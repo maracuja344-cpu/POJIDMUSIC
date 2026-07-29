@@ -1,0 +1,2862 @@
+
+
+/* =========================================================
+   1. БАЗОВЫЕ НАСТРОЙКИ СТРАНИЦЫ
+   ========================================================= */
+
+/*
+Все элементы учитывают padding и border
+внутри заданной ширины.
+*/
+* {
+    box-sizing: border-box;
+}
+
+
+/* Плавное перемещение по якорным ссылкам */
+html {
+    scroll-behavior: smooth;
+}
+
+
+/*
+Общие настройки всей страницы.
+
+Нижний отступ нужен, чтобы закреплённый плеер
+не закрывал последние карточки.
+*/
+body {
+    margin: 0;
+    padding-bottom: 40vh;
+
+    overflow-x: hidden;
+
+    background-color: #111111;
+    color: white;
+
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+
+/*
+При переходе по ссылке раздел останавливается
+ниже закреплённой шапки.
+*/
+.name,
+.recommendations-section {
+    scroll-margin-top: 110px;
+}
+
+
+/* =========================================================
+   2. ШАПКА САЙТА
+   ========================================================= */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    width: 100%;
+    max-width: 1100px;
+
+    margin: 0 auto;
+    padding: 20px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background-color: rgba(17, 17, 17, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+
+/* Логотип сайта */
+.logo {
+    width: 200px;
+
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-align: center;
+
+    transition:
+        color 0.3s,
+        letter-spacing 0.3s;
+}
+
+
+.logo:hover {
+    color: #fe2adf;
+    letter-spacing: 4px;
+}
+
+
+/* Контейнер навигационных ссылок */
+.nav {
+    display: flex;
+    gap: 30px;
+}
+
+
+/* Ссылки в шапке */
+.nav a {
+    position: relative;
+
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+
+    transition: color 0.3s;
+}
+
+
+/* Изменение цвета при наведении */
+.nav a:hover {
+    color: #ff93ef;
+}
+
+
+/* Линия под ссылкой */
+.nav a::after {
+    content: "";
+
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+
+    width: 0;
+    height: 2px;
+
+    background-color: white;
+
+    transform: translateX(-50%);
+    transition: width 0.5s;
+}
+
+
+/* Раскрытие линии из центра */
+.nav a:hover::after {
+    width: 100%;
+}
+
+
+/* =========================================================
+   3. ПОИСК
+   ========================================================= */
+
+/* Внешний контейнер строки поиска */
+.search-wrap {
+    width: 100%;
+    max-width: 1100px;
+
+    margin: 30px auto 10px;
+    padding: 0 20px;
+}
+
+
+/* Поле ввода */
+.search-input {
+    width: 100%;
+    padding: 14px 18px;
+
+    border: 1px solid #333;
+    border-radius: 16px;
+
+    background-color: #181818;
+    color: white;
+
+    font-size: 16px;
+    outline: none;
+
+    transition:
+        border-color 0.2s,
+        background-color 0.2s;
+}
+
+
+/* Текст внутри пустого поля */
+.search-input::placeholder {
+    color: #888;
+}
+
+
+/* Поле во время ввода */
+.search-input:focus {
+    border-color: #666;
+    background-color: #202020;
+}
+
+
+/*
+Раздел поиска изначально скрыт.
+JavaScript меняет display на block.
+*/
+.search-results {
+    display: none;
+}
+
+
+/* =========================================================
+   4. ПЛАВНОЕ ПОЯВЛЕНИЕ ПОИСКА
+   ========================================================= */
+
+/*
+Сам раздел результатов немного поднимается
+и плавно становится видимым.
+*/
+#search-results {
+    opacity: 0;
+    transform: translateY(12px);
+
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+/* Класс добавляется JavaScript */
+#search-results.search-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/*
+Карточки поиска сначала скрыты
+и немного уменьшены.
+*/
+.search-results-list .release-card {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+
+    transition:
+        opacity 0.3s var(--delay, 0ms) ease,
+        transform 0.3s var(--delay, 0ms) ease,
+        background-color 0.3s,
+        box-shadow 0.3s;
+}
+
+
+/* Плавное появление карточки */
+.search-results-list .release-card.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+
+/* =========================================================
+   5. СЕТКА РЕЗУЛЬТАТОВ ПОИСКА
+   ========================================================= */
+
+/*
+На широком экране карточки имеют нормальную ширину.
+
+Если найден один трек, он не растягивается
+на всю страницу.
+*/
+#search-results .search-results-list {
+    width: 100%;
+    max-width: 1100px;
+
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(300px, 1fr));
+
+    gap: 16px;
+
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+
+/* Горизонтальная карточка результата */
+#search-results .search-results-list .release-card {
+    width: 100%;
+    min-width: 0;
+
+    flex-direction: row;
+    align-items: center;
+
+    gap: 16px;
+    padding: 14px;
+}
+
+
+/* Фиксированный размер обложки */
+#search-results .search-results-list .cover-wrap {
+    width: 110px;
+    flex: 0 0 110px;
+}
+
+
+#search-results .search-results-list .cover {
+    width: 110px;
+    height: 110px;
+
+    aspect-ratio: auto;
+    object-fit: cover;
+
+    border-radius: 15px;
+}
+
+
+/* Текст занимает оставшееся пространство */
+#search-results .search-results-list .release-info {
+    min-width: 0;
+    flex: 1;
+
+    text-align: left;
+}
+
+
+/* Название найденного трека */
+#search-results .search-results-list .track-title {
+    margin: 0 0 7px;
+
+    font-size: 20px;
+    line-height: 1.2;
+    text-align: left;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* Исполнитель найденного трека */
+#search-results .search-results-list .artist-name {
+    margin: 0;
+
+    font-size: 16px;
+    line-height: 1.3;
+    text-align: left;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* Надпись «Ничего не найдено» */
+.search-empty {
+    display: none;
+
+    margin-top: 40px;
+
+    color: #888;
+    font-size: 18px;
+    text-align: center;
+}
+
+
+/* =========================================================
+   6. ЗАПРЕТ СЛУЧАЙНОГО ВЫДЕЛЕНИЯ
+   ========================================================= */
+
+.release-card,
+.recommendation-card,
+.mini-player,
+.player-controls,
+.volume-control,
+.header,
+.nav,
+.logo,
+.track-title,
+.artist-name,
+.section-title {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+
+/* Убирает подсветку при касании */
+.release-card,
+.recommendation-card,
+.mini-player,
+.player-controls,
+.player-toggle,
+.player-prev,
+.player-next,
+.volume-button,
+.nav a,
+button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+/* Запрещает перетаскивание изображений */
+img {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+}
+
+
+/* =========================================================
+   7. ЗАГОЛОВКИ РАЗДЕЛОВ
+   ========================================================= */
+
+.section-title {
+    margin-top: 50px;
+    margin-bottom: 30px;
+
+    font-size: 48px;
+}
+
+
+/* Базовый размер названия */
+.track-title {
+    font-size: 24px;
+}
+
+
+/* Базовый размер исполнителя */
+.artist-name {
+    font-size: 20px;
+    line-height: 1.3;
+}
+
+
+.track-title,
+.artist-name {
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+
+/* =========================================================
+   8. СЕТКА ТРЕКОВ
+   ========================================================= */
+
+/*
+На широком экране браузер самостоятельно
+выбирает количество колонок.
+
+Карточка не становится уже 300px.
+*/
+.tracks-row {
+    width: 100%;
+    max-width: 1500px;
+
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(300px, 1fr));
+
+    gap: 16px;
+
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+
+/* =========================================================
+   9. КАРТОЧКА ТРЕКА
+   ========================================================= */
+
+.release-card {
+    position: relative;
+
+    width: 100%;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    padding: 16px;
+
+    border: 1px solid #202020;
+    border-radius: 20px;
+
+    opacity: 0;
+    translate: 0 20px;
+
+    transition:
+        opacity 0.8s var(--delay, 0ms),
+        translate 0.8s var(--delay, 0ms),
+        transform 0.3s,
+        background-color 0.3s,
+        box-shadow 0.3s;
+}
+
+
+/* Появление обычной карточки */
+.release-card.show {
+    opacity: 1;
+    translate: 0 0;
+}
+
+
+/* Сжатие при нажатии */
+.release-card:active {
+    transform: scale(0.97);
+}
+
+
+/*
+Hover работает только на устройствах
+с настоящей мышью.
+*/
+@media (hover: hover) and (pointer: fine) {
+    .release-card:hover {
+        background-color: #444444;
+
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px #8a8a8a;
+    }
+
+
+    .release-card:hover .cover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 5px 30px #e2adff;
+    }
+}
+
+
+/* =========================================================
+   10. ОБЛОЖКА И СОСТОЯНИЕ ВОСПРОИЗВЕДЕНИЯ
+   ========================================================= */
+
+/*
+Контейнер позволяет расположить значок паузы
+поверх обложки.
+*/
+.cover-wrap {
+    position: relative;
+}
+
+
+/* Обложка трека */
+.cover {
+    width: 150px;
+    height: 150px;
+
+    object-fit: cover;
+    border-radius: 20px;
+
+    transition:
+        transform 0.3s,
+        box-shadow 0.3s,
+        filter 0.2s;
+}
+
+
+/* Значок паузы */
+.play-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    font-size: 40px;
+
+    opacity: 0;
+
+    transition: opacity 0.2s;
+}
+
+
+/* Показ значка паузы */
+.release-card.playing .play-state {
+    opacity: 1;
+}
+
+
+/* Затемнение играющего трека */
+.release-card.playing .cover {
+    filter: brightness(0.3);
+}
+
+
+/* Контейнер названия и исполнителя */
+.release-info {
+    min-width: 0;
+    flex: 1;
+}
+
+
+/* Заголовок карточки */
+.release-info h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+
+/* =========================================================
+   11. МИНИ-ПЛЕЕР
+   ========================================================= */
+
+.mini-player {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    z-index: 1000;
+
+    width: 90%;
+    max-width: 700px;
+    height: 80px;
+
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr);
+
+    align-items: center;
+    gap: 16px;
+
+    padding: 10px 15px;
+
+    overflow: hidden;
+
+    background-color: #181818;
+
+    border: 1px solid #333;
+    border-radius: 20px;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transform: translate(-50%, 10px);
+
+    transition:
+        opacity 0.3s,
+        transform 0.3s,
+        visibility 0.3s;
+}
+
+
+/* Показ плеера */
+.mini-player.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+
+    transform: translate(-50%, 0);
+}
+
+
+/* =========================================================
+   12. ИНФОРМАЦИЯ В ПЛЕЕРЕ
+   ========================================================= */
+
+.player-main {
+    position: relative;
+    z-index: 2;
+
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    pointer-events: none;
+}
+
+
+/* Маленькая обложка */
+.player-cover {
+    position: relative;
+    z-index: 3;
+
+    width: 52px;
+    height: 52px;
+
+    flex-shrink: 0;
+
+    object-fit: cover;
+    border-radius: 12px;
+
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+
+/* Название и исполнитель */
+.player-info {
+    min-width: 0;
+    flex: 1;
+
+    text-align: left;
+
+    pointer-events: none;
+}
+
+
+.player-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+
+.player-artist {
+    margin-top: 3px;
+
+    font-size: 13px;
+    opacity: 0.65;
+}
+
+
+/* =========================================================
+   13. ПОЛОСА ПРОГРЕССА
+   ========================================================= */
+
+.player-progress {
+    position: relative;
+    inset: 0;
+    z-index: 2;
+
+    width: 100%;
+    height: 100%;
+
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+}
+
+
+/* Заполненная часть прогресса */
+.player-progress-fill {
+    width: 0%;
+    height: 100%;
+
+    background-color: #2b2b2b;
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   14. КНОПКИ ПЛЕЕРА
+   ========================================================= */
+
+.player-controls {
+    position: relative;
+    z-index: 3;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: center;
+
+    gap: 8px;
+}
+
+
+/* Центральная кнопка */
+.player-toggle {
+    position: relative;
+    z-index: 2;
+
+    width: 42px;
+    height: 42px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    font-size: 18px;
+    cursor: pointer;
+}
+
+
+/* Основа иконок Play и Pause */
+.player-toggle::before,
+.player-toggle::after {
+    content: "";
+    position: absolute;
+}
+
+
+/* Иконка Play */
+.player-toggle::before {
+    left: 50%;
+    top: 50%;
+
+    width: 0;
+    height: 0;
+
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 11px solid #111;
+
+    transform: translate(-40%, -50%);
+}
+
+
+/* Второй элемент скрыт в режиме Play */
+.player-toggle::after {
+    display: none;
+}
+
+
+/* Полосы Pause */
+.player-toggle.playing::before,
+.player-toggle.playing::after {
+    top: 50%;
+
+    width: 4px;
+    height: 14px;
+
+    border: none;
+    background-color: #111;
+
+    transform: translateY(-50%);
+}
+
+
+.player-toggle.playing::before {
+    left: calc(50% - 6px);
+}
+
+
+.player-toggle.playing::after {
+    left: calc(50% + 2px);
+    display: block;
+}
+
+
+/* Кнопки предыдущего и следующего трека */
+.player-prev,
+.player-next {
+    width: 32px;
+    height: 32px;
+
+    padding: 6px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: white;
+
+    cursor: pointer;
+    opacity: 0.65;
+
+    transition:
+        opacity 0.2s,
+        background-color 0.2s,
+        transform 0.15s;
+}
+
+
+/* SVG внутри кнопок */
+.player-prev svg,
+.player-next svg {
+    width: 18px;
+    height: 18px;
+
+    fill: currentColor;
+}
+
+
+/* Наведение */
+.player-prev:hover,
+.player-next:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+
+/* Нажатие */
+.player-prev:active,
+.player-next:active {
+    transform: scale(0.88);
+}
+
+
+/* =========================================================
+   15. ГРОМКОСТЬ И ВРЕМЯ
+   ========================================================= */
+
+.volume-control {
+    position: relative;
+    z-index: 3;
+
+    min-width: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-self: end;
+
+    gap: 8px;
+}
+
+
+/* Кнопка динамика */
+.volume-button {
+    width: 32px;
+    height: 32px;
+
+    padding: 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: white;
+
+    cursor: pointer;
+    opacity: 0.7;
+
+    transition:
+        opacity 0.2s,
+        background-color 0.2s;
+}
+
+
+.volume-button:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+
+/* Иконка динамика */
+.volume-icon {
+    width: 21px;
+    height: 21px;
+
+    fill: currentColor;
+}
+
+
+/* Звуковые волны */
+.volume-wave {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+
+/* Ползунок громкости */
+.volume-slider {
+    width: 0;
+
+    opacity: 0;
+    accent-color: white;
+
+    transition:
+        width 0.25s,
+        opacity 0.25s;
+}
+
+
+/* Раскрытие ползунка на компьютере */
+@media (hover: hover) and (pointer: fine) {
+    .volume-control:hover .volume-slider {
+        width: 80px;
+        opacity: 1;
+    }
+}
+
+
+/* Время трека */
+.player-time {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 4px;
+
+    padding: 0 4px;
+
+    font-size: 11px;
+    line-height: 1;
+
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+
+.time-separator {
+    opacity: 0.45;
+}
+
+
+/* =========================================================
+   16. РЕКОМЕНДАЦИИ
+   ========================================================= */
+
+.recommendations-section {
+    width: 100%;
+    overflow: hidden;
+}
+
+
+/* Видимая область карусели */
+.recommendations-viewport {
+    width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding: 10px 20px 25px;
+
+    scrollbar-width: none;
+}
+
+
+/* Скрытие полосы прокрутки */
+.recommendations-viewport::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* Горизонтальная лента */
+.recommendations-track {
+    width: max-content;
+
+    display: flex;
+    gap: 20px;
+}
+
+
+/* Карточка рекомендации */
+.recommendation-card {
+    width: 260px;
+    flex-shrink: 0;
+
+    padding: 15px;
+
+    border: 1px solid #202020;
+    border-radius: 20px;
+
+    text-align: left;
+
+    opacity: 0;
+    translate: 0 20px;
+
+    transition:
+        opacity 0.8s var(--delay, 0ms),
+        translate 0.8s var(--delay, 0ms),
+        transform 0.3s,
+        background-color 0.3s,
+        box-shadow 0.3s;
+}
+
+
+/* Появление рекомендации */
+.recommendation-card.show {
+    opacity: 1;
+    translate: 0 0;
+}
+
+
+/* Нажатие */
+.recommendation-card:active {
+    transform: scale(0.97);
+}
+
+
+/* Hover только для мыши */
+@media (hover: hover) and (pointer: fine) {
+    .recommendation-card:hover {
+        background-color: #444444;
+
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px #8a8a8a;
+    }
+
+
+    .recommendation-card:hover .recommendation-cover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 5px 30px #e2adff;
+    }
+}
+
+
+/* Обложка рекомендации */
+.recommendation-cover {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+
+    display: block;
+
+    object-fit: cover;
+    border-radius: 15px;
+
+    transition:
+        transform 0.3s,
+        box-shadow 0.3s,
+        filter 0.2s;
+}
+
+
+/* Затемнение играющей рекомендации */
+.recommendation-card.playing .recommendation-cover {
+    filter: brightness(0.3);
+}
+
+
+/* Текст рекомендации */
+.recommendation-info {
+    padding-top: 12px;
+}
+
+
+.recommendation-title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+
+.recommendation-artist {
+    margin-top: 5px;
+
+    font-size: 16px;
+    opacity: 0.7;
+}
+
+
+/* =========================================================
+   17. СРЕДНИЕ ЭКРАНЫ
+   ========================================================= */
+
+@media (max-width: 1000px) {
+    /*
+    Обычные карточки становятся немного уже,
+    чтобы помещаться на среднем экране.
+    */
+    .tracks-row {
+        grid-template-columns:
+            repeat(auto-fit, minmax(210px, 1fr));
+
+        gap: 14px;
+    }
+
+
+    /*
+    Обычная карточка становится вертикальной.
+    */
+    .release-card {
+        flex-direction: column;
+        align-items: stretch;
+
+        gap: 12px;
+        padding: 12px;
+    }
+
+
+    .cover-wrap {
+        width: 100%;
+    }
+
+
+    .release-card .cover {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+
+        display: block;
+    }
+
+
+    .release-info {
+        width: 100%;
+        min-width: 0;
+
+        text-align: left;
+    }
+
+
+    /* Обрезание длинного названия */
+    .release-info h2 {
+        margin: 0 0 6px;
+
+        text-align: left;
+        white-space: nowrap;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+
+    .artist-name {
+        margin: 0;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+
+    /*
+    В поиске остаются две горизонтальные карточки.
+    */
+    #search-results .search-results-list {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        padding: 0 16px;
+    }
+
+
+    #search-results .search-results-list .release-card {
+        flex-direction: row;
+        align-items: center;
+    }
+
+
+    #search-results .search-results-list .cover-wrap {
+        width: 100px;
+        flex: 0 0 100px;
+    }
+
+
+    #search-results .search-results-list .cover {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+
+/* =========================================================
+   18. ТЕЛЕФОНЫ
+   ========================================================= */
+
+@media (max-width: 560px) {
+    /* Вертикальная шапка */
+    .header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+
+    /* Отступ для якорных ссылок */
+    .name,
+    .recommendations-section {
+        scroll-margin-top: 150px;
+    }
+
+
+    /* Перенос навигации */
+    .nav {
+        flex-wrap: wrap;
+        justify-content: center;
+
+        gap: 12px 16px;
+    }
+
+
+    /* Две обычные карточки в строке */
+    .tracks-row {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 10px;
+
+        padding: 0 10px;
+    }
+
+
+    /* Компактная обычная карточка */
+    .release-card {
+        min-height: 0;
+
+        gap: 9px;
+        padding: 9px;
+
+        border-radius: 16px;
+    }
+
+
+    .release-card .cover-wrap {
+        width: 100%;
+        min-width: 0;
+    }
+
+
+    .release-card .cover {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+
+        border-radius: 13px;
+    }
+
+
+    .release-info {
+        width: 100%;
+        min-width: 0;
+
+        text-align: left;
+    }
+
+
+    .release-info h2,
+    .track-title {
+        margin: 0 0 4px;
+
+        font-size: 15px;
+        line-height: 1.15;
+        text-align: left;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+
+    .artist-name {
+        margin: 0;
+
+        font-size: 12px;
+        line-height: 1.2;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+
+    /* Заголовки разделов */
+    .section-title {
+        margin-top: 45px;
+        margin-bottom: 20px;
+
+        font-size: 32px;
+    }
+
+
+    /* =====================================================
+       ПОИСК НА ТЕЛЕФОНЕ
+       ===================================================== */
+
+    /*
+    На телефоне один результат в строке,
+    чтобы текст нормально помещался.
+    */
+    #search-results .search-results-list {
+        grid-template-columns: 1fr;
+
+        padding: 0 10px;
+    }
+
+
+    /*
+    Карточка поиска остаётся горизонтальной,
+    несмотря на мобильные стили обычных карточек.
+    */
+    #search-results .search-results-list .release-card {
+        flex-direction: row;
+        align-items: center;
+
+        gap: 12px;
+        padding: 10px;
+    }
+
+
+    #search-results .search-results-list .cover-wrap {
+        width: 88px;
+        flex: 0 0 88px;
+    }
+
+
+    #search-results .search-results-list .cover {
+        width: 88px;
+        height: 88px;
+
+        aspect-ratio: auto;
+    }
+
+
+    #search-results .search-results-list .track-title {
+        margin: 0 0 5px;
+
+        font-size: 17px;
+    }
+
+
+    #search-results .search-results-list .artist-name {
+        margin: 0;
+
+        font-size: 13px;
+    }
+
+
+    /* =====================================================
+       МОБИЛЬНЫЙ ПЛЕЕР
+       ===================================================== */
+
+    .mini-player {
+        bottom: 18px;
+
+        width: calc(100% - 36px);
+        height: 76px;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+
+        gap: 4px 10px;
+
+        padding: 8px 12px 7px;
+
+        background-color: rgba(24, 24, 24, 0.82);
+        backdrop-filter: blur(12px);
+
+        border-radius: 18px;
+    }
+
+
+    .player-main {
+        min-width: 0;
+    }
+
+
+    .player-cover {
+        width: 46px;
+        height: 46px;
+    }
+
+
+    .player-info {
+        max-width: 150px;
+    }
+
+
+    /* Обрезание текста плеера */
+    .player-title,
+    .player-artist {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+
+    .player-controls {
+        justify-content: flex-end;
+        gap: 4px;
+    }
+
+
+    .player-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+
+    .player-prev,
+    .player-next {
+        width: 26px;
+        height: 26px;
+
+        padding: 4px;
+    }
+
+
+    .player-prev svg,
+    .player-next svg {
+        width: 15px;
+        height: 15px;
+    }
+
+
+    /*
+    На телефоне громкость скрывается,
+    остаётся только время.
+    */
+    .volume-button,
+    .volume-slider {
+        display: none;
+    }
+
+
+    .volume-control {
+        position: absolute;
+        right: 12px;
+        bottom: 5px;
+
+        min-width: 0;
+
+        pointer-events: none;
+    }
+
+
+    .player-time {
+        width: auto;
+
+        margin: 0;
+        padding: 0;
+
+        gap: 3px;
+
+        font-size: 10px;
+        opacity: 0.55;
+    }
+
+
+    /* Место под закреплённый плеер */
+    body {
+        padding-bottom: 180px;
+    }
+}
+
+
+
+
+
+
+
+/* =========================================================
+   ПОЛНОЭКРАННЫЙ ПЛЕЕР
+   ========================================================= */
+
+/*
+Сам полноэкранный слой выезжает снизу.
+
+Здесь больше нет scale:
+содержимое не сжимается и не деформируется.
+*/
+.fullscreen-player {
+    position: fixed;
+    inset: 0;
+
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 32px;
+
+    visibility: hidden;
+    pointer-events: none;
+
+    transform: translateY(100%);
+
+    border-radius:
+        28px
+        28px
+        0
+        0;
+
+    overflow: hidden;
+
+    transition:
+        visibility 0.55s ease,
+        transform 0.55s
+            cubic-bezier(0.22, 1, 0.36, 1),
+        border-radius 0.45s ease;
+}
+
+
+/*
+Экран полностью поднялся.
+
+Контент становится кликабельным
+только после открытия плеера.
+*/
+.fullscreen-player.open {
+    visibility: visible;
+    pointer-events: auto;
+
+    transform: translateY(0);
+
+    border-radius: 0;
+}
+
+/*
+При закрытии весь экран уезжает вниз.
+
+Контент внутри начинает исчезать
+немного раньше благодаря отдельной анимации.
+*/
+.fullscreen-player.closing {
+    pointer-events: none;
+
+    transform: translateY(100%);
+
+    border-radius:
+        28px
+        28px
+        0
+        0;
+}
+
+
+/* =========================================================
+   ФОН ПОЛНОЭКРАННОГО ПЛЕЕРА
+   ========================================================= */
+
+/*
+Фон занимает весь экран.
+
+Позже через JavaScript мы передадим сюда
+обложку текущего трека.
+*/
+.fullscreen-player-background {
+    position: absolute;
+    inset: -40px;
+    z-index: 0;
+
+    background-position: center;
+    background-size: cover;
+
+    filter:
+        blur(34px)
+        brightness(0.42)
+        saturate(1.15);
+
+    transform:
+        scale(1.08)
+        translateY(35px);
+
+    opacity: 0.65;
+
+    transition:
+        transform 0.8s
+            cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.7s ease,
+        opacity 0.5s ease;
+}
+
+/*
+Во время открытия фон медленно распрямляется
+и становится чуть насыщеннее.
+*/
+.fullscreen-player.open
+.fullscreen-player-background {
+    transform:
+        scale(1.13)
+        translateY(0);
+
+    filter:
+        blur(38px)
+        brightness(0.46)
+        saturate(1.25);
+
+    opacity: 1;
+}
+
+/*
+При сворачивании фон постепенно уходит вниз,
+будто стягивается обратно к мини-плееру.
+*/
+.fullscreen-player.closing
+.fullscreen-player-background {
+    transform:
+        scale(1.08)
+        translateY(45px);
+
+    filter:
+        blur(30px)
+        brightness(0.38)
+        saturate(1.05);
+
+    opacity: 0.75;
+
+    transition:
+        transform 0.5s ease,
+        filter 0.45s ease,
+        opacity 0.4s ease;
+}
+
+
+/*
+Размытая обложка будет добавляться
+через CSS-переменную --fullscreen-cover.
+*/
+.fullscreen-player-background::before {
+    content: "";
+
+    position: absolute;
+    inset: -60px;
+
+    background-image:
+        var(--fullscreen-cover);
+
+    background-position: center;
+    background-size: cover;
+
+    filter:
+        blur(60px)
+        brightness(0.45)
+        saturate(1.4);
+
+    transform: scale(1.15);
+
+    animation:
+    backgroundFloat 30s ease-in-out infinite;
+
+    opacity: 0.9;
+}
+
+
+/*
+Дополнительный тёмный слой,
+чтобы текст и кнопки всегда читались.
+*/
+.fullscreen-player-background::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.18),
+            rgba(0, 0, 0, 0.72)
+        );
+}
+
+
+
+
+/* =========================================================
+   СОДЕРЖИМОЕ
+   ========================================================= */
+
+.fullscreen-player-content {
+    position: relative;
+    z-index: 2;
+
+    width: min(100%, 560px);
+
+    opacity: 0;
+
+    transform: translateY(44px);
+
+    transition:
+        opacity 0.32s ease,
+        transform 0.5s
+            cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+Контент начинает появляться немного позже,
+чем сам экран поднимается снизу.
+*/
+.fullscreen-player.open
+.fullscreen-player-content {
+    opacity: 1;
+
+    transform: translateY(0);
+
+    transition-delay: 0.09s;
+}
+
+/*
+При закрытии обложка, название и управление
+первыми немного опускаются и исчезают.
+*/
+.fullscreen-player.closing
+.fullscreen-player-content {
+    opacity: 0;
+
+    transform: translateY(30px);
+
+    transition:
+        opacity 0.18s ease,
+        transform 0.28s ease;
+
+    transition-delay: 0s;
+}
+
+
+/* =========================================================
+   ВЕРХНЯЯ ПАНЕЛЬ
+   ========================================================= */
+
+/*
+Стрелка появляется сверху чуть позже контента.
+*/
+.fullscreen-player-header {
+    opacity: 0;
+
+    transform:
+        translateX(-50%)
+        translateY(-12px);
+
+    transition:
+        opacity 0.3s ease,
+        transform 0.4s
+            cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fullscreen-player.open
+.fullscreen-player-header {
+    opacity: 1;
+
+    transform:
+        translateX(-50%)
+        translateY(0);
+
+    transition-delay: 0.18s;
+}
+
+.fullscreen-player.closing
+.fullscreen-player-header {
+    opacity: 0;
+
+    transform:
+        translateX(-50%)
+        translateY(-10px);
+
+    transition-delay: 0s;
+}
+
+
+/*
+Кнопка закрытия.
+*/
+.fullscreen-player-close {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 999px;
+
+    background: rgba(255,255,255,.08);
+
+    backdrop-filter: blur(10px);
+
+    color: rgba(255,255,255,.85);
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        color .2s ease;
+}
+
+
+.fullscreen-player-close:hover {
+    background: rgba(255,255,255,.13);
+
+    color: #fff;
+}
+
+
+.fullscreen-player-close:active {
+    transform: scale(.94);
+}
+
+
+.fullscreen-player-close svg {
+    width: 22px;
+    height: 22px;
+
+    fill: none;
+
+    stroke: currentColor;
+    stroke-width: 1.8;
+
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* =========================================================
+   ЦЕНТРАЛЬНАЯ ЧАСТЬ
+   ========================================================= */
+
+.fullscreen-player-main {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 70px 0 40px;
+}
+
+
+/* =========================================================
+   БОЛЬШАЯ ЖИВАЯ ОБЛОЖКА
+   ========================================================= */
+
+/*
+Обёртка отвечает за наклон,
+объём, тень и световой блик.
+*/
+.fullscreen-player-cover-wrap {
+    position: relative;
+
+    width: min(100%, 58vh, 520px);
+    aspect-ratio: 1 / 1;
+
+    flex-shrink: 0;
+
+    border-radius: 24px;
+    overflow: hidden;
+
+    transform:
+        perspective(1200px)
+        rotateX(0deg)
+        rotateY(0deg)
+        scale(1);
+
+    transform-style: preserve-3d;
+
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.5);
+
+    will-change: transform;
+
+    transition:
+        transform 0.18s ease-out,
+        box-shadow 0.35s ease;
+}
+
+
+/*
+Сама картинка заполняет обёртку.
+
+Она слегка увеличена,
+чтобы при наклоне не появлялись пустые края.
+*/
+.fullscreen-player-cover {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    border-radius: inherit;
+
+    user-select: none;
+    pointer-events: none;
+
+    transform: scale(1.035);
+
+    transition:
+        transform 0.6s ease,
+        filter 0.4s ease;
+}
+
+
+/*
+Световой блик поверх обложки.
+
+Координаты блика будет менять JavaScript.
+*/
+.fullscreen-player-cover-wrap::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    z-index: 2;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at
+            var(--cover-light-x, 50%)
+            var(--cover-light-y, 35%),
+
+            rgba(255, 255, 255, 0.22),
+            rgba(255, 255, 255, 0.08) 18%,
+            transparent 48%
+        );
+
+    mix-blend-mode: screen;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.3s ease;
+}
+
+
+/*
+Тонкий внутренний свет по краям.
+*/
+.fullscreen-player-cover-wrap::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    z-index: 3;
+
+    border-radius: inherit;
+
+    pointer-events: none;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+}
+
+
+/*
+Когда плеер открыт,
+блик становится видимым.
+*/
+.fullscreen-player.open
+.fullscreen-player-cover-wrap::after {
+    opacity: 1;
+}
+
+
+/*
+Когда музыка играет,
+картинка внутри медленно дышит.
+*/
+.fullscreen-player.is-playing
+.fullscreen-player-cover {
+    animation:
+        fullscreen-cover-breath
+        7s
+        ease-in-out
+        infinite;
+}
+
+
+/*
+При паузе дыхание выключается.
+*/
+.fullscreen-player:not(.is-playing)
+.fullscreen-player-cover {
+    animation: none;
+
+    transform: scale(1.035);
+}
+
+
+/* =====================================================
+   СВЕТОВЫЕ ЧАСТИЦЫ ПОЛНОЭКРАННОГО ПЛЕЕРА
+   ===================================================== */
+
+/*
+Контейнер занимает весь экран.
+
+pointer-events: none не даёт частицам
+мешать нажимать кнопки и двигать ползунки.
+*/
+.fullscreen-particles {
+    position: absolute;
+    inset: 0;
+
+    overflow: hidden;
+
+    pointer-events: none;
+
+    z-index: 1;
+}
+
+
+/*
+Общий вид всех частиц.
+*/
+.fullscreen-particle {
+    position: absolute;
+
+    display: block;
+
+    border-radius: 50%;
+
+    opacity: 0.05;
+
+    filter: blur(110px);
+
+    will-change: transform;
+
+    transform: translate3d(0, 0, 0);
+}
+
+
+/* =====================================================
+   ПЕРВАЯ ЧАСТИЦА
+   ===================================================== */
+
+.particle-1 {
+    width: 420px;
+    height: 500px;
+
+    top: 8%;
+    left: 8%;
+
+    background:
+        rgba(255, 255, 255, 0.55);
+
+    animation:
+        particleFloatOne
+        22s
+        ease-in-out
+        infinite;
+}
+
+
+/* =====================================================
+   ВТОРАЯ ЧАСТИЦА
+   ===================================================== */
+
+.particle-2 {
+    width: 340px;
+    height: 340px;
+
+    top: 14%;
+    right: -80px;
+
+    background:
+        rgba(165, 115, 255, 0.5);
+
+    animation:
+        particleFloatTwo
+        28s
+        ease-in-out
+        infinite;
+}
+
+
+/* =====================================================
+   ТРЕТЬЯ ЧАСТИЦА
+   ===================================================== */
+
+.particle-3 {
+    width: 220px;
+    height: 220px;
+
+    bottom: 8%;
+    left: 18%;
+
+    background:
+        rgba(90, 190, 255, 0.45);
+
+    animation:
+        particleFloatThree
+        24s
+        ease-in-out
+        infinite;
+}
+
+
+/* =====================================================
+   ЧЕТВЁРТАЯ ЧАСТИЦА
+   ===================================================== */
+
+.particle-4 {
+    width: 300px;
+    height: 300px;
+
+    bottom: -90px;
+    right: 14%;
+
+    background:
+        rgba(255, 120, 190, 0.4);
+
+    animation:
+        particleFloatFour
+        31s
+        ease-in-out
+        infinite;
+}
+
+
+/* =====================================================
+   ПЯТАЯ ЧАСТИЦА
+   ===================================================== */
+
+.particle-5 {
+    width: 180px;
+    height: 180px;
+
+    top: 48%;
+    left: 45%;
+
+    background:
+        rgba(255, 255, 255, 0.38);
+
+    filter: blur(55px);
+
+    opacity: 0.09;
+
+    animation:
+        particleFloatFive
+        19s
+        ease-in-out
+        infinite;
+}
+
+
+/* =====================================================
+   ДВИЖЕНИЕ ЧАСТИЦ
+   ===================================================== */
+
+@keyframes particleFloatOne {
+
+    0%,
+    100% {
+        transform:
+            translate3d(0, 0, 0)
+            scale(1);
+    }
+
+    50% {
+        transform:
+            translate3d(70px, 40px, 0)
+            scale(1.12);
+    }
+
+}
+
+
+@keyframes particleFloatTwo {
+
+    0%,
+    100% {
+        transform:
+            translate3d(0, 0, 0)
+            scale(1);
+    }
+
+    50% {
+        transform:
+            translate3d(-85px, 60px, 0)
+            scale(0.92);
+    }
+
+}
+
+
+@keyframes particleFloatThree {
+
+    0%,
+    100% {
+        transform:
+            translate3d(0, 0, 0)
+            scale(1);
+    }
+
+    50% {
+        transform:
+            translate3d(55px, -75px, 0)
+            scale(1.08);
+    }
+
+}
+
+
+@keyframes particleFloatFour {
+
+    0%,
+    100% {
+        transform:
+            translate3d(0, 0, 0)
+            scale(1);
+    }
+
+    50% {
+        transform:
+            translate3d(-70px, -45px, 0)
+            scale(1.15);
+    }
+
+}
+
+
+@keyframes particleFloatFive {
+
+    0%,
+    100% {
+        transform:
+            translate3d(0, 0, 0)
+            scale(1);
+    }
+
+    50% {
+        transform:
+            translate3d(-35px, 55px, 0)
+            scale(0.9);
+    }
+
+}
+
+
+/*
+Мягкое дыхание картинки.
+*/
+@keyframes fullscreen-cover-breath {
+    0%,
+    100% {
+        transform: scale(1.035);
+    }
+
+    50% {
+        transform: scale(1.075);
+    }
+}
+
+/* =====================================================
+   ЖИВОЙ ФОН
+   ===================================================== */
+
+@keyframes backgroundFloat {
+
+    0% {
+
+        transform:
+            translate3d(0, 0, 0)
+            scale(1.15);
+
+    }
+
+    25% {
+
+        transform:
+            translate3d(-10px, -8px, 0)
+            scale(1.17);
+
+    }
+
+    50% {
+
+        transform:
+            translate3d(8px, -14px, 0)
+            scale(1.16);
+
+    }
+
+    75% {
+
+        transform:
+            translate3d(14px, 8px, 0)
+            scale(1.18);
+
+    }
+
+    100% {
+
+        transform:
+            translate3d(0, 0, 0)
+            scale(1.15);
+
+    }
+
+}
+
+
+/*
+Устройства с мышью получают
+чуть более глубокую тень при наведении.
+*/
+@media (hover: hover) and (pointer: fine) {
+    .fullscreen-player-cover-wrap:hover {
+        box-shadow:
+            0 38px 100px rgba(0, 0, 0, 0.62);
+    }
+}
+
+
+/*
+Если пользователь отключил анимации
+в настройках системы.
+*/
+@media (prefers-reduced-motion: reduce) {
+    .fullscreen-player.is-playing
+    .fullscreen-player-cover {
+        animation: none;
+    }
+
+    .fullscreen-player-cover-wrap {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   НАЗВАНИЕ И ИСПОЛНИТЕЛЬ
+   ========================================================= */
+
+.fullscreen-player-info {
+    width: min(100%, 58vh, 520px);
+
+    margin-top: 24px;
+
+    text-align: center;
+}
+
+
+.fullscreen-player-title {
+    margin: 0;
+
+    color: white;
+
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+.fullscreen-player-artist {
+    margin:
+        8px
+        0
+        0;
+
+    color:
+        rgba(255, 255, 255, 0.68);
+
+    font-size: 17px;
+    line-height: 1.3;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   ПРОГРЕСС
+   ========================================================= */
+
+.fullscreen-player-progress-area {
+    width: min(100%, 58vh, 520px);
+
+    margin-top: 28px;
+}
+
+
+.fullscreen-player-progress {
+    position: relative;
+
+    width: 100%;
+    height: 6px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(255, 255, 255, 0.2);
+
+    overflow: hidden;
+
+    cursor: pointer;
+}
+
+
+/*
+Заполненная часть полосы.
+
+Ширину будет менять player.js.
+*/
+.fullscreen-player-progress-fill {
+    width: 0%;
+    height: 100%;
+
+    border-radius: inherit;
+
+    background: white;
+
+    pointer-events: none;
+}
+
+
+.fullscreen-player-time {
+    display: flex;
+    justify-content: space-between;
+
+    margin-top: 8px;
+
+    color:
+        rgba(255, 255, 255, 0.58);
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   КНОПКИ УПРАВЛЕНИЯ
+   ========================================================= */
+
+.fullscreen-player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 28px;
+
+    margin-top: 26px;
+}
+
+
+.fullscreen-player-controls button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    color: white;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+
+.fullscreen-player-prev,
+.fullscreen-player-next {
+    width: 52px;
+    height: 52px;
+
+    background:
+        rgba(255, 255, 255, 0.1);
+}
+
+
+.fullscreen-player-toggle {
+    width: 72px;
+    height: 72px;
+
+    background: white;
+
+    color: black !important;
+}
+
+
+.fullscreen-player-controls button:hover {
+    transform: scale(1.06);
+}
+
+
+.fullscreen-player-controls button:active {
+    transform: scale(0.94);
+}
+
+
+.fullscreen-player-controls svg {
+    width: 28px;
+    height: 28px;
+
+    fill: currentColor;
+}
+
+
+/* =========================================================
+   ПЛАВНАЯ СМЕНА ТРЕКА
+   ========================================================= */
+
+/*
+Обложка, информация и фон получают
+отдельные плавные переходы.
+*/
+.fullscreen-player-cover-wrap {
+    transition:
+        opacity 0.18s ease,
+        transform 0.22s ease-out,
+        box-shadow 0.35s ease;
+}
+
+
+.fullscreen-player-info {
+    transition:
+        opacity 0.18s ease,
+        transform 0.22s ease;
+}
+
+
+/*
+Добавляем плавность слою,
+который показывает размытую обложку.
+*/
+.fullscreen-player-background::before {
+    transition:
+        opacity 0.28s ease,
+        transform 0.4s ease,
+        filter 0.35s ease;
+}
+
+
+/*
+Старая обложка немного уезжает влево
+и растворяется.
+*/
+.fullscreen-player.track-changing
+.fullscreen-player-cover-wrap {
+    opacity: 0;
+
+    transform:
+        perspective(1200px)
+        translateY(10px)
+        scale(0.985);
+}
+
+
+/*
+Название и исполнитель
+слегка опускаются и исчезают.
+*/
+.fullscreen-player.track-changing
+.fullscreen-player-info {
+    opacity: 0;
+
+    transform: translateY(10px);
+}
+
+
+/*
+Старый размытый фон растворяется.
+
+Новая картинка устанавливается,
+пока слой почти невидим.
+*/
+.fullscreen-player.track-changing
+.fullscreen-player-background::before {
+    opacity: 0;
+
+    transform: scale(1.22);
+
+    filter:
+        blur(70px)
+        brightness(0.35)
+        saturate(1.15);
+}
+
+
+/* =========================================================
+   PLAY / PAUSE
+   ========================================================= */
+
+/*
+По умолчанию показывается Play.
+*/
+.fullscreen-pause-icon {
+    display: none;
+}
+
+
+/*
+Когда JavaScript добавит кнопке класс playing,
+прячем Play и показываем Pause.
+*/
+.fullscreen-player-toggle.playing
+.fullscreen-play-icon {
+    display: none;
+}
+
+
+.fullscreen-player-toggle.playing
+.fullscreen-pause-icon {
+    display: block;
+}
+
+
+/* =========================================================
+   БЛОКИРОВКА ПРОКРУТКИ СТРАНИЦЫ
+   ========================================================= */
+
+/*
+Когда полноэкранный плеер открыт,
+страница под ним не должна прокручиваться.
+*/
+body.fullscreen-player-open {
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   МОБИЛЬНАЯ ВЕРСИЯ
+   ========================================================= */
+
+@media (max-width: 600px) {
+    .fullscreen-player {
+        padding:
+            16px
+            20px;
+    }
+
+
+    .fullscreen-player-header {
+        min-height: 54px;
+    }
+
+
+    .fullscreen-player-close {
+        width: 44px;
+        height: 44px;
+    }
+
+
+    .fullscreen-player-main {
+    justify-content: center;
+
+    padding:
+        70px
+        0
+        30px;
+    }
+
+
+    .fullscreen-player-cover-wrap {
+    width: min(100%, 360px);
+
+    border-radius: 20px;
+}
+
+
+    .fullscreen-player-info,
+    .fullscreen-player-progress-area {
+        width: min(100%, 360px);
+    }
+
+
+    .fullscreen-player-title {
+        font-size: 23px;
+    }
+
+
+    .fullscreen-player-artist {
+        font-size: 16px;
+    }
+
+
+    .fullscreen-player-controls {
+        gap: 20px;
+    }
+
+
+    .fullscreen-player-prev,
+    .fullscreen-player-next {
+        width: 48px;
+        height: 48px;
+    }
+
+
+    .fullscreen-player-toggle {
+        width: 68px;
+        height: 68px;
+    }
+}
+
+
+/* =========================================================
+   НИЗКИЕ ЭКРАНЫ
+   ========================================================= */
+
+/*
+Этот режим нужен только для действительно
+низких окон, например небольших ноутбуков.
+
+Он больше не делает плеер слишком маленьким.
+*/
+@media (max-height: 720px) {
+    .fullscreen-player-main {
+        padding:
+            54px
+            0
+            20px;
+    }
+
+    .fullscreen-player-info {
+        margin-top: 14px;
+    }
+
+    .fullscreen-player-progress-area {
+        margin-top: 16px;
+    }
+
+    .fullscreen-player-controls {
+        margin-top: 16px;
+    }
+}
+
+
+
+/* =========================================================
+   ИСПРАВЛЕНИЕ ТАЙМЛАЙНА МИНИ-ПЛЕЕРА
+   ========================================================= */
+
+/*
+Таймлайн должен быть тонкой полосой
+внизу мини-плеера, а не большим серым блоком.
+*/
+.mini-player .player-progress {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 6px;
+
+    width: auto;
+    height: 4px;
+
+    margin: 0;
+    padding: 0;
+
+    z-index: 2;
+
+    border-radius: 999px;
+
+    background:
+        rgba(255, 255, 255, 0.14);
+
+    overflow: hidden;
+    cursor: pointer;
+}
+
+
+/*
+Заполненная часть прогресса.
+*/
+.mini-player .player-progress-fill {
+    width: 0%;
+    height: 100%;
+
+    border-radius: inherit;
+
+    background: white;
+
+    pointer-events: none;
+}
+
+
+/*
+Мини-плеер должен быть основой
+для абсолютного таймлайна.
+*/
+.mini-player {
+    position: fixed;
+    overflow: hidden;
+}
+
+
+/*
+Обложку оставляем выше таймлайна,
+чтобы по ней открывался большой плеер.
+*/
+.mini-player .player-cover {
+    position: relative;
+    z-index: 4;
+
+    cursor: pointer;
+    pointer-events: auto;
+}
