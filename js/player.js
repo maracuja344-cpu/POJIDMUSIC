@@ -4,6 +4,7 @@ import {
     getPlaybackContext,
     restartSearchPlaybackQueue
 } from "./playback-context.js";
+import { isMobileDevice } from "./mobile.js";
 
 
 /* =========================================================
@@ -901,7 +902,7 @@ function closeFullscreenPlayer(fromDrag = false) {
             "cubic-bezier(0.32, 0, 0.67, 0)";
 
         fullscreenPlayer.style.transform =
-            "translate3d(0, 100dvh, 0)";
+            "translate3d(0, 100vh, 0)";
 
         if (fullscreenBackground) {
             fullscreenBackground.style.transition =
@@ -1515,6 +1516,7 @@ function shouldUseStaticAudioReaction() {
 
     return (
         audioReactionUnavailable ||
+        isMobileDevice() ||
         audioReactionMotionQuery.matches ||
         navigator.connection?.saveData === true ||
         deviceMemory <= 4 ||

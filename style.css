@@ -3658,6 +3658,8 @@ body.fullscreen-player-open {
     но сохраняет старый внешний вид.
     */
     .fullscreen-player {
+        height: 100vh;
+        min-height: 100vh;
         height: 100dvh;
         min-height: 100dvh;
 
@@ -3702,57 +3704,313 @@ body.fullscreen-player-open {
 
 
 /* =========================================================
-   FULLSCREEN ДЛЯ iPHONE SAFARI
+   ОПТИМИЗАЦИЯ ДЛЯ ТЕЛЕФОНОВ И МОБИЛЬНЫХ WEBVIEW
    ========================================================= */
 
 /*
-viewport-fit=cover разрешает фону заходить в области вокруг
-выреза и Home Indicator. Сам контент остаётся внутри safe-area
-за счёт внутренних отступов fullscreen-слоя.
-
-Проверка -webkit-touch-callout ограничивает правило iOS WebKit:
-Android и desktop продолжают использовать обычную раскладку.
+Класс mobile-device добавляет mobile.js только при сочетании
+узкого экрана и coarse-pointer. Поэтому правила ниже не меняют
+desktop-версию даже в небольшом окне браузера.
 */
-@supports (-webkit-touch-callout: none) {
-    @media (
-        max-width: 768px
-    ) and (
-        hover: none
-    ) and (
-        pointer: coarse
-    ) {
-        .fullscreen-player {
-            top: 0;
-            right: 0;
-            bottom: auto;
-            left: 0;
+html.mobile-device,
+html.mobile-device body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
 
-            width: 100%;
+html.mobile-device {
+    overscroll-behavior-x: none;
+    -webkit-text-size-adjust: 100%;
+}
 
-            height: 100vh;
-            min-height: 100vh;
-            height: 100dvh;
-            min-height: 100dvh;
+html.mobile-device .header {
+    padding:
+        calc(
+            12px +
+            env(safe-area-inset-top)
+        )
+        calc(
+            16px +
+            env(safe-area-inset-right)
+        )
+        12px
+        calc(
+            16px +
+            env(safe-area-inset-left)
+        );
 
-            padding:
-                calc(
-                    16px +
-                    env(safe-area-inset-top)
-                )
-                calc(
-                    20px +
-                    env(safe-area-inset-right)
-                )
-                calc(
-                    16px +
-                    env(safe-area-inset-bottom)
-                )
-                calc(
-                    20px +
-                    env(safe-area-inset-left)
-                );
-        }
+    background-color: rgba(17, 17, 17, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
 
+html.mobile-device .mini-player {
+    left:
+        calc(
+            12px +
+            env(safe-area-inset-left)
+        );
+    right:
+        calc(
+            12px +
+            env(safe-area-inset-right)
+        );
+
+    background-color: rgba(24, 24, 24, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+html.mobile-device .fullscreen-player {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+
+    width: 100%;
+
+    height: 100vh;
+    min-height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+
+    padding:
+        calc(
+            12px +
+            env(safe-area-inset-top)
+        )
+        calc(
+            16px +
+            env(safe-area-inset-right)
+        )
+        calc(
+            12px +
+            env(safe-area-inset-bottom)
+        )
+        calc(
+            16px +
+            env(safe-area-inset-left)
+        );
+
+    background-color: #080808;
+    overscroll-behavior: none;
+}
+
+html.mobile-device .fullscreen-player-content {
+    width: min(100%, 560px);
+    max-height: 100%;
+}
+
+html.mobile-device .fullscreen-player-cover-float {
+    width: min(100%, 42vh, 360px);
+    width: min(100%, 42dvh, 360px);
+
+    animation: none !important;
+    transform: none;
+}
+
+html.mobile-device .fullscreen-player-info {
+    margin-top: 16px;
+}
+
+html.mobile-device
+.fullscreen-player-progress-area {
+    margin-top: 16px;
+}
+
+html.mobile-device .fullscreen-player-controls {
+    width: 100%;
+    gap: clamp(2px, 1.5vw, 10px);
+    margin-top: 14px;
+}
+
+html.mobile-device .fullscreen-player-prev,
+html.mobile-device .fullscreen-player-next,
+html.mobile-device
+.fullscreen-player-controls
+.player-mode-button {
+    width: clamp(42px, 12vw, 48px);
+    height: clamp(42px, 12vw, 48px);
+}
+
+html.mobile-device .fullscreen-player-toggle {
+    width: clamp(60px, 18vw, 68px);
+    height: clamp(60px, 18vw, 68px);
+}
+
+/*
+Фон остаётся полноэкранным и сохраняет динамический цвет,
+но использует существенно более дешёвые blur и переходы.
+*/
+html.mobile-device .fullscreen-player-background {
+    filter:
+        blur(18px)
+        brightness(0.45)
+        saturate(1.1);
+
+    transform: scale(1.06);
+    transition:
+        opacity 260ms ease,
+        transform 320ms ease;
+}
+
+html.mobile-device
+.fullscreen-player.open
+.fullscreen-player-background {
+    filter:
+        blur(20px)
+        brightness(0.48)
+        saturate(1.16);
+
+    transform: scale(1.08);
+}
+
+html.mobile-device
+.fullscreen-player-background::before {
+    filter:
+        blur(30px)
+        brightness(0.48)
+        saturate(1.2);
+
+    animation: none;
+    transition: opacity 180ms ease;
+}
+
+html.mobile-device .fullscreen-particles {
+    display: none;
+}
+
+html.mobile-device
+.fullscreen-player-cover-wrap {
+    box-shadow:
+        0 16px 38px rgba(0, 0, 0, 0.4);
+}
+
+html.mobile-device
+.fullscreen-player-cover-interaction::before {
+    box-shadow:
+        0 0 18px
+        color-mix(
+            in srgb,
+            var(--player-accent) 28%,
+            transparent
+        );
+}
+
+html.mobile-device .fullscreen-player-close {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/*
+Coarse-pointer не получает hover-состояния. Короткий active
+остаётся как обратная связь при касании.
+*/
+html.mobile-device .release-card,
+html.mobile-device .recommendation-card,
+html.mobile-device button,
+html.mobile-device a {
+    touch-action: manipulation;
+}
+
+html.mobile-device .logo:hover {
+    color: white;
+    letter-spacing: 2px;
+    text-shadow: none;
+}
+
+html.mobile-device
+.nav a:not(.is-active):hover {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+html.mobile-device
+.nav a:not(.is-active):hover::after {
+    width: 0;
+    opacity: 0;
+}
+
+html.mobile-device .volume-button:hover {
+    opacity: 0.7;
+    background-color: transparent;
+    filter: none;
+}
+
+html.mobile-device
+.fullscreen-player-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+html.mobile-device
+.mini-player
+.player-toggle:hover,
+html.mobile-device
+.fullscreen-player-toggle:hover {
+    box-shadow: none;
+}
+
+html.mobile-device
+.mini-player
+.player-toggle:active,
+html.mobile-device
+.fullscreen-player-toggle:active {
+    box-shadow: var(--glow-player-control-active);
+}
+
+html.mobile-device
+.player-mode-button.is-active:hover {
+    box-shadow: var(--glow-player-control-active);
+}
+
+html.mobile-device
+.player-progress:hover
+.player-progress-thumb,
+html.mobile-device
+.fullscreen-player-progress:hover
+.fullscreen-player-progress-thumb {
+    opacity: 0;
+}
+
+html.mobile-device
+.player-progress.is-seeking
+.player-progress-thumb,
+html.mobile-device
+.fullscreen-player-progress.is-seeking
+.fullscreen-player-progress-thumb {
+    opacity: 1;
+}
+
+/*
+Даже если observer встроенного браузера завис, CSS не оставит
+уже созданные карточки и секцию рекомендаций прозрачными.
+*/
+html.mobile-device .release-card.reveal-item,
+html.mobile-device
+.recommendations-section.reveal-section {
+    opacity: 1;
+    translate: 0 0;
+    will-change: auto;
+}
+
+@media (max-height: 700px) {
+    html.mobile-device
+    .fullscreen-player-cover-float {
+        width: min(100%, 34vh, 300px);
+        width: min(100%, 34dvh, 300px);
+    }
+
+    html.mobile-device .fullscreen-player-header {
+        min-height: 44px;
+    }
+
+    html.mobile-device .fullscreen-player-info,
+    html.mobile-device
+    .fullscreen-player-progress-area,
+    html.mobile-device
+    .fullscreen-player-controls {
+        margin-top: 10px;
     }
 }
 

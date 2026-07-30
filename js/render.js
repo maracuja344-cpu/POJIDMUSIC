@@ -1,6 +1,8 @@
 import { isPlayableRelease } from "./tracks-utils.js";
+import { isMobileDevice } from "./mobile.js";
 
 let revealObserver = null;
+const REVEAL_FALLBACK_DELAY = 1400;
 
 
 /* =========================================================
@@ -312,12 +314,35 @@ export function observeRevealElement(element) {
         return;
     }
 
-    if (!("IntersectionObserver" in window)) {
+    if (
+        isMobileDevice() ||
+        !("IntersectionObserver" in window) ||
+        !revealObserver
+    ) {
         element.classList.add("is-visible");
         return;
     }
 
-    revealObserver?.observe(element);
+    try {
+        revealObserver.observe(element);
+
+        /*
+        Некоторые встроенные браузеры создают observer, но не
+        вызывают callback. Карточка всё равно станет видимой.
+        */
+        window.setTimeout(() => {
+            if (
+                !element.classList.contains(
+                    "is-visible"
+                )
+            ) {
+                element.classList.add("is-visible");
+                revealObserver?.unobserve(element);
+            }
+        }, REVEAL_FALLBACK_DELAY);
+    } catch (error) {
+        element.classList.add("is-visible");
+    }
 }
 
 export function unobserveRevealElement(element) {
@@ -329,29 +354,33 @@ export function initializeCardAnimations() {
         "IntersectionObserver" in window &&
         revealObserver === null
     ) {
-        revealObserver = new IntersectionObserver(
-            (entries, observer) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
+        try {
+            revealObserver = new IntersectionObserver(
+                (entries, observer) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) return;
 
-                    entry.target.classList.add(
-                        "is-visible"
-                    );
+                        entry.target.classList.add(
+                            "is-visible"
+                        );
 
-                    entry.target.dispatchEvent(
-                        new CustomEvent(
-                            "revealvisible"
-                        )
-                    );
+                        entry.target.dispatchEvent(
+                            new CustomEvent(
+                                "revealvisible"
+                            )
+                        );
 
-                    observer.unobserve(entry.target);
-                });
-            },
-            {
-                threshold: 0.12,
-                rootMargin: "0px 0px -40px 0px"
-            }
-        );
+                        observer.unobserve(entry.target);
+                    });
+                },
+                {
+                    threshold: 0.12,
+                    rootMargin: "0px 0px -40px 0px"
+                }
+            );
+        } catch (error) {
+            revealObserver = null;
+        }
     }
 
     document

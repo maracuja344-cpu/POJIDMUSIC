@@ -71,6 +71,10 @@ import {
     initializeSectionNavigation
 } from "./navigation.js";
 
+import {
+    initializeMobileEnvironment
+} from "./mobile.js";
+
 
 /* =========================================================
    6. ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ САЙТА
@@ -91,6 +95,12 @@ import {
 как карточки уже появились в HTML.
 */
 function initializeWebsite() {
+    /*
+    Мобильный режим определяется до создания карточек:
+    WebView сразу получает облегчённые эффекты и надёжный рендер.
+    */
+    initializeMobileEnvironment();
+
     /* Создаём раздел «Новинки» */
     renderNewTracks();
 
