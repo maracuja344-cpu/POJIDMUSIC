@@ -1,4 +1,13 @@
-import { createTrackCard } from "./render.js";
+import {
+    createTrackCard,
+    observeRevealElement,
+    unobserveRevealElement
+} from "./render.js";
+import { isPlayableRelease } from "./tracks-utils.js";
+import {
+    clearSearchPlaybackQueue,
+    setSearchPlaybackQueue
+} from "./playback-context.js";
 
 
 /* =========================================================
@@ -13,6 +22,10 @@ import { createTrackCard } from "./render.js";
 */
 function findTracks(query) {
     return tracks.filter((track) => {
+        if (!isPlayableRelease(track)) {
+            return false;
+        }
+
         /*
         Переводим название и исполнителя
         в нижний регистр.
@@ -71,6 +84,10 @@ function hideMainSections(sections) {
 не накапливались и не дублировались.
 */
 function clearSearchResults(container) {
+    container
+        .querySelectorAll(".reveal-item")
+        .forEach(unobserveRevealElement);
+
     container.innerHTML = "";
 }
 
@@ -87,44 +104,15 @@ function renderSearchResults(
     foundTracks,
     container
 ) {
-    foundTracks.forEach((track, index) => {
+    foundTracks.forEach((track) => {
         /*
         Создаём обычную карточку трека
         через функцию из render.js.
         */
         const card = createTrackCard(track);
 
-        /*
-        Добавляем небольшую последовательную задержку.
-
-        Если найдено несколько треков,
-        они будут появляться друг за другом.
-        */
-        card.style.setProperty(
-            "--delay",
-            `${index * 60}ms`
-        );
-
-        /*
-        Сначала добавляем карточку в HTML
-        в её начальном скрытом состоянии.
-        */
         container.append(card);
-
-        /*
-        На следующем кадре добавляем класс show.
-
-        Браузер успевает увидеть:
-
-        1. скрытую карточку;
-        2. видимую карточку.
-
-        Между этими состояниями запускается
-        CSS-анимация.
-        */
-        requestAnimationFrame(() => {
-            card.classList.add("show");
-        });
+        observeRevealElement(card);
     });
 }
 
@@ -162,6 +150,8 @@ function resetSearch({
     searchEmpty,
     mainSections
 }) {
+    clearSearchPlaybackQueue();
+
     /*
     Удаляем карточки прошлого поиска.
     */
@@ -302,6 +292,12 @@ function handleSearch({
     Получаем массив найденных треков.
     */
     const foundTracks = findTracks(query);
+
+    /*
+    Плеер получает тот же список и тот же порядок,
+    который сейчас показан в результатах поиска.
+    */
+    setSearchPlaybackQueue(foundTracks);
 
     /*
     Создаём карточки найденных треков.

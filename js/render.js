@@ -1,3 +1,8 @@
+import { isPlayableRelease } from "./tracks-utils.js";
+
+let revealObserver = null;
+
+
 /* =========================================================
    1. ПОЛУЧЕНИЕ И СОРТИРОВКА ТРЕКОВ
    ========================================================= */
@@ -11,9 +16,7 @@
 type: "release"
 */
 function getReleaseTracks() {
-    return tracks.filter((track) => {
-        return track.type === "release";
-    });
+    return tracks.filter(isPlayableRelease);
 }
 
 
@@ -85,7 +88,7 @@ export function createTrackCard(track) {
     /*
     CSS использует этот класс для оформления карточки.
     */
-    card.className = "release-card";
+    card.className = "release-card reveal-item";
 
     /*
     data-audio хранит путь к аудиофайлу.
@@ -201,26 +204,20 @@ function renderCards(
 ) {
     if (!container) return;
 
+    container
+        .querySelectorAll(".reveal-item")
+        .forEach((element) => {
+            revealObserver?.unobserve(element);
+        });
+
     /*
     Очищаем старое содержимое перед новым рендером.
     Это защищает от появления дублей.
     */
     container.innerHTML = "";
 
-    trackList.forEach((track, index) => {
+    trackList.forEach((track) => {
         const card = createCard(track);
-
-        /*
-        CSS-переменная задаёт задержку анимации.
-
-        Первая карточка: 0ms
-        Вторая: 80ms
-        Третья: 160ms
-        */
-        card.style.setProperty(
-            "--delay",
-            `${index * 80}ms`
-        );
 
         container.append(card);
     });
@@ -307,70 +304,60 @@ export function renderRecommendations() {
    ========================================================= */
 
 /*
-Добавляет класс show, когда карточка появляется
-в видимой области экрана.
-
-CSS реагирует на этот класс:
-
-.release-card.show {
-    opacity: 1;
-    translate: 0 0;
-}
+Один общий observer показывает карточки по мере входа
+в viewport и отдельно наблюдает секцию рекомендаций.
 */
-export function initializeCardAnimations() {
-    const cards = document.querySelectorAll(
-        ".release-card, .recommendation-card"
-    );
-
-    /*
-    Если браузер не поддерживает IntersectionObserver,
-    показываем карточки сразу без анимации.
-    */
-    if (!("IntersectionObserver" in window)) {
-        cards.forEach((card) => {
-            card.classList.add("show");
-        });
-
+export function observeRevealElement(element) {
+    if (!element || element.classList.contains("is-visible")) {
         return;
     }
 
-    /*
-    Создаём наблюдателя за карточками.
-    */
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                /*
-                Если карточка ещё не попала в область экрана,
-                ничего не делаем.
-                */
-                if (!entry.isIntersecting) return;
+    if (!("IntersectionObserver" in window)) {
+        element.classList.add("is-visible");
+        return;
+    }
 
-                /*
-                Запускаем CSS-анимацию.
-                */
-                entry.target.classList.add("show");
+    revealObserver?.observe(element);
+}
 
-                /*
-                После появления карточки наблюдать за ней
-                больше не требуется.
-                */
-                observer.unobserve(entry.target);
-            });
-        },
-        {
-            /*
-            Анимация запускается, когда видно
-            хотя бы 15% карточки.
-            */
-            threshold: 0.15
-        }
-    );
+export function unobserveRevealElement(element) {
+    revealObserver?.unobserve(element);
+}
 
-    /*
-    Передаём каждую карточку наблюдателю.
-    */
-    cards.forEach((card) => {
-        observer.observe(card);
-    });
+export function initializeCardAnimations() {
+    if (
+        "IntersectionObserver" in window &&
+        revealObserver === null
+    ) {
+        revealObserver = new IntersectionObserver(
+            (entries, observer) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+
+                    entry.target.classList.add(
+                        "is-visible"
+                    );
+
+                    entry.target.dispatchEvent(
+                        new CustomEvent(
+                            "revealvisible"
+                        )
+                    );
+
+                    observer.unobserve(entry.target);
+                });
+            },
+            {
+                threshold: 0.12,
+                rootMargin: "0px 0px -40px 0px"
+            }
+        );
+    }
+
+    document
+        .querySelectorAll(
+            ".release-card.reveal-item, " +
+            ".recommendations-section.reveal-section"
+        )
+        .forEach(observeRevealElement);
 }

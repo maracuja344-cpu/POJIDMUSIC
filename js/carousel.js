@@ -140,13 +140,6 @@ export function initializeRecommendationsCarousel() {
             Клон должен быть видимым сразу
             и не проигрывать повторную анимацию появления.
             */
-            clone.classList.add("show");
-
-            clone.style.setProperty(
-                "--delay",
-                "0ms"
-            );
-
             track.append(clone);
         });
     }
@@ -427,5 +420,38 @@ export function initializeRecommendationsCarousel() {
         );
     }
 
-    autoScroll();
+    let carouselStartTimer = null;
+
+    function startAutoScrollAfterReveal() {
+        if (animationFrameId !== null) return;
+
+        window.clearTimeout(carouselStartTimer);
+
+        carouselStartTimer = window.setTimeout(
+            autoScroll,
+            300
+        );
+    }
+
+    const recommendationsSection =
+        document.querySelector(
+            ".recommendations-section"
+        );
+
+    if (
+        !recommendationsSection ||
+        recommendationsSection.classList.contains(
+            "is-visible"
+        )
+    ) {
+        startAutoScrollAfterReveal();
+    } else {
+        recommendationsSection.addEventListener(
+            "revealvisible",
+            startAutoScrollAfterReveal,
+            {
+                once: true
+            }
+        );
+    }
 }

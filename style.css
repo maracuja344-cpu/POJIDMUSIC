@@ -77,6 +77,8 @@ body {
 .logo {
     width: 200px;
 
+    color: white;
+
     font-size: 24px;
     font-weight: 700;
     letter-spacing: 2px;
@@ -84,13 +86,15 @@ body {
 
     transition:
         color 0.3s,
-        letter-spacing 0.3s;
+        letter-spacing 0.3s,
+        text-shadow 0.3s;
 }
 
 
 .logo:hover {
-    color: #fe2adf;
+    color: var(--accent-primary);
     letter-spacing: 4px;
+    text-shadow: var(--glow-control-active);
 }
 
 
@@ -105,17 +109,22 @@ body {
 .nav a {
     position: relative;
 
-    color: white;
+    color: rgba(255, 255, 255, 0.72);
     text-decoration: none;
     font-size: 16px;
 
-    transition: color 0.3s;
+    transition: color 0.3s ease;
 }
 
 
 /* Изменение цвета при наведении */
 .nav a:hover {
-    color: #ff93ef;
+    color:
+        color-mix(
+            in srgb,
+            var(--accent-primary) 82%,
+            white
+        );
 }
 
 
@@ -130,16 +139,34 @@ body {
     width: 0;
     height: 2px;
 
-    background-color: white;
+    background-color: var(--accent-primary);
+    opacity: 0;
 
     transform: translateX(-50%);
-    transition: width 0.5s;
+    transition:
+        width 0.5s,
+        opacity 0.25s ease;
 }
 
 
 /* Раскрытие линии из центра */
 .nav a:hover::after {
     width: 100%;
+    opacity: 0.68;
+}
+
+
+/*
+Активным пунктом управляет navigation.js:
+он оставляет класс is-active только у ссылки текущего раздела.
+*/
+.nav a.is-active {
+    color: var(--accent-primary);
+}
+
+.nav a.is-active::after {
+    width: 100%;
+    opacity: 1;
 }
 
 
@@ -221,29 +248,6 @@ JavaScript меняет display на block.
 #search-results.search-visible {
     opacity: 1;
     transform: translateY(0);
-}
-
-
-/*
-Карточки поиска сначала скрыты
-и немного уменьшены.
-*/
-.search-results-list .release-card {
-    opacity: 0;
-    transform: translateY(14px) scale(0.98);
-
-    transition:
-        opacity 0.3s var(--delay, 0ms) ease,
-        transform 0.3s var(--delay, 0ms) ease,
-        background-color 0.3s,
-        box-shadow 0.3s;
-}
-
-
-/* Плавное появление карточки */
-.search-results-list .release-card.show {
-    opacity: 1;
-    transform: translateY(0) scale(1);
 }
 
 
@@ -381,6 +385,7 @@ JavaScript меняет display на block.
 .player-toggle,
 .player-prev,
 .player-next,
+.player-mode-button,
 .volume-button,
 .nav a,
 button {
@@ -393,6 +398,16 @@ img {
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
+}
+
+
+/*ЗАПРЕТ ВЫДЕЛЕНИЯ В FULLSCREEN ПЛЕЕРЕ*/
+.fullscreen-player,
+.fullscreen-player * {
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
 }
 
 
@@ -472,22 +487,32 @@ img {
     border: 1px solid #202020;
     border-radius: 20px;
 
-    opacity: 0;
-    translate: 0 20px;
-
     transition:
-        opacity 0.8s var(--delay, 0ms),
-        translate 0.8s var(--delay, 0ms),
         transform 0.3s,
         background-color 0.3s,
         box-shadow 0.3s;
 }
 
 
-/* Появление обычной карточки */
-.release-card.show {
+.release-card.reveal-item {
+    opacity: 0;
+    translate: 0 20px;
+
+    transition:
+        opacity var(--motion-slow) ease,
+        translate 600ms var(--ease-out-smooth),
+        transform 0.3s,
+        background-color 0.3s,
+        box-shadow 0.3s;
+
+    will-change: opacity, translate;
+}
+
+.release-card.reveal-item.is-visible {
     opacity: 1;
     translate: 0 0;
+
+    will-change: auto;
 }
 
 
@@ -506,13 +531,13 @@ Hover работает только на устройствах
         background-color: #444444;
 
         transform: translateY(-5px);
-        box-shadow: 0 10px 30px #8a8a8a;
+        box-shadow: var(--glow-card-hover);
     }
 
 
     .release-card:hover .cover {
         transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 5px 30px #e2adff;
+        box-shadow: var(--glow-cover-hover);
     }
 }
 
@@ -572,6 +597,10 @@ Hover работает только на устройствах
     filter: brightness(0.3);
 }
 
+.release-card.playing {
+    box-shadow: var(--glow-player-card);
+}
+
 
 /* Контейнер названия и исполнителя */
 .release-info {
@@ -593,18 +622,21 @@ Hover работает только на устройствах
 
 .mini-player {
     position: fixed;
-    left: 50%;
-    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    bottom:
+        calc(16px + env(safe-area-inset-bottom));
     z-index: 1000;
 
-    width: 90%;
-    max-width: 700px;
-    height: 80px;
+    width: auto;
+    max-width: none;
+    height: 72px;
+    margin: 0;
 
     display: grid;
     grid-template-columns:
         minmax(0, 1fr)
-        auto
+        260px
         minmax(0, 1fr);
 
     align-items: center;
@@ -623,7 +655,7 @@ Hover работает только на устройствах
     visibility: hidden;
     pointer-events: none;
 
-    transform: translate(-50%, 10px);
+    transform: translateY(10px);
 
     transition:
         opacity 0.3s,
@@ -638,7 +670,15 @@ Hover работает только на устройствах
     visibility: visible;
     pointer-events: auto;
 
-    transform: translate(-50%, 0);
+    transform: translateY(0);
+}
+
+body:has(.mini-player.active) {
+    padding-bottom:
+        calc(
+            120px +
+            env(safe-area-inset-bottom)
+        );
 }
 
 
@@ -646,11 +686,12 @@ Hover работает только на устройствах
    12. ИНФОРМАЦИЯ В ПЛЕЕРЕ
    ========================================================= */
 
-.player-main {
+.mini-player .player-main {
     position: relative;
     z-index: 2;
 
     min-width: 0;
+    grid-column: 1;
 
     display: flex;
     align-items: center;
@@ -661,7 +702,7 @@ Hover работает только на устройствах
 
 
 /* Маленькая обложка */
-.player-cover {
+.mini-player .player-cover {
     position: relative;
     z-index: 3;
 
@@ -679,7 +720,7 @@ Hover работает только на устройствах
 
 
 /* Название и исполнитель */
-.player-info {
+.mini-player .player-info {
     min-width: 0;
     flex: 1;
 
@@ -689,17 +730,25 @@ Hover работает только на устройствах
 }
 
 
-.player-title {
+.mini-player .player-title {
     font-size: 16px;
     font-weight: 700;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 
-.player-artist {
+.mini-player .player-artist {
     margin-top: 3px;
 
     font-size: 13px;
     opacity: 0.65;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 
@@ -713,11 +762,26 @@ Hover работает только на устройствах
     z-index: 2;
 
     width: 100%;
-    height: 100%;
+    height: 28px;
 
     cursor: pointer;
     touch-action: none;
     user-select: none;
+}
+
+.player-progress-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+
+    width: 100%;
+    height: 4px;
+
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+
+    overflow: hidden;
+    transform: translateY(-50%);
 }
 
 
@@ -726,9 +790,40 @@ Hover работает только на устройствах
     width: 0%;
     height: 100%;
 
-    background-color: #2b2b2b;
+    background-color: white;
 
     pointer-events: none;
+
+    transition: width 80ms linear;
+}
+
+.player-progress-thumb {
+    position: absolute;
+    top: 50%;
+    left: var(--progress, 0%);
+
+    width: 12px;
+    height: 12px;
+
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+
+    transition: opacity 160ms ease;
+}
+
+.player-progress:hover .player-progress-thumb,
+.player-progress.is-seeking .player-progress-thumb {
+    opacity: 1;
+}
+
+.player-progress.is-seeking .player-progress-fill,
+.fullscreen-player-progress.is-seeking
+.fullscreen-player-progress-fill {
+    transition: none;
 }
 
 
@@ -736,7 +831,7 @@ Hover работает только на устройствах
    14. КНОПКИ ПЛЕЕРА
    ========================================================= */
 
-.player-controls {
+.mini-player .player-controls {
     position: relative;
     z-index: 3;
 
@@ -745,17 +840,19 @@ Hover работает только на устройствах
     justify-content: center;
     justify-self: center;
 
-    gap: 8px;
+    grid-column: 2;
+    gap: 4px;
 }
 
 
 /* Центральная кнопка */
-.player-toggle {
+.mini-player .player-toggle {
     position: relative;
     z-index: 2;
 
     width: 42px;
     height: 42px;
+    margin-inline: 6px;
 
     flex-shrink: 0;
 
@@ -766,21 +863,45 @@ Hover работает только на устройствах
     border: none;
     border-radius: 50%;
 
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+
     font-size: 18px;
     cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .mini-player .player-toggle:hover {
+        box-shadow:
+            var(--glow-player-control-active-hover);
+    }
+}
+
+.mini-player .player-toggle:active {
+    box-shadow:
+        var(--glow-player-control-active);
+}
+
+.mini-player .player-toggle:focus {
+    box-shadow:
+        var(--glow-player-control-active-hover);
 }
 
 
 /* Основа иконок Play и Pause */
-.player-toggle::before,
-.player-toggle::after {
+.mini-player .player-toggle::before,
+.mini-player .player-toggle::after {
     content: "";
     position: absolute;
 }
 
 
 /* Иконка Play */
-.player-toggle::before {
+.mini-player .player-toggle::before {
     left: 50%;
     top: 50%;
 
@@ -789,94 +910,256 @@ Hover работает только на устройствах
 
     border-top: 7px solid transparent;
     border-bottom: 7px solid transparent;
-    border-left: 11px solid #111;
+    border-left: 11px solid white;
 
     transform: translate(-40%, -50%);
 }
 
 
 /* Второй элемент скрыт в режиме Play */
-.player-toggle::after {
+.mini-player .player-toggle::after {
     display: none;
 }
 
 
 /* Полосы Pause */
-.player-toggle.playing::before,
-.player-toggle.playing::after {
+.mini-player .player-toggle.playing::before,
+.mini-player .player-toggle.playing::after {
     top: 50%;
 
     width: 4px;
     height: 14px;
 
     border: none;
-    background-color: #111;
+    background-color: white;
 
     transform: translateY(-50%);
 }
 
 
-.player-toggle.playing::before {
+.mini-player .player-toggle.playing::before {
     left: calc(50% - 6px);
 }
 
 
-.player-toggle.playing::after {
+.mini-player .player-toggle.playing::after {
     left: calc(50% + 2px);
     display: block;
 }
 
 
 /* Кнопки предыдущего и следующего трека */
-.player-prev,
-.player-next {
-    width: 32px;
-    height: 32px;
+.mini-player .player-prev,
+.mini-player .player-next {
+    width: 44px;
+    height: 44px;
 
-    padding: 6px;
+    padding: 11px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
     border: none;
-    border-radius: 50%;
+    border-radius: 0;
 
     background: transparent;
+    box-shadow: none;
     color: white;
 
     cursor: pointer;
-    opacity: 0.65;
+
+    opacity: 0.78;
 
     transition:
-        opacity 0.2s,
-        background-color 0.2s,
-        transform 0.15s;
+        transform 0.12s ease,
+        opacity 0.18s ease,
+        filter 0.2s ease;
+}
+
+.mini-player .player-prev:hover,
+.mini-player .player-next:hover {
+    background: transparent;
+    opacity: 1;
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgb(var(--accent-primary-rgb) / 0.48)
+        );
+}
+
+.mini-player .player-prev:active,
+.mini-player .player-next:active {
+    background: transparent;
+
+    opacity: 0.58;
+
+    transform: scale(0.9);
 }
 
 
 /* SVG внутри кнопок */
-.player-prev svg,
-.player-next svg {
-    width: 18px;
-    height: 18px;
+.mini-player .player-prev svg,
+.mini-player .player-next svg {
+    width: 20px;
+    height: 20px;
+
+    display: block;
 
     fill: currentColor;
 }
 
 
 /* Наведение */
-.player-prev:hover,
-.player-next:hover {
+.mini-player .player-prev:hover,
+.mini-player .player-next:hover {
     opacity: 1;
-    background-color: rgba(255, 255, 255, 0.1);
+
+    background-color: transparent;
 }
 
 
 /* Нажатие */
-.player-prev:active,
-.player-next:active {
-    transform: scale(0.88);
+.mini-player .player-prev:active,
+.mini-player .player-next:active {
+    opacity: 0.65;
+
+    transform: scale(0.9);
+
+    background-color: transparent;
+}
+
+.mini-player .player-prev:focus,
+.mini-player .player-next:focus {
+    outline: none;
+}
+
+.mini-player .player-prev:focus-visible,
+.mini-player .player-next:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+
+/*
+Shuffle и Repeat используют одинаковые классы состояния
+во всех панелях плеера.
+*/
+.player-mode-button {
+    position: relative;
+}
+
+.player-mode-button svg {
+    fill: none !important;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.repeat-one-indicator {
+    position: absolute;
+    top: 4px;
+    right: 3px;
+
+    display: none;
+
+    min-width: 11px;
+    height: 11px;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    background: white;
+    color: #181818;
+
+    font-size: 7px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.player-mode-button.is-repeat-one
+.repeat-one-indicator {
+    display: flex;
+    box-shadow:
+        0 0 7px
+        color-mix(
+            in srgb,
+            var(--player-accent) 42%,
+            transparent
+        );
+}
+
+.mini-player .player-mode-button {
+    width: 44px;
+    height: 44px;
+
+    padding: 11px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: white;
+
+    cursor: pointer;
+    opacity: 0.62;
+
+    transition:
+        transform 0.12s ease,
+        opacity 0.2s ease,
+        color 0.22s ease,
+        background-color 0.22s ease,
+        box-shadow 0.22s ease;
+}
+
+.mini-player .player-mode-button svg {
+    width: 19px;
+    height: 19px;
+}
+
+.mini-player .player-mode-button.is-active {
+    background-color:
+        rgba(255, 255, 255, 0.08);
+    box-shadow: var(--glow-player-control-active);
+    color: white;
+    opacity: 1;
+}
+
+.mini-player .player-mode-button:active {
+    transform: scale(0.9);
+    opacity: 0.78;
+    transition-duration: 70ms;
+}
+
+.mini-player .player-mode-button:focus {
+    outline: none;
+}
+
+.mini-player .player-mode-button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .mini-player .player-mode-button:hover {
+        background-color: rgba(255, 255, 255, 0.07);
+        box-shadow: var(--glow-player-control-active);
+        opacity: 0.9;
+    }
+
+    .mini-player
+    .player-mode-button.is-active:hover {
+        background-color:
+            rgba(255, 255, 255, 0.1);
+        box-shadow:
+            var(--glow-player-control-active-hover);
+        opacity: 1;
+    }
 }
 
 
@@ -884,26 +1167,30 @@ Hover работает только на устройствах
    15. ГРОМКОСТЬ И ВРЕМЯ
    ========================================================= */
 
-.volume-control {
+.mini-player .volume-control {
     position: relative;
     z-index: 3;
 
-    min-width: 32px;
+    min-width: 0;
+    grid-column: 3;
 
     display: flex;
     align-items: center;
     justify-self: end;
 
     gap: 8px;
+
+    width: 100%;
+    justify-content: flex-end;
 }
 
 
 /* Кнопка динамика */
 .volume-button {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
 
-    padding: 5px;
+    padding: 9px;
 
     display: flex;
     align-items: center;
@@ -920,13 +1207,24 @@ Hover работает только на устройствах
 
     transition:
         opacity 0.2s,
-        background-color 0.2s;
+        background-color 0.2s,
+        filter 0.2s ease;
 }
 
 
 .volume-button:hover {
     opacity: 1;
     background-color: rgba(255, 255, 255, 0.1);
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgb(var(--accent-primary-rgb) / 0.48)
+        );
+}
+
+.volume-button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
 
 
@@ -948,25 +1246,85 @@ Hover работает только на устройствах
 }
 
 
-/* Ползунок громкости */
-.volume-slider {
+/* Раскрывающаяся область ползунка громкости */
+.volume-slider-wrapper {
     width: 0;
+    height: 32px;
 
     opacity: 0;
-    accent-color: white;
+    overflow: hidden;
+    pointer-events: none;
 
     transition:
-        width 0.25s,
-        opacity 0.25s;
+        width 220ms ease,
+        opacity 160ms ease;
 }
 
+.volume-control.is-open .volume-slider-wrapper {
+    width: 88px;
+    opacity: 1;
+    pointer-events: auto;
+}
 
-/* Раскрытие ползунка на компьютере */
-@media (hover: hover) and (pointer: fine) {
-    .volume-control:hover .volume-slider {
-        width: 80px;
-        opacity: 1;
-    }
+.volume-slider {
+    width: 88px;
+    height: 32px;
+    margin: 0;
+
+    appearance: none;
+    -webkit-appearance: none;
+
+    background: transparent;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background:
+        linear-gradient(
+            to right,
+            white
+                0 var(--volume, 10%),
+            rgba(255, 255, 255, 0.22) var(--volume, 10%) 100%
+        );
+}
+
+.volume-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background:
+        linear-gradient(
+            to right,
+            white
+                0 var(--volume, 10%),
+            rgba(255, 255, 255, 0.22) var(--volume, 10%) 100%
+        );
+}
+
+.volume-slider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+
+    appearance: none;
+    -webkit-appearance: none;
+
+    border: 0;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+
+    border: 0;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
 }
 
 
@@ -983,7 +1341,8 @@ Hover работает только на устройствах
     font-size: 11px;
     line-height: 1;
 
-    opacity: 0.65;
+    color: rgba(255, 255, 255, 0.68);
+    opacity: 0.48;
     pointer-events: none;
 }
 
@@ -1000,6 +1359,23 @@ Hover работает только на устройствах
 .recommendations-section {
     width: 100%;
     overflow: hidden;
+}
+
+.recommendations-section.reveal-section {
+    opacity: 0;
+    translate: 0 22px;
+
+    transition:
+        opacity var(--motion-slow) ease,
+        translate 600ms var(--ease-out-smooth);
+
+    will-change: opacity, translate;
+}
+
+.recommendations-section.reveal-section.is-visible {
+    opacity: 1;
+    translate: 0 0;
+    will-change: auto;
 }
 
 
@@ -1043,22 +1419,10 @@ Hover работает только на устройствах
 
     text-align: left;
 
-    opacity: 0;
-    translate: 0 20px;
-
     transition:
-        opacity 0.8s var(--delay, 0ms),
-        translate 0.8s var(--delay, 0ms),
         transform 0.3s,
         background-color 0.3s,
         box-shadow 0.3s;
-}
-
-
-/* Появление рекомендации */
-.recommendation-card.show {
-    opacity: 1;
-    translate: 0 0;
 }
 
 
@@ -1074,13 +1438,13 @@ Hover работает только на устройствах
         background-color: #444444;
 
         transform: translateY(-5px);
-        box-shadow: 0 10px 30px #8a8a8a;
+        box-shadow: var(--glow-card-hover);
     }
 
 
     .recommendation-card:hover .recommendation-cover {
         transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 5px 30px #e2adff;
+        box-shadow: var(--glow-cover-hover);
     }
 }
 
@@ -1105,6 +1469,10 @@ Hover работает только на устройствах
 /* Затемнение играющей рекомендации */
 .recommendation-card.playing .recommendation-cover {
     filter: brightness(0.3);
+}
+
+.recommendation-card.playing {
+    box-shadow: var(--glow-player-card);
 }
 
 
@@ -1399,18 +1767,27 @@ Hover работает только на устройствах
        ===================================================== */
 
     .mini-player {
-        bottom: 18px;
+        left: 12px;
+        right: 12px;
+        bottom:
+            calc(
+                10px +
+                env(safe-area-inset-bottom)
+            );
 
-        width: calc(100% - 36px);
-        height: 76px;
+        width: auto;
+        height: 112px;
 
         grid-template-columns:
             minmax(0, 1fr)
             auto;
+        grid-template-rows:
+            44px
+            44px;
 
-        gap: 4px 10px;
+        gap: 4px 8px;
 
-        padding: 8px 12px 7px;
+        padding: 10px;
 
         background-color: rgba(24, 24, 24, 0.82);
         backdrop-filter: blur(12px);
@@ -1419,96 +1796,136 @@ Hover работает только на устройствах
     }
 
 
-    .player-main {
+    .mini-player .player-main {
         min-width: 0;
+        grid-column: 1;
+        grid-row: 1;
+        gap: 9px;
     }
 
 
-    .player-cover {
-        width: 46px;
-        height: 46px;
+    .mini-player .player-cover {
+        width: 44px;
+        height: 44px;
+
+        border-radius: 10px;
     }
 
 
-    .player-info {
-        max-width: 150px;
+    .mini-player .player-info {
+        min-width: 0;
+        max-width: none;
     }
 
 
     /* Обрезание текста плеера */
-    .player-title,
-    .player-artist {
+    .mini-player .player-title,
+    .mini-player .player-artist {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
 
-    .player-controls {
-        justify-content: flex-end;
-        gap: 4px;
+    .mini-player .player-controls {
+        grid-column: 1 / -1;
+        grid-row: 2;
+
+        justify-content: center;
+        justify-self: center;
+        gap: 0;
     }
 
 
-    .player-toggle {
+    .mini-player .player-toggle {
         width: 40px;
         height: 40px;
+        margin-inline: 4px;
+
+        transition:
+            transform 0.15s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .mini-player .player-toggle:active {
+        transform: scale(0.9);
+        transition: transform 0.08s ease;
     }
 
 
-    .player-prev,
-    .player-next {
-        width: 26px;
-        height: 26px;
+    .mini-player .player-prev,
+    .mini-player .player-next {
+        width: 40px;
+        height: 40px;
 
-        padding: 4px;
+        padding: 10px;
+
+        color: white;
+        opacity: 0.8;
     }
 
 
-    .player-prev svg,
-    .player-next svg {
-        width: 15px;
-        height: 15px;
+    .mini-player .player-prev svg,
+    .mini-player .player-next svg {
+        width: 20px;
+        height: 20px;
     }
 
 
-    /*
-    На телефоне громкость скрывается,
-    остаётся только время.
-    */
-    .volume-button,
-    .volume-slider {
+    .mini-player .player-mode-button {
+        width: 40px;
+        height: 40px;
+
+        padding: 10px;
+    }
+
+
+    .mini-player .player-mode-button svg {
+        width: 18px;
+        height: 18px;
+    }
+
+
+    .mini-player .volume-control {
+        grid-column: 2;
+        grid-row: 1;
+
+        width: auto;
+        min-width: 0;
+
+        display: flex;
+        gap: 2px;
+    }
+
+
+    .mini-player .volume-slider-wrapper {
         display: none;
     }
 
 
-    .volume-control {
-        position: absolute;
-        right: 12px;
-        bottom: 5px;
+    .mini-player .volume-button {
+        width: 36px;
+        height: 36px;
 
-        min-width: 0;
-
-        pointer-events: none;
+        padding: 8px;
     }
 
 
-    .player-time {
-        width: auto;
-
-        margin: 0;
+    .mini-player .player-time {
         padding: 0;
 
-        gap: 3px;
-
         font-size: 10px;
-        opacity: 0.55;
+        opacity: 0.42;
     }
 
 
-    /* Место под закреплённый плеер */
-    body {
-        padding-bottom: 180px;
+    body:has(.mini-player.active) {
+        padding-bottom:
+            calc(
+                104px +
+                44px +
+                env(safe-area-inset-bottom)
+            );
     }
 }
 
@@ -1529,6 +1946,8 @@ Hover работает только на устройствах
 содержимое не сжимается и не деформируется.
 */
 .fullscreen-player {
+    --audio-reactive-level: 0;
+
     position: fixed;
     inset: 0;
 
@@ -1552,6 +1971,7 @@ Hover работает только на устройствах
         0;
 
     overflow: hidden;
+    touch-action: pan-x;
 
     transition:
         visibility 0.55s ease,
@@ -1576,6 +1996,11 @@ Hover работает только на устройствах
     border-radius: 0;
 }
 
+.fullscreen-player.is-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 /*
 При закрытии весь экран уезжает вниз.
 
@@ -1592,6 +2017,11 @@ Hover работает только на устройствах
         28px
         0
         0;
+
+    transition:
+        transform 320ms
+            cubic-bezier(0.32, 0, 0.67, 0),
+        border-radius 280ms ease;
 }
 
 
@@ -1699,7 +2129,14 @@ Hover работает только на устройствах
     animation:
     backgroundFloat 30s ease-in-out infinite;
 
-    opacity: 0.9;
+    opacity:
+        calc(
+            0.9 +
+            var(--audio-reactive-level) * 0.1
+        );
+
+    transition:
+        opacity 100ms linear;
 }
 
 
@@ -1714,6 +2151,7 @@ Hover работает только на устройствах
     inset: 0;
 
     background:
+        var(--glow-player-fullscreen-background),
         linear-gradient(
             to bottom,
             rgba(0, 0, 0, 0.18),
@@ -1894,45 +2332,109 @@ Hover работает только на устройствах
    БОЛЬШАЯ ЖИВАЯ ОБЛОЖКА
    ========================================================= */
 
+.fullscreen-player-cover-float {
+    width: min(100%, 58vh, 520px);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+
+    --cover-float-distance: -6px;
+
+    transform: translateY(0);
+    transition: transform 300ms ease;
+}
+
+.fullscreen-player.is-playing
+.fullscreen-player-cover-float {
+    animation:
+        fullscreen-cover-float
+        5.8s
+        ease-in-out
+        infinite;
+}
+
 /*
-Обёртка отвечает за наклон,
-объём, тень и световой блик.
+Отдельный уровень для реакции на курсор.
+Переменные блика наследуются внутренней карточкой.
+*/
+.fullscreen-player-cover-interaction {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    border-radius: 24px;
+    isolation: isolate;
+
+    --rotate-x: 0deg;
+    --rotate-y: 0deg;
+    --pointer-x: 50%;
+    --pointer-y: 50%;
+}
+
+/*
+Тонкое кольцо находится снаружи карточки.
+Звук меняет только его прозрачность, а не размеры
+или transform самой обложки.
+*/
+.fullscreen-player-cover-interaction::before {
+    content: "";
+
+    position: absolute;
+    inset: -3px;
+    z-index: 0;
+
+    border:
+        1px solid
+        color-mix(
+            in srgb,
+            var(--player-accent) 72%,
+            transparent
+        );
+    border-radius: inherit;
+
+    box-shadow: var(--glow-player-audio-reactive);
+
+    opacity:
+        calc(
+            0.22 +
+            var(--audio-reactive-level) * 0.55
+        );
+
+    pointer-events: none;
+
+    transition:
+        opacity 140ms ease-out;
+}
+
+.fullscreen-player.audio-reactive-static {
+    --audio-reactive-level: 0.12;
+}
+
+/*
+Внутренняя карточка отвечает только за форму,
+тень и наложение двух неподвижных изображений.
 */
 .fullscreen-player-cover-wrap {
     position: relative;
 
-    width: min(100%, 58vh, 520px);
-    aspect-ratio: 1 / 1;
-
-    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
 
     border-radius: 24px;
     overflow: hidden;
 
-    transform:
-        perspective(1200px)
-        rotateX(0deg)
-        rotateY(0deg)
-        scale(1);
-
-    transform-style: preserve-3d;
-
     box-shadow:
         0 30px 80px rgba(0, 0, 0, 0.5);
 
-    will-change: transform;
-
     transition:
-        transform 0.18s ease-out,
         box-shadow 0.35s ease;
 }
 
 
 /*
-Сама картинка заполняет обёртку.
-
-Она слегка увеличена,
-чтобы при наклоне не появлялись пустые края.
+Сама картинка только заполняет обёртку.
+Её transform всегда остаётся неподвижным.
 */
 .fullscreen-player-cover {
     width: 100%;
@@ -1941,17 +2443,51 @@ Hover работает только на устройствах
     display: block;
 
     object-fit: cover;
+    object-position: center;
 
     border-radius: inherit;
 
     user-select: none;
     pointer-events: none;
 
-    transform: scale(1.035);
+    transform: none;
+    filter: none;
+    animation: none;
+}
+
+.fullscreen-player-cover-next {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    border-radius: inherit;
+    object-fit: cover;
+    object-position: center;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+    filter: none;
+    animation: none;
 
     transition:
-        transform 0.6s ease,
-        filter 0.4s ease;
+        opacity var(--motion-normal) ease,
+        visibility 0s linear var(--motion-normal);
+}
+
+.fullscreen-player-cover-next.is-ready {
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.fullscreen-player-cover-next.is-visible {
+    opacity: 1;
 }
 
 
@@ -1973,20 +2509,18 @@ Hover работает только на устройствах
     background:
         radial-gradient(
             circle at
-            var(--cover-light-x, 50%)
-            var(--cover-light-y, 35%),
+            var(--pointer-x)
+            var(--pointer-y),
 
-            rgba(255, 255, 255, 0.22),
-            rgba(255, 255, 255, 0.08) 18%,
-            transparent 48%
+            rgba(255, 255, 255, 0.1),
+            rgba(255, 255, 255, 0.03) 26%,
+            transparent 58%
         );
-
-    mix-blend-mode: screen;
 
     opacity: 0;
 
     transition:
-        opacity 0.3s ease;
+        opacity 180ms ease;
 }
 
 
@@ -2011,41 +2545,6 @@ Hover работает только на устройствах
 }
 
 
-/*
-Когда плеер открыт,
-блик становится видимым.
-*/
-.fullscreen-player.open
-.fullscreen-player-cover-wrap::after {
-    opacity: 1;
-}
-
-
-/*
-Когда музыка играет,
-картинка внутри медленно дышит.
-*/
-.fullscreen-player.is-playing
-.fullscreen-player-cover {
-    animation:
-        fullscreen-cover-breath
-        7s
-        ease-in-out
-        infinite;
-}
-
-
-/*
-При паузе дыхание выключается.
-*/
-.fullscreen-player:not(.is-playing)
-.fullscreen-player-cover {
-    animation: none;
-
-    transform: scale(1.035);
-}
-
-
 /* =====================================================
    СВЕТОВЫЕ ЧАСТИЦЫ ПОЛНОЭКРАННОГО ПЛЕЕРА
    ===================================================== */
@@ -2065,6 +2564,8 @@ pointer-events: none не даёт частицам
     pointer-events: none;
 
     z-index: 1;
+
+    transition: opacity 220ms ease;
 }
 
 
@@ -2122,7 +2623,7 @@ pointer-events: none не даёт частицам
     right: -80px;
 
     background:
-        rgba(165, 115, 255, 0.5);
+        rgb(var(--accent-secondary-rgb) / 0.42);
 
     animation:
         particleFloatTwo
@@ -2144,7 +2645,7 @@ pointer-events: none не даёт частицам
     left: 18%;
 
     background:
-        rgba(90, 190, 255, 0.45);
+        rgb(var(--accent-tertiary-rgb) / 0.42);
 
     animation:
         particleFloatThree
@@ -2166,7 +2667,7 @@ pointer-events: none не даёт частицам
     right: 14%;
 
     background:
-        rgba(255, 120, 190, 0.4);
+        rgb(var(--accent-tertiary-rgb) / 0.3);
 
     animation:
         particleFloatFour
@@ -2297,16 +2798,19 @@ pointer-events: none не даёт частицам
 
 
 /*
-Мягкое дыхание картинки.
+Спокойное вертикальное движение всей карточки.
 */
-@keyframes fullscreen-cover-breath {
+@keyframes fullscreen-cover-float {
     0%,
     100% {
-        transform: scale(1.035);
+        transform: translateY(0);
     }
 
     50% {
-        transform: scale(1.075);
+        transform:
+            translateY(
+                var(--cover-float-distance)
+            );
     }
 }
 
@@ -2364,6 +2868,37 @@ pointer-events: none не даёт частицам
 чуть более глубокую тень при наведении.
 */
 @media (hover: hover) and (pointer: fine) {
+    .fullscreen-player-cover-interaction {
+        transform:
+            perspective(1000px)
+            translateY(0)
+            rotateX(var(--rotate-x))
+            rotateY(var(--rotate-y));
+
+        transform-style: preserve-3d;
+        will-change: transform;
+
+        transition:
+            transform 280ms
+            cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .fullscreen-player-cover-interaction.is-pointer-active {
+        transform:
+            perspective(1000px)
+            translateY(-2px)
+            rotateX(var(--rotate-x))
+            rotateY(var(--rotate-y));
+
+        transition:
+            transform 60ms linear;
+    }
+
+    .fullscreen-player-cover-interaction.is-pointer-active
+    .fullscreen-player-cover-wrap::after {
+        opacity: 1;
+    }
+
     .fullscreen-player-cover-wrap:hover {
         box-shadow:
             0 38px 100px rgba(0, 0, 0, 0.62);
@@ -2376,13 +2911,53 @@ pointer-events: none не даёт частицам
 в настройках системы.
 */
 @media (prefers-reduced-motion: reduce) {
-    .fullscreen-player.is-playing
-    .fullscreen-player-cover {
-        animation: none;
+    .fullscreen-player,
+    .fullscreen-player-content,
+    .fullscreen-player-background,
+    .fullscreen-player-header,
+    .fullscreen-player-controls button,
+    .fullscreen-player-progress-fill,
+    .player-progress-fill,
+    .volume-slider-wrapper,
+    .release-card.reveal-item,
+    .recommendations-section.reveal-section,
+    .fullscreen-player-cover-next {
+        transition-duration: 1ms;
     }
 
-    .fullscreen-player-cover-wrap {
+    .fullscreen-player-cover-float {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    .fullscreen-player-cover-interaction {
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .fullscreen-player {
+        --audio-reactive-level: 0.12 !important;
+    }
+
+    .fullscreen-player-cover-interaction::before {
         transition: none;
+    }
+
+    .fullscreen-player-background::before {
+        animation: none !important;
+        opacity: 0.912 !important;
+        transition: none !important;
+    }
+
+    .fullscreen-player-cover-wrap::after {
+        display: none;
+    }
+
+    .fullscreen-player-cover,
+    .fullscreen-player-cover-next {
+        animation: none !important;
+        transform: none !important;
+        transition-duration: 1ms;
     }
 }
 
@@ -2448,16 +3023,25 @@ pointer-events: none не даёт частицам
     position: relative;
 
     width: 100%;
+    height: 30px;
+
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.fullscreen-player-progress-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+
+    width: 100%;
     height: 6px;
 
     border-radius: 999px;
-
-    background:
-        rgba(255, 255, 255, 0.2);
-
-    overflow: hidden;
-
-    cursor: pointer;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%);
 }
 
 
@@ -2475,6 +3059,34 @@ pointer-events: none не даёт частицам
     background: white;
 
     pointer-events: none;
+
+    transition: width 80ms linear;
+}
+
+.fullscreen-player-progress-thumb {
+    position: absolute;
+    top: 50%;
+    left: var(--progress, 0%);
+
+    width: 14px;
+    height: 14px;
+
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+
+    transition: opacity 160ms ease;
+}
+
+.fullscreen-player-progress:hover
+.fullscreen-player-progress-thumb,
+.fullscreen-player-progress.is-seeking
+.fullscreen-player-progress-thumb {
+    opacity: 1;
 }
 
 
@@ -2496,6 +3108,8 @@ pointer-events: none не даёт частицам
    ========================================================= */
 
 .fullscreen-player-controls {
+    position: relative;
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2503,6 +3117,36 @@ pointer-events: none не даёт частицам
     gap: 28px;
 
     margin-top: 26px;
+}
+
+/*
+Desktop-ползунок вынесен из потока и привязан
+к блоку управления, поэтому существующие кнопки
+не меняют своё положение.
+*/
+.fullscreen-volume-control {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+
+    width: 164px;
+    height: 24px;
+
+    display: flex;
+    align-items: center;
+
+    transform: translateX(-50%);
+}
+
+.fullscreen-volume-slider {
+    width: 100%;
+    height: 24px;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .fullscreen-volume-control {
+        display: none;
+    }
 }
 
 
@@ -2520,17 +3164,99 @@ pointer-events: none не даёт частицам
 
     transition:
         transform 0.2s ease,
-        background 0.2s ease;
+        opacity 0.18s ease,
+        background-color 0.18s ease,
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
 }
 
 
 .fullscreen-player-prev,
 .fullscreen-player-next {
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
 
-    background:
-        rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    opacity: 0.78;
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+.fullscreen-player-controls
+.player-mode-button {
+    width: 56px;
+    height: 56px;
+
+    padding: 14px;
+
+    background: transparent;
+    opacity: 0.62;
+
+    transition:
+        transform 0.12s ease,
+        opacity 0.16s ease,
+        color 0.18s ease,
+        background-color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.fullscreen-player-controls
+.player-mode-button svg {
+    width: 25px;
+    height: 25px;
+}
+
+.fullscreen-player-controls
+.player-mode-button.is-active {
+    background-color:
+        rgba(255, 255, 255, 0.08);
+    box-shadow: var(--glow-player-control-active);
+    color: white;
+    opacity: 1;
+}
+
+.fullscreen-player-controls
+.player-mode-button:active {
+    transform: scale(0.9);
+    opacity: 0.8;
+    transition-duration: 70ms;
+}
+
+.fullscreen-player-controls
+.player-mode-button:focus {
+    outline: none;
+}
+
+.fullscreen-player-controls
+.player-mode-button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.fullscreen-player-controls
+.repeat-one-indicator {
+    top: 7px;
+    right: 7px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .fullscreen-player-controls
+    .player-mode-button:hover {
+        background-color: rgba(255, 255, 255, 0.07);
+        box-shadow: var(--glow-player-control-active);
+        opacity: 0.9;
+    }
+
+    .fullscreen-player-controls
+    .player-mode-button.is-active:hover {
+        background-color:
+            rgba(255, 255, 255, 0.1);
+        box-shadow:
+            var(--glow-player-control-active-hover);
+        opacity: 1;
+    }
 }
 
 
@@ -2538,19 +3264,29 @@ pointer-events: none не даёт частицам
     width: 72px;
     height: 72px;
 
-    background: white;
+    background: rgba(255, 255, 255, 0.08);
 
-    color: black !important;
+    color: white !important;
 }
 
 
-.fullscreen-player-controls button:hover {
+.fullscreen-player-toggle:hover {
     transform: scale(1.06);
+    box-shadow:
+        var(--glow-player-control-active-hover);
 }
 
 
-.fullscreen-player-controls button:active {
+.fullscreen-player-toggle:active {
     transform: scale(0.94);
+    box-shadow:
+        var(--glow-player-control-active);
+}
+
+
+.fullscreen-player-toggle:focus {
+    box-shadow:
+        var(--glow-player-control-active-hover);
 }
 
 
@@ -2559,6 +3295,49 @@ pointer-events: none не даёт частицам
     height: 28px;
 
     fill: currentColor;
+}
+
+.fullscreen-player-prev svg,
+.fullscreen-player-next svg {
+    width: 42px;
+    height: 42px;
+}
+
+.fullscreen-player-prev:hover,
+.fullscreen-player-next:hover {
+    background: transparent;
+    box-shadow: none;
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgb(var(--accent-primary-rgb) / 0.48)
+        );
+    transform: none;
+    opacity: 1;
+}
+
+.fullscreen-player-prev:active,
+.fullscreen-player-next:active {
+    background: transparent;
+    box-shadow: none;
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgb(var(--accent-primary-rgb) / 0.48)
+        );
+    transform: none;
+    opacity: 0.72;
+}
+
+.fullscreen-player-prev:focus,
+.fullscreen-player-next:focus {
+    outline: none;
+}
+
+.fullscreen-player-prev:focus-visible,
+.fullscreen-player-next:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
 
 
@@ -2573,7 +3352,6 @@ pointer-events: none не даёт частицам
 .fullscreen-player-cover-wrap {
     transition:
         opacity 0.18s ease,
-        transform 0.22s ease-out,
         box-shadow 0.35s ease;
 }
 
@@ -2602,25 +3380,10 @@ pointer-events: none не даёт частицам
 и растворяется.
 */
 .fullscreen-player.track-changing
-.fullscreen-player-cover-wrap {
-    opacity: 0;
-
-    transform:
-        perspective(1200px)
-        translateY(10px)
-        scale(0.985);
-}
-
-
-/*
-Название и исполнитель
-слегка опускаются и исчезают.
-*/
-.fullscreen-player.track-changing
 .fullscreen-player-info {
-    opacity: 0;
+    opacity: 0.3;
 
-    transform: translateY(10px);
+    transform: translateY(7px);
 }
 
 
@@ -2632,9 +3395,9 @@ pointer-events: none не даёт частицам
 */
 .fullscreen-player.track-changing
 .fullscreen-player-background::before {
-    opacity: 0;
+    opacity: 0.3;
 
-    transform: scale(1.22);
+    transform: scale(1.18);
 
     filter:
         blur(70px)
@@ -2717,11 +3480,18 @@ body.fullscreen-player-open {
     }
 
 
-    .fullscreen-player-cover-wrap {
-    width: min(100%, 360px);
+    .fullscreen-player-cover-float {
+        width: min(100%, 360px);
+        --cover-float-distance: -4px;
+    }
 
-    border-radius: 20px;
-}
+    .fullscreen-player-cover-wrap {
+        border-radius: 20px;
+    }
+
+    .fullscreen-player-cover-interaction {
+        border-radius: 20px;
+    }
 
 
     .fullscreen-player-info,
@@ -2741,7 +3511,11 @@ body.fullscreen-player-open {
 
 
     .fullscreen-player-controls {
-        gap: 20px;
+        gap: 10px;
+    }
+
+    .fullscreen-volume-control {
+        display: none;
     }
 
 
@@ -2749,6 +3523,15 @@ body.fullscreen-player-open {
     .fullscreen-player-next {
         width: 48px;
         height: 48px;
+    }
+
+
+    .fullscreen-player-controls
+    .player-mode-button {
+        width: 48px;
+        height: 48px;
+
+        padding: 12px;
     }
 
 
@@ -2804,23 +3587,26 @@ body.fullscreen-player-open {
     position: absolute;
     left: 16px;
     right: 16px;
-    bottom: 6px;
+    top: 0;
+    bottom: auto;
 
     width: auto;
-    height: 4px;
+    height: 22px;
 
     margin: 0;
     padding: 0;
 
     z-index: 2;
 
-    border-radius: 999px;
-
-    background:
-        rgba(255, 255, 255, 0.14);
-
-    overflow: hidden;
+    background: transparent;
+    overflow: visible;
     cursor: pointer;
+}
+
+.mini-player .player-progress-track {
+    top: 0;
+    height: 4px;
+    transform: none;
 }
 
 
@@ -2859,4 +3645,174 @@ body.fullscreen-player-open {
 
     cursor: pointer;
     pointer-events: auto;
+}
+
+/* =========================================================
+   МОБИЛЬНЫЙ FULLSCREEN БЕЗ ИЗМЕНЕНИЯ ДИЗАЙНА
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    /*
+    Плеер занимает видимую высоту телефона,
+    но сохраняет старый внешний вид.
+    */
+    .fullscreen-player {
+        height: 100dvh;
+        min-height: 100dvh;
+
+        background-color: #080808;
+
+        overscroll-behavior: none;
+    }
+
+
+    /*
+    Страница под открытым плеером
+    не должна прокручиваться.
+    */
+    body.fullscreen-player-open {
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+
+    /*
+    Мини-плеер прячется,
+    пока открыт большой экран.
+    */
+    body.fullscreen-player-open
+    .mini-player {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+
+    /*
+    Фон и частицы не перехватывают касания.
+    */
+    .fullscreen-player-background,
+    .fullscreen-player-background::before,
+    .fullscreen-player-background::after,
+    .fullscreen-particles {
+        pointer-events: none;
+    }
+}
+@property --player-accent {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #e2adff;
+}
+
+:root {
+    /*
+    Единая триадная палитра:
+    основной интерактивный, фоновый и декоративный акценты.
+    */
+    --accent-primary: #e2adff;
+    --accent-primary-rgb: 226 173 255;
+    --accent-secondary: #ffe2ad;
+    --accent-secondary-rgb: 255 226 173;
+    --accent-tertiary: #adffe2;
+    --accent-tertiary-rgb: 173 255 226;
+
+    /*
+    Акцент текущего трека. JavaScript меняет только эту переменную,
+    а при недоступной обложке остаётся исходный фиолетовый.
+    */
+    --player-accent: var(--accent-primary);
+
+    --accent-primary-surface:
+        rgb(var(--accent-primary-rgb) / 0.14);
+    --accent-secondary-surface:
+        rgb(var(--accent-secondary-rgb) / 0.1);
+    --accent-tertiary-surface:
+        rgb(var(--accent-tertiary-rgb) / 0.12);
+
+    --glow-card-hover:
+        0 10px 30px
+        rgb(var(--accent-primary-rgb) / 0.24);
+    --glow-cover-hover:
+        0 5px 30px
+        rgb(var(--accent-primary-rgb) / 0.58);
+    --glow-control-active:
+        0 0 18px
+        rgb(var(--accent-primary-rgb) / 0.24);
+    --glow-control-active-hover:
+        0 0 22px
+        rgb(var(--accent-primary-rgb) / 0.3);
+    --glow-fullscreen-background:
+        radial-gradient(
+            circle at 50% 30%,
+            rgb(var(--accent-secondary-rgb) / 0.12),
+            transparent 58%
+        );
+    --glow-audio-reactive:
+        0 0 10px
+            rgb(var(--accent-tertiary-rgb) / 0.42),
+        0 0 26px
+            rgb(var(--accent-tertiary-rgb) / 0.27),
+        0 0 52px
+            rgb(var(--accent-tertiary-rgb) / 0.15);
+
+    --glow-player-card:
+        0 10px 32px
+        color-mix(
+            in srgb,
+            var(--player-accent) 34%,
+            transparent
+        );
+    --glow-player-control-active:
+        0 0 18px
+        color-mix(
+            in srgb,
+            var(--player-accent) 32%,
+            transparent
+        );
+    --glow-player-control-active-hover:
+        0 0 22px
+        color-mix(
+            in srgb,
+            var(--player-accent) 42%,
+            transparent
+        );
+    --glow-player-fullscreen-background:
+        radial-gradient(
+            circle at 50% 30%,
+            color-mix(
+                in srgb,
+                var(--player-accent) 18%,
+                transparent
+            ),
+            transparent 58%
+        );
+    --glow-player-audio-reactive:
+        0 0 10px
+            color-mix(
+                in srgb,
+                var(--player-accent) 48%,
+                transparent
+            ),
+        0 0 26px
+            color-mix(
+                in srgb,
+                var(--player-accent) 32%,
+                transparent
+            ),
+        0 0 52px
+            color-mix(
+                in srgb,
+                var(--player-accent) 18%,
+                transparent
+            );
+
+    transition:
+        --player-accent 700ms ease;
+
+    --motion-fast: 160ms;
+    --motion-normal: 260ms;
+    --motion-slow: 500ms;
+    --ease-out-smooth:
+        cubic-bezier(0.22, 1, 0.36, 1);
 }

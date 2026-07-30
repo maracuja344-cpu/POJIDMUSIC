@@ -90,7 +90,7 @@
 
     <section
         id="recommendations"
-        class="recommendations-section"
+        class="recommendations-section reveal-section"
     >
         <h2 class="section-title">
             РЕКОМЕНДУЕМ
@@ -108,7 +108,10 @@
 
         <!-- Мини-плеер:Полоса прогресса -->
         <div class="player-progress">
-            <div class="player-progress-fill"></div>
+            <div class="player-progress-track">
+                <div class="player-progress-fill"></div>
+                <div class="player-progress-thumb"></div>
+            </div>
         </div>
 
 
@@ -136,6 +139,25 @@
         <!-- Мини-плеер:Кнопки управления -->
 
         <div class="player-controls">
+
+            <button
+                class="player-mode-button player-shuffle"
+                type="button"
+                data-player-mode="shuffle"
+                aria-label="Включить перемешивание"
+                aria-pressed="false"
+                title="Перемешивание выключено"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M4 7H7.5C9 7 10.2 7.7 11.1 9L15.9 16C16.8 17.3 18 18 19.5 18H21M18 15L21 18L18 21M4 18H7.5C9 18 10.2 17.3 11.1 16L15.9 9C16.8 7.7 18 7 19.5 7H21M18 4L21 7L18 10"
+                    ></path>
+                </svg>
+            </button>
+
 
             <button
                 class="player-prev"
@@ -168,6 +190,30 @@
                 </svg>
             </button>
 
+
+            <button
+                class="player-mode-button player-repeat"
+                type="button"
+                data-player-mode="repeat"
+                aria-label="Повтор выключен"
+                aria-pressed="false"
+                title="Повтор выключен"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M17 2L21 6L17 10M3 11V9C3 7.3 4.3 6 6 6H21M7 22L3 18L7 14M21 13V15C21 16.7 19.7 18 18 18H3"
+                    ></path>
+                </svg>
+
+                <span
+                    class="repeat-one-indicator"
+                    aria-hidden="true"
+                >1</span>
+            </button>
+
         </div>
 
 
@@ -178,6 +224,7 @@
             <button
                 class="volume-button"
                 aria-label="Громкость"
+                aria-expanded="false"
             >
                 <svg
                     class="volume-icon"
@@ -199,15 +246,17 @@
             </button>
 
 
-            <input
-                class="volume-slider"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value="0.1"
-                aria-label="Уровень громкости"
-            >
+            <div class="volume-slider-wrapper">
+                <input
+                    class="volume-slider"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.1"
+                    aria-label="Уровень громкости"
+                >
+            </div>
 
 
             <div class="player-time">
@@ -234,6 +283,9 @@
 <section
     class="fullscreen-player"
     aria-hidden="true"
+
+
+    
 >
     <!--
     Затемнённый фон.
@@ -290,15 +342,26 @@
 
 
         <!-- Центральная часть -->
-        <div class="fullscreen-player-cover-wrap">
+        <div class="fullscreen-player-cover-float">
+            <div class="fullscreen-player-cover-interaction">
+                <div class="fullscreen-player-cover-wrap">
 
-    <img
-        class="fullscreen-player-cover"
-        src=""
-        alt=""
-    >
+                    <img
+                        class="fullscreen-player-cover"
+                        src="img/cover.jpg"
+                        alt=""
+                    >
 
-</div>
+                    <img
+                        class="fullscreen-player-cover-next"
+                        src="img/cover.jpg"
+                        alt=""
+                        aria-hidden="true"
+                    >
+
+                </div>
+            </div>
+        </div>
 
 
             <!-- Название и исполнитель -->
@@ -320,12 +383,17 @@
 
                 <!-- Кликабельная полоса прогресса -->
                 <div class="fullscreen-player-progress">
+                    <div class="fullscreen-player-progress-track">
+                        <!-- Заполненная часть полосы -->
+                        <div
+                            class="fullscreen-player-progress-fill"
+                        ></div>
 
-                    <!-- Заполненная часть полосы -->
-                    <div
-                        class="fullscreen-player-progress-fill"
-                    ></div>
-
+                        <div
+                            class="fullscreen-player-progress-thumb"
+                            aria-hidden="true"
+                        ></div>
+                    </div>
                 </div>
 
 
@@ -351,6 +419,25 @@
 
             <!-- Кнопки управления -->
             <div class="fullscreen-player-controls">
+
+                <button
+                    class="player-mode-button fullscreen-player-shuffle"
+                    type="button"
+                    data-player-mode="shuffle"
+                    aria-label="Включить перемешивание"
+                    aria-pressed="false"
+                    title="Перемешивание выключено"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M4 7H7.5C9 7 10.2 7.7 11.1 9L15.9 16C16.8 17.3 18 18 19.5 18H21M18 15L21 18L18 21M4 18H7.5C9 18 10.2 17.3 11.1 16L15.9 9C16.8 7.7 18 7 19.5 7H21M18 4L21 7L18 10"
+                        ></path>
+                    </svg>
+                </button>
+
 
                 <!-- Предыдущий трек -->
                 <button
@@ -414,6 +501,42 @@
                         ></path>
                     </svg>
                 </button>
+
+
+                <button
+                    class="player-mode-button fullscreen-player-repeat"
+                    type="button"
+                    data-player-mode="repeat"
+                    aria-label="Повтор выключен"
+                    aria-pressed="false"
+                    title="Повтор выключен"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M17 2L21 6L17 10M3 11V9C3 7.3 4.3 6 6 6H21M7 22L3 18L7 14M21 13V15C21 16.7 19.7 18 18 18H3"
+                        ></path>
+                    </svg>
+
+                    <span
+                        class="repeat-one-indicator"
+                        aria-hidden="true"
+                    >1</span>
+                </button>
+
+                <div class="fullscreen-volume-control">
+                    <input
+                        class="volume-slider fullscreen-volume-slider"
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value="0.1"
+                        aria-label="Громкость fullscreen-плеера"
+                    >
+                </div>
 
             </div>
 
