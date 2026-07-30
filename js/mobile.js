@@ -4,6 +4,9 @@ const coarsePointerQuery = window.matchMedia(
 const phoneWidthQuery = window.matchMedia(
     "(max-width: 932px)"
 );
+const standaloneDisplayQuery = window.matchMedia(
+    "(display-mode: standalone)"
+);
 
 
 function isIOSDevice() {
@@ -39,6 +42,14 @@ export function isMobileDevice() {
 }
 
 
+export function isStandaloneMode() {
+    return (
+        standaloneDisplayQuery.matches ||
+        navigator.standalone === true
+    );
+}
+
+
 function updateDeviceClasses() {
     const root = document.documentElement;
     const mobileDevice = isMobileDevice();
@@ -56,6 +67,10 @@ function updateDeviceClasses() {
     root.classList.toggle(
         "ios-safari",
         iosDevice && isSafariBrowser()
+    );
+    root.classList.toggle(
+        "standalone-mode",
+        isStandaloneMode()
     );
 }
 
@@ -130,6 +145,10 @@ export function initializeMobileEnvironment() {
     );
     listenForQueryChange(
         phoneWidthQuery,
+        updateDeviceClasses
+    );
+    listenForQueryChange(
+        standaloneDisplayQuery,
         updateDeviceClasses
     );
 

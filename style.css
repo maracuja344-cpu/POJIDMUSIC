@@ -3778,10 +3778,7 @@ html.mobile-device .fullscreen-player {
     min-height: 100dvh;
 
     padding:
-        calc(
-            12px +
-            env(safe-area-inset-top)
-        )
+        env(safe-area-inset-top)
         calc(
             16px +
             env(safe-area-inset-right)
@@ -3798,6 +3795,10 @@ html.mobile-device .fullscreen-player {
     background-color: #080808;
     overscroll-behavior: none;
     touch-action: pan-y;
+
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 html.mobile-device .fullscreen-player-content {
@@ -3805,6 +3806,40 @@ html.mobile-device .fullscreen-player-content {
     min-width: 0;
     max-height: 100%;
     max-width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    margin-top: 0;
+    padding-top: 0;
+}
+
+html.mobile-device .fullscreen-player-header {
+    width: 100%;
+    min-height: 44px;
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-shrink: 0;
+
+    margin-top: 0;
+    padding-top: 0;
+
+    transform: translateY(-12px);
+}
+
+html.mobile-device
+.fullscreen-player.open
+.fullscreen-player-header {
+    transform: translateY(0);
+}
+
+html.mobile-device
+.fullscreen-player.closing
+.fullscreen-player-header {
+    transform: translateY(-10px);
 }
 
 html.mobile-device .fullscreen-player-cover-float {
@@ -3812,6 +3847,8 @@ html.mobile-device .fullscreen-player-cover-float {
     width: min(100%, 42dvh, 360px);
     min-width: 0;
     max-width: 100%;
+
+    margin-top: 0;
 
     animation: none !important;
     transform: none;
