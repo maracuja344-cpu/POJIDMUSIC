@@ -3699,6 +3699,64 @@ body.fullscreen-player-open {
         pointer-events: none;
     }
 }
+
+
+/* =========================================================
+   FULLSCREEN ДЛЯ iPHONE SAFARI
+   ========================================================= */
+
+/*
+viewport-fit=cover разрешает фону заходить в области вокруг
+выреза и Home Indicator. Сам контент остаётся внутри safe-area
+за счёт внутренних отступов fullscreen-слоя.
+
+Проверка -webkit-touch-callout ограничивает правило iOS WebKit:
+Android и desktop продолжают использовать обычную раскладку.
+*/
+@supports (-webkit-touch-callout: none) {
+    @media (
+        max-width: 768px
+    ) and (
+        hover: none
+    ) and (
+        pointer: coarse
+    ) {
+        .fullscreen-player {
+            top: 0;
+            right: 0;
+            bottom: auto;
+            left: 0;
+
+            width: 100%;
+
+            height: 100vh;
+            min-height: 100vh;
+            height: 100dvh;
+            min-height: 100dvh;
+
+            padding:
+                calc(
+                    16px +
+                    env(safe-area-inset-top)
+                )
+                calc(
+                    20px +
+                    env(safe-area-inset-right)
+                )
+                calc(
+                    16px +
+                    env(safe-area-inset-bottom)
+                )
+                calc(
+                    20px +
+                    env(safe-area-inset-left)
+                );
+        }
+
+    }
+}
+
+
 @property --player-accent {
     syntax: "<color>";
     inherits: true;
