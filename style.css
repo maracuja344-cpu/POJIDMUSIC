@@ -16,6 +16,8 @@
 /* Плавное перемещение по якорным ссылкам */
 html {
     scroll-behavior: smooth;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 
@@ -3795,16 +3797,21 @@ html.mobile-device .fullscreen-player {
 
     background-color: #080808;
     overscroll-behavior: none;
+    touch-action: pan-y;
 }
 
 html.mobile-device .fullscreen-player-content {
     width: min(100%, 560px);
+    min-width: 0;
     max-height: 100%;
+    max-width: 100%;
 }
 
 html.mobile-device .fullscreen-player-cover-float {
     width: min(100%, 42vh, 360px);
     width: min(100%, 42dvh, 360px);
+    min-width: 0;
+    max-width: 100%;
 
     animation: none !important;
     transform: none;
@@ -3910,8 +3917,33 @@ Coarse-pointer не получает hover-состояния. Короткий 
 html.mobile-device .release-card,
 html.mobile-device .recommendation-card,
 html.mobile-device button,
-html.mobile-device a {
+html.mobile-device a,
+html.mobile-device input:not([type="range"]),
+html.mobile-device select,
+html.mobile-device textarea,
+html.mobile-device [role="button"],
+html.mobile-device [tabindex],
+html.mobile-device .player-cover {
     touch-action: manipulation;
+}
+
+html.mobile-device .player-progress,
+html.mobile-device .fullscreen-player-progress,
+html.mobile-device input[type="range"] {
+    touch-action: none;
+}
+
+html.mobile-device img,
+html.mobile-device video,
+html.mobile-device canvas {
+    max-width: 100%;
+}
+
+html.mobile-device .fullscreen-player-cover,
+html.mobile-device .fullscreen-player-cover-next {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
 html.mobile-device .logo:hover {
@@ -3948,6 +3980,7 @@ html.mobile-device
 .player-toggle:hover,
 html.mobile-device
 .fullscreen-player-toggle:hover {
+    transform: none;
     box-shadow: none;
 }
 
@@ -3980,6 +4013,28 @@ html.mobile-device
 .fullscreen-player-progress.is-seeking
 .fullscreen-player-progress-thumb {
     opacity: 1;
+}
+
+/*
+На touch-устройствах нажатие меняет только прозрачность или
+свечение. Геометрия интерфейса при касании не масштабируется.
+*/
+html.mobile-device .release-card:active,
+html.mobile-device .recommendation-card:active,
+html.mobile-device .mini-player button:active,
+html.mobile-device
+.fullscreen-player-controls button:active,
+html.mobile-device .fullscreen-player-close:active {
+    transform: none !important;
+}
+
+html.mobile-device .release-card:hover .cover,
+html.mobile-device
+.recommendation-card:hover
+.recommendation-cover,
+html.mobile-device
+.fullscreen-player-cover-wrap:hover {
+    transform: none;
 }
 
 /*

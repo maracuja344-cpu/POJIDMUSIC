@@ -3459,6 +3459,39 @@ fullscreenCoverNext =
             }
         );
 
+        /*
+        На мобильных fullscreen объявлен как pan-y, чтобы Safari
+        не воспринимал вертикальную серию касаний как zoom.
+        Для одиночного свайпа вне элементов управления передаём
+        жест существующей Pointer Events логике drag-to-close.
+        Прокрутку обычной страницы это не затрагивает.
+        */
+        fullscreenPlayer.addEventListener(
+            "touchstart",
+            (event) => {
+                if (
+                    !document.documentElement
+                        .classList.contains(
+                            "mobile-device"
+                        ) ||
+                    event.touches.length !== 1 ||
+                    !fullscreenPlayer.classList.contains(
+                        "open"
+                    ) ||
+                    event.target.closest(
+                        blockedDragSelector
+                    )
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+            },
+            {
+                passive: false
+            }
+        );
+
         fullscreenPlayer.addEventListener(
             "pointermove",
             (event) => {

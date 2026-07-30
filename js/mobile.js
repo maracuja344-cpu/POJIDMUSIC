@@ -2,7 +2,7 @@ const coarsePointerQuery = window.matchMedia(
     "(pointer: coarse)"
 );
 const phoneWidthQuery = window.matchMedia(
-    "(max-width: 768px)"
+    "(max-width: 932px)"
 );
 
 
@@ -79,26 +79,45 @@ function listenForQueryChange(
 }
 
 
-function preventIOSGestureZoom() {
-    if (!isIOSDevice()) return;
-
-    [
-        "gesturestart",
-        "gesturechange",
-        "gestureend"
-    ].forEach((eventName) => {
-        document.addEventListener(
-            eventName,
-            (event) => {
-                if (isMobileDevice()) {
-                    event.preventDefault();
+function preventMobileGestureZoom() {
+    if (isIOSDevice()) {
+        [
+            "gesturestart",
+            "gesturechange",
+            "gestureend"
+        ].forEach((eventName) => {
+            document.addEventListener(
+                eventName,
+                (event) => {
+                    if (isMobileDevice()) {
+                        event.preventDefault();
+                    }
+                },
+                {
+                    passive: false
                 }
-            },
-            {
-                passive: false
+            );
+        });
+    }
+
+    /*
+    Блокируется только жест с несколькими пальцами.
+    Обычная прокрутка одним пальцем остаётся нативной.
+    */
+    document.addEventListener(
+        "touchmove",
+        (event) => {
+            if (
+                isMobileDevice() &&
+                event.touches.length > 1
+            ) {
+                event.preventDefault();
             }
-        );
-    });
+        },
+        {
+            passive: false
+        }
+    );
 }
 
 
@@ -114,5 +133,5 @@ export function initializeMobileEnvironment() {
         updateDeviceClasses
     );
 
-    preventIOSGestureZoom();
+    preventMobileGestureZoom();
 }
