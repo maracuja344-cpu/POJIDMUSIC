@@ -20,7 +20,7 @@ function getUniqueTracks(trackList) {
             return (
                 tracks.findIndex((otherTrack) => {
                     return (
-                        otherTrack.audio === track.audio
+                        otherTrack.catalogId === track.catalogId
                     );
                 }) === index
             );

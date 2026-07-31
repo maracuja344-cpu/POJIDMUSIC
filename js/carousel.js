@@ -2,6 +2,9 @@
    1. ЗАПУСК КАРУСЕЛИ РЕКОМЕНДАЦИЙ
    ========================================================= */
 
+let activeCarouselCleanup = null;
+
+
 /*
 Создаёт бесконечную горизонтальную карусель:
 
@@ -11,6 +14,9 @@
 - при ручном взаимодействии автоскролл временно ставится на паузу.
 */
 export function initializeRecommendationsCarousel() {
+    activeCarouselCleanup?.();
+    activeCarouselCleanup = null;
+
     /*
     Видимая область карусели.
     Именно она прокручивается по горизонтали.
@@ -85,6 +91,8 @@ export function initializeRecommendationsCarousel() {
     При true автоматическая прокрутка остановлена.
     */
     let isPaused = false;
+    let isHovering = false;
+    let isPointerInteracting = false;
 
     /*
     Текущая виртуальная позиция прокрутки.
@@ -101,6 +109,13 @@ export function initializeRecommendationsCarousel() {
     остановить уже запущенный цикл.
     */
     let animationFrameId = null;
+    let carouselStartTimer = null;
+    let resizeTimer = null;
+    let destroyed = false;
+    const listenerController = new AbortController();
+    const listenerOptions = {
+        signal: listenerController.signal
+    };
 
     /*
     Скорость автоматического движения
@@ -225,12 +240,17 @@ export function initializeRecommendationsCarousel() {
         return normalizedValue;
     }
 
+    position = normalizePosition(position);
+    viewport.scrollLeft = position;
+
 
     /* =====================================================
        9. АВТОМАТИЧЕСКАЯ ПРОКРУТКА
        ===================================================== */
 
     function autoScroll() {
+        if (destroyed) return;
+
         /*
         Когда вкладка браузера скрыта,
         не двигаем карусель впустую.
@@ -300,7 +320,7 @@ export function initializeRecommendationsCarousel() {
         viewport.scrollLeft = position;
 
         resumeTimer = setTimeout(() => {
-            isPaused = false;
+            isPaused = isHovering;
         }, resumeDelay);
     }
 
@@ -314,7 +334,11 @@ export function initializeRecommendationsCarousel() {
     */
     viewport.addEventListener(
         "pointerdown",
-        pauseScroll
+        () => {
+            isPointerInteracting = true;
+            pauseScroll();
+        },
+        listenerOptions
     );
 
 
@@ -323,7 +347,11 @@ export function initializeRecommendationsCarousel() {
     */
     viewport.addEventListener(
         "pointerup",
-        resumeScrollLater
+        () => {
+            isPointerInteracting = false;
+            resumeScrollLater();
+        },
+        listenerOptions
     );
 
 
@@ -332,7 +360,11 @@ export function initializeRecommendationsCarousel() {
     */
     viewport.addEventListener(
         "pointercancel",
-        resumeScrollLater
+        () => {
+            isPointerInteracting = false;
+            resumeScrollLater();
+        },
+        listenerOptions
     );
 
 
@@ -342,11 +374,27 @@ export function initializeRecommendationsCarousel() {
     */
     viewport.addEventListener(
         "pointerleave",
-        () => {
+        (event) => {
+            const wasInteracting =
+                isPointerInteracting;
+
+            isPointerInteracting = false;
+            isHovering = false;
+
             if (!isPaused) return;
 
-            resumeScrollLater();
-        }
+            if (
+                wasInteracting ||
+                event.pointerType !== "mouse"
+            ) {
+                resumeScrollLater();
+            } else {
+                window.clearTimeout(resumeTimer);
+                resumeTimer = null;
+                isPaused = false;
+            }
+        },
+        listenerOptions
     );
 
 
@@ -360,9 +408,25 @@ export function initializeRecommendationsCarousel() {
             resumeScrollLater();
         },
         {
-            passive: true
+            passive: true,
+            signal: listenerController.signal
         }
     );
+
+    if (
+        window.matchMedia(
+            "(hover: hover) and (pointer: fine)"
+        ).matches
+    ) {
+        viewport.addEventListener(
+            "mouseenter",
+            () => {
+                isHovering = true;
+                pauseScroll();
+            },
+            listenerOptions
+        );
+    }
 
 
     /*
@@ -380,7 +444,8 @@ export function initializeRecommendationsCarousel() {
                 );
         },
         {
-            passive: true
+            passive: true,
+            signal: listenerController.signal
         }
     );
 
@@ -402,7 +467,22 @@ export function initializeRecommendationsCarousel() {
                         viewport.scrollLeft
                     );
             }
-        }
+        },
+        listenerOptions
+    );
+
+    window.addEventListener(
+        "resize",
+        () => {
+            window.clearTimeout(resizeTimer);
+
+            resizeTimer = window.setTimeout(() => {
+                if (!destroyed) {
+                    initializeRecommendationsCarousel();
+                }
+            }, 180);
+        },
+        listenerOptions
     );
 
 
@@ -410,25 +490,20 @@ export function initializeRecommendationsCarousel() {
        13. ЗАПУСК ЦИКЛА
        ===================================================== */
 
-    /*
-    На всякий случай отменяем предыдущий кадр,
-    если он каким-то образом уже существовал.
-    */
-    if (animationFrameId !== null) {
-        cancelAnimationFrame(
-            animationFrameId
-        );
-    }
-
-    let carouselStartTimer = null;
-
     function startAutoScrollAfterReveal() {
-        if (animationFrameId !== null) return;
-
-        window.clearTimeout(carouselStartTimer);
+        if (
+            destroyed ||
+            animationFrameId !== null ||
+            carouselStartTimer !== null
+        ) {
+            return;
+        }
 
         carouselStartTimer = window.setTimeout(
-            autoScroll,
+            () => {
+                carouselStartTimer = null;
+                autoScroll();
+            },
             300
         );
     }
@@ -450,8 +525,33 @@ export function initializeRecommendationsCarousel() {
             "revealvisible",
             startAutoScrollAfterReveal,
             {
-                once: true
+                once: true,
+                signal: listenerController.signal
             }
         );
     }
+
+    activeCarouselCleanup = () => {
+        destroyed = true;
+        listenerController.abort();
+
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+
+        window.clearTimeout(resumeTimer);
+        window.clearTimeout(carouselStartTimer);
+        window.clearTimeout(resizeTimer);
+
+        resumeTimer = null;
+        carouselStartTimer = null;
+        resizeTimer = null;
+
+        track
+            .querySelectorAll('[data-clone="true"]')
+            .forEach((clone) => {
+                clone.remove();
+            });
+    };
 }

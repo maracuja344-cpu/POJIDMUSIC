@@ -1,10 +1,15 @@
 import { isPlayableRelease } from "./tracks-utils.js";
 import {
+    getCatalogTrackById,
+    getCatalogTracks,
+    replaceCatalogTrack,
+    sortTracksByReleaseDate
+} from "./catalog-state.js";
+import {
     activateSearchWave,
     getPlaybackContext,
     restartSearchPlaybackQueue
 } from "./playback-context.js";
-import { isMobileDevice } from "./mobile.js";
 
 
 /* =========================================================
@@ -12,23 +17,13 @@ import { isMobileDevice } from "./mobile.js";
    ========================================================= */
 
 /*
-Два объекта Audio по очереди меняются ролями:
-один играет текущий трек, второй готовит следующий.
-Во время crossfade оба объекта звучат одновременно.
+Единственный Audio является источником истины для mini-player,
+fullscreen, очереди и Media Session. CORS-режим задаётся до src,
+чтобы одинаково обрабатывать локальные и подписанные URL.
 */
-const primaryAudio = new Audio();
-const secondaryAudio = new Audio();
-const audioElements = [
-    primaryAudio,
-    secondaryAudio
-];
-
-audioElements.forEach((mediaElement) => {
-    mediaElement.preload = "auto";
-});
-
-let audio = primaryAudio;
-let standbyAudio = secondaryAudio;
+const audio = new Audio();
+audio.crossOrigin = "anonymous";
+audio.preload = "auto";
 
 const FALLBACK_COVER = "img/cover.jpg";
 const FALLBACK_PLAYER_ACCENT = {
@@ -37,22 +32,18 @@ const FALLBACK_PLAYER_ACCENT = {
     blue: 255
 };
 const COVER_COLOR_SAMPLE_SIZE = 32;
-const TRACK_CROSSFADE_DURATION = 3000;
+const SIGNED_URL_REFRESH_LEEWAY_MS = 30 * 1000;
+const TRACK_FADE_OUT_DURATION_MS = 220;
+const TRACK_FADE_IN_DURATION_MS = 360;
 const REPEAT_MODES = [
     "off",
     "all",
     "one"
 ];
-const audioReactionMotionQuery = window.matchMedia(
-    "(prefers-reduced-motion: reduce)"
-);
-
-
 /* Начальная пользовательская громкость: 10% */
 let userVolume = 0.1;
 
 audio.volume = userVolume;
-standbyAudio.volume = 0;
 
 
 
@@ -61,7 +52,7 @@ standbyAudio.volume = 0;
    ========================================================= */
 
 /*
-Текущий объект трека из массива tracks.
+Текущий объект трека из runtime-каталога.
 
 Теперь плеер хранит именно трек,
 а не конкретную карточку на странице.
@@ -99,19 +90,12 @@ let trackSwitchTimer = null;
 let trackSwitchCleanupTimer = null;
 let trackSwitchId = 0;
 let isTrackSwitchPending = false;
+let transitionGain = 1;
+let volumeTransitionFrame = null;
+let volumeTransitionFallbackTimer = null;
+let volumeTransitionResolve = null;
 let fullscreenCloseTimer = null;
 let coverFloatSettleTimer = null;
-let audioContext = null;
-let audioMediaSources = [];
-let audioAnalyser = null;
-let audioFrequencyData = null;
-let audioReactionFrame = null;
-let smoothedBassLevel = 0;
-let audioReactionUnavailable = false;
-let crossfadeTimer = null;
-let crossfadeRequestId = 0;
-let crossfadeState = null;
-let isCrossfadePreparing = false;
 let shuffleEnabled = false;
 let repeatMode = "off";
 let shuffleHistory = [];
@@ -119,6 +103,7 @@ let shuffleHistoryIndex = -1;
 let pendingShuffleHistoryIndex = null;
 let playerAccentRequestId = 0;
 const coverAccentCache = new Map();
+const audioRefreshPromises = new Map();
 
 
 /* =========================================================
@@ -155,7 +140,7 @@ let fullscreenCover;
 let fullscreenCoverNext;
 let fullscreenTitle;
 let fullscreenArtist;
-let fullscreenClose;
+let fullscreenDesktopCollapse;
 let fullscreenToggle;
 let fullscreenPrev;
 let fullscreenNext;
@@ -204,13 +189,13 @@ function formatTime(seconds) {
 Раньше очередь могла строиться из карточек,
 поэтому один и тот же трек повторялся.
 
-Теперь очередь строится напрямую из tracks.js.
+Теперь очередь строится напрямую из объединённого runtime-каталога.
 */
 function getCatalogPlaybackQueue() {
     /*
     Оставляем только полноценные релизы.
     */
-    const releaseTracks = tracks.filter(
+    const releaseTracks = getCatalogTracks().filter(
         isPlayableRelease
     );
 
@@ -222,7 +207,7 @@ function getCatalogPlaybackQueue() {
             return (
                 trackList.findIndex((otherTrack) => {
                     return (
-                        otherTrack.audio === track.audio
+                        otherTrack.catalogId === track.catalogId
                     );
                 }) === index
             );
@@ -233,16 +218,9 @@ function getCatalogPlaybackQueue() {
     Самые новые треки идут первыми.
 
     Создаём копию массива,
-    чтобы не менять исходный tracks.
+    чтобы не менять исходный runtime-каталог.
     */
-    return [...uniqueTracks].sort(
-        (firstTrack, secondTrack) => {
-            return (
-                new Date(secondTrack.releaseDate) -
-                new Date(firstTrack.releaseDate)
-            );
-        }
-    );
+    return sortTracksByReleaseDate(uniqueTracks);
 }
 
 
@@ -271,8 +249,22 @@ function getCurrentTrackIndex(
     if (!currentTrack) return -1;
 
     return playbackQueue.findIndex((track) => {
-        return track.audio === currentTrack.audio;
+        return track.catalogId === currentTrack.catalogId;
     });
+}
+
+function findTrackByCatalogId(catalogId) {
+    const queuedTrack =
+        getPlaybackQueue().find((track) => {
+            return track.catalogId === catalogId;
+        }) || null;
+
+    if (!queuedTrack) return null;
+
+    return (
+        getCatalogTrackById(catalogId) ||
+        queuedTrack
+    );
 }
 
 
@@ -371,7 +363,7 @@ function resetShuffleHistory(
     initialTrack = currentTrack
 ) {
     shuffleHistory = initialTrack
-        ? [initialTrack.audio]
+        ? [initialTrack.catalogId]
         : [];
 
     shuffleHistoryIndex =
@@ -393,7 +385,7 @@ function recordTrackInShuffleHistory(track) {
         pendingShuffleHistoryIndex !== null &&
         shuffleHistory[
             pendingShuffleHistoryIndex
-        ] === track.audio
+        ] === track.catalogId
     ) {
         shuffleHistoryIndex =
             pendingShuffleHistoryIndex;
@@ -407,7 +399,7 @@ function recordTrackInShuffleHistory(track) {
     if (
         shuffleHistory[
             shuffleHistoryIndex
-        ] === track.audio
+        ] === track.catalogId
     ) {
         return;
     }
@@ -417,7 +409,7 @@ function recordTrackInShuffleHistory(track) {
         shuffleHistoryIndex + 1
     );
 
-    shuffleHistory.push(track.audio);
+    shuffleHistory.push(track.catalogId);
     shuffleHistoryIndex =
         shuffleHistory.length - 1;
 }
@@ -541,7 +533,7 @@ function getSequentialSearchTrack(
         );
     }
 
-    const playedAudioPaths = new Set(
+    const playedTrackIds = new Set(
         shuffleHistory
     );
     const currentIndex =
@@ -562,10 +554,10 @@ function getSequentialSearchTrack(
             playbackQueue[targetIndex];
 
         if (
-            candidate.audio !==
-                currentTrack?.audio &&
-            !playedAudioPaths.has(
-                candidate.audio
+            candidate.catalogId !==
+                currentTrack?.catalogId &&
+            !playedTrackIds.has(
+                candidate.catalogId
             )
         ) {
             return candidate;
@@ -611,7 +603,7 @@ function getShuffledTrack(
         historyTargetIndex <
             shuffleHistory.length
     ) {
-        const historyTrack = findTrackByAudio(
+        const historyTrack = findTrackByCatalogId(
             shuffleHistory[
                 historyTargetIndex
             ]
@@ -632,19 +624,19 @@ function getShuffledTrack(
     let candidates = playbackQueue.filter(
         (track) => {
             return (
-                track.audio !== currentTrack.audio
+                track.catalogId !== currentTrack.catalogId
             );
         }
     );
 
     if (isSearchResultQueue) {
-        const playedAudioPaths = new Set(
+        const playedTrackIds = new Set(
             shuffleHistory
         );
 
         candidates = candidates.filter((track) => {
-            return !playedAudioPaths.has(
-                track.audio
+            return !playedTrackIds.has(
+                track.catalogId
             );
         });
 
@@ -657,8 +649,8 @@ function getShuffledTrack(
             candidates = playbackQueue.filter(
                 (track) => {
                     return (
-                        track.audio !==
-                        currentTrack.audio
+                        track.catalogId !==
+                        currentTrack.catalogId
                     );
                 }
             );
@@ -784,12 +776,12 @@ function findOriginalCard(card) {
         return card;
     }
 
-    const audioPath = card.dataset.audio;
+    const catalogId = card.dataset.trackId;
 
     return (
         getTrackCards().find((trackCard) => {
             return (
-                trackCard.dataset.audio === audioPath
+                trackCard.dataset.trackId === catalogId
             );
         }) || card
     );
@@ -806,7 +798,7 @@ function findCardForTrack(track) {
     return (
         getTrackCards().find((card) => {
             return (
-                card.dataset.audio === track.audio
+                card.dataset.trackId === track.catalogId
             );
         }) || null
     );
@@ -829,7 +821,6 @@ function openFullscreenPlayer() {
     }
 
     window.clearTimeout(fullscreenCloseTimer);
-    initializeAudioReaction();
 
     fullscreenPlayer.classList.remove(
         "closing",
@@ -1338,7 +1329,7 @@ async function updatePlayerAccent(
 
     if (
         requestId !== playerAccentRequestId ||
-        currentTrack?.audio !== track?.audio
+        currentTrack?.catalogId !== track?.catalogId
     ) {
         return;
     }
@@ -1479,8 +1470,8 @@ function setPlayingState(isPlaying) {
             )
             .forEach((card) => {
                 if (
-                    card.dataset.audio ===
-                    currentTrack.audio
+                    card.dataset.trackId ===
+                    currentTrack.catalogId
                 ) {
                     card.classList.add("playing");
                 }
@@ -1507,296 +1498,141 @@ function setPlayingState(isPlaying) {
 На устройствах с ограниченными ресурсами оставляем
 спокойное статичное свечение и не запускаем анализ по кадрам.
 */
-function shouldUseStaticAudioReaction() {
-    const deviceMemory =
-        Number(navigator.deviceMemory) || Infinity;
-
-    const processorCount =
-        Number(navigator.hardwareConcurrency) || Infinity;
-
-    return (
-        audioReactionUnavailable ||
-        isMobileDevice() ||
-        audioReactionMotionQuery.matches ||
-        navigator.connection?.saveData === true ||
-        deviceMemory <= 4 ||
-        processorCount <= 2
-    );
-}
-
-
 function applyAudioReactionMode() {
-    const useStaticGlow =
-        shouldUseStaticAudioReaction();
-
     fullscreenPlayer?.classList.toggle(
         "audio-reactive-static",
-        useStaticGlow
+        true
     );
 
-    if (useStaticGlow) {
-        if (audioReactionFrame !== null) {
-            cancelAnimationFrame(audioReactionFrame);
-            audioReactionFrame = null;
-        }
-
-        smoothedBassLevel = 0;
-
-        fullscreenPlayer?.style.removeProperty(
-            "--audio-reactive-level"
-        );
-    }
-
-    return useStaticGlow;
-}
-
-
-function setAudioReactiveLevel(level) {
-    if (!fullscreenPlayer) return;
-
-    const safeLevel =
-        Math.min(Math.max(level, 0), 1);
-
-    fullscreenPlayer.style.setProperty(
-        "--audio-reactive-level",
-        safeLevel.toFixed(3)
-    );
-}
-
-
-/*
-Берём только низкочастотную область примерно 30–180 Гц.
-AnalyserNode уже выполняет первичное сглаживание,
-а ниже добавляется отдельное плавное нарастание и спад.
-*/
-function readBassLevel() {
-    if (
-        !audioAnalyser ||
-        !audioFrequencyData ||
-        !audioContext
-    ) {
-        return 0;
-    }
-
-    audioAnalyser.getByteFrequencyData(
-        audioFrequencyData
+    fullscreenPlayer?.style.removeProperty(
+        "--audio-reactive-level"
     );
 
-    const binWidth =
-        audioContext.sampleRate /
-        audioAnalyser.fftSize;
-
-    const firstBassBin = Math.max(
-        1,
-        Math.floor(30 / binWidth)
-    );
-
-    const lastBassBin = Math.min(
-        audioFrequencyData.length - 1,
-        Math.ceil(180 / binWidth)
-    );
-
-    let bassTotal = 0;
-    let bassBinCount = 0;
-
-    for (
-        let index = firstBassBin;
-        index <= lastBassBin;
-        index++
-    ) {
-        bassTotal += audioFrequencyData[index];
-        bassBinCount++;
-    }
-
-    if (bassBinCount === 0) return 0;
-
-    const rawBass =
-        bassTotal / bassBinCount / 255;
-
-    const noiseFloor = 0.06;
-    const normalizedBass = Math.min(
-        Math.max(
-            (rawBass - noiseFloor) /
-            (1 - noiseFloor),
-            0
-        ),
-        1
-    );
-
-    return Math.pow(normalizedBass, 0.78);
-}
-
-
-function updateAudioReaction() {
-    audioReactionFrame = null;
-
-    if (applyAudioReactionMode()) {
-        return;
-    }
-
-    const fullscreenIsActive =
-        fullscreenPlayer?.classList.contains("open") &&
-        !fullscreenPlayer?.classList.contains("closing");
-
-    const canReadAudio =
-        fullscreenIsActive &&
-        !audio.paused &&
-        !audio.ended &&
-        audioContext?.state === "running";
-
-    const targetBassLevel =
-        canReadAudio ? readBassLevel() : 0;
-
-    const smoothing =
-        targetBassLevel > smoothedBassLevel
-            ? 0.16
-            : 0.055;
-
-    smoothedBassLevel +=
-        (
-            targetBassLevel -
-            smoothedBassLevel
-        ) * smoothing;
-
-    if (
-        targetBassLevel === 0 &&
-        smoothedBassLevel < 0.002
-    ) {
-        smoothedBassLevel = 0;
-    }
-
-    setAudioReactiveLevel(smoothedBassLevel);
-
-    if (canReadAudio || smoothedBassLevel > 0) {
-        audioReactionFrame = requestAnimationFrame(
-            updateAudioReaction
-        );
-    }
+    return true;
 }
 
 
 function startAudioReactionLoop() {
-    if (
-        applyAudioReactionMode() ||
-        !audioAnalyser ||
-        audioReactionFrame !== null
-    ) {
-        return;
-    }
-
-    audioReactionFrame = requestAnimationFrame(
-        updateAudioReaction
-    );
+    applyAudioReactionMode();
 }
 
 
 function stopAudioReactionLoop() {
-    if (audioReactionFrame !== null) {
-        cancelAnimationFrame(audioReactionFrame);
-        audioReactionFrame = null;
-    }
-
-    smoothedBassLevel = 0;
-
-    if (shouldUseStaticAudioReaction()) {
-        fullscreenPlayer?.style.removeProperty(
-            "--audio-reactive-level"
-        );
-    } else {
-        setAudioReactiveLevel(0);
-    }
+    applyAudioReactionMode();
 }
 
 
-/*
-Контекст и оба MediaElementSource создаются только здесь
-и повторно не создаются при смене src объектов Audio.
-*/
-function initializeAudioReaction() {
+async function ensurePlayableTrackAudio(track) {
+    const latestTrack =
+        getCatalogTrackById(track?.catalogId) || track;
+
+    if (latestTrack?.source !== "supabase") {
+        return latestTrack;
+    }
+
+    const expiresAt =
+        Number(latestTrack.audioExpiresAt) || 0;
+
     if (
-        applyAudioReactionMode() ||
-        audioReactionUnavailable
+        latestTrack.audio &&
+        expiresAt >
+            Date.now() + SIGNED_URL_REFRESH_LEEWAY_MS
     ) {
-        return;
+        return latestTrack;
     }
 
-    if (!audioContext) {
-        const AudioContextClass =
-            window.AudioContext ||
-            window.webkitAudioContext;
+    let refreshPromise =
+        audioRefreshPromises.get(latestTrack.catalogId);
 
-        if (!AudioContextClass) {
-            audioReactionUnavailable = true;
-            applyAudioReactionMode();
-            return;
-        }
+    if (!refreshPromise) {
+        refreshPromise = import("./tracks-api.js")
+            .then(({ refreshSupabaseTrackAudio }) => {
+                return refreshSupabaseTrackAudio(latestTrack);
+            })
+            .then((refreshedTrack) => {
+                replaceCatalogTrack(refreshedTrack);
+                return refreshedTrack;
+            })
+            .finally(() => {
+                audioRefreshPromises.delete(
+                    latestTrack.catalogId
+                );
+            });
 
-        try {
-            audioContext = new AudioContextClass();
-            audioAnalyser =
-                audioContext.createAnalyser();
-
-            audioAnalyser.fftSize = 512;
-            audioAnalyser.smoothingTimeConstant = 0.82;
-
-            audioFrequencyData = new Uint8Array(
-                audioAnalyser.frequencyBinCount
-            );
-
-            audioMediaSources = audioElements.map(
-                (mediaElement) => {
-                    const mediaSource =
-                        audioContext
-                            .createMediaElementSource(
-                                mediaElement
-                            );
-
-                    mediaSource.connect(audioAnalyser);
-                    return mediaSource;
-                }
-            );
-
-            audioAnalyser.connect(
-                audioContext.destination
-            );
-        } catch (error) {
-            audioReactionUnavailable = true;
-            applyAudioReactionMode();
-
-            console.warn(
-                "Аудиореактивное свечение недоступно:",
-                error
-            );
-
-            return;
-        }
+        audioRefreshPromises.set(
+            latestTrack.catalogId,
+            refreshPromise
+        );
     }
 
-    resumeAudioReactionContext();
-    startAudioReactionLoop();
+    return refreshPromise;
 }
 
-
-function resumeAudioReactionContext() {
-    if (!audioContext) {
-        return Promise.resolve();
+function assignAudioSource(
+    track,
+    {
+        preserveCurrentTime = false
+    } = {}
+) {
+    if (
+        !track?.audio ||
+        audio.getAttribute("src") === track.audio
+    ) {
+        return false;
     }
 
-    if (audioContext.state !== "suspended") {
-        startAudioReactionLoop();
-        return Promise.resolve();
+    const previousTime =
+        preserveCurrentTime &&
+        Number.isFinite(audio.currentTime)
+            ? audio.currentTime
+            : 0;
+
+    audio.src = track.audio;
+    audio.load();
+
+    if (previousTime > 0) {
+        audio.addEventListener(
+            "loadedmetadata",
+            () => {
+                if (Number.isFinite(audio.duration)) {
+                    audio.currentTime = Math.min(
+                        previousTime,
+                        audio.duration
+                    );
+                }
+            },
+            { once: true }
+        );
     }
 
-    return audioContext.resume()
-        .then(() => {
-            startAudioReactionLoop();
-        })
-        .catch((error) => {
-            console.warn(
-                "Не удалось возобновить AudioContext:",
-                error
-            );
-        });
+    return true;
+}
+
+function showPlaybackError() {
+    const message = "Не удалось воспроизвести трек";
+
+    setPlayingState(false);
+    settleFullscreenCoverFloat();
+
+    if (playerArtist) {
+        playerArtist.textContent = message;
+    }
+
+    if (fullscreenArtist) {
+        fullscreenArtist.textContent = message;
+    }
+}
+
+function clearPlaybackError() {
+    if (!currentTrack) return;
+
+    if (playerArtist) {
+        playerArtist.textContent = currentTrack.artist;
+    }
+
+    if (fullscreenArtist) {
+        fullscreenArtist.textContent = currentTrack.artist;
+    }
 }
 
 
@@ -1808,35 +1644,60 @@ function resumeAudioReactionContext() {
 Пытается запустить текущий аудиофайл.
 */
 async function startAudio(
-    expectedAudio = currentTrack?.audio
+    expectedCatalogId = currentTrack?.catalogId
 ) {
     const targetAudio = audio;
 
-    applyPlaybackVolume();
-
-    const audioContextResume =
-        resumeAudioReactionContext();
-
     try {
-        await targetAudio.play();
+        const playableTrack =
+            await ensurePlayableTrackAudio(currentTrack);
 
         if (
-            targetAudio !== audio ||
-            (
-                expectedAudio &&
-                targetAudio.getAttribute("src") !==
-                    expectedAudio
-            )
+            !playableTrack ||
+            currentTrack?.catalogId !==
+                expectedCatalogId
         ) {
             return;
         }
 
-        setPlayingState(true);
-        await audioContextResume;
-    } catch (error) {
+        if (playableTrack !== currentTrack) {
+            currentTrack = playableTrack;
+            assignAudioSource(playableTrack, {
+                preserveCurrentTime: true
+            });
+        }
+
+        applyPlaybackVolume();
+
+        await targetAudio.play();
+
+        if (
+            targetAudio !== audio ||
+            currentTrack?.catalogId !==
+                expectedCatalogId
+        ) {
+            return;
+        }
+    } catch {
+        if (
+            currentTrack?.catalogId !==
+                expectedCatalogId
+        ) {
+            return;
+        }
+
+        cancelVolumeTransition({
+            restoreGain: true
+        });
+        showPlaybackError();
         console.error(
             "Не удалось запустить аудио:",
-            error
+            {
+                catalogId:
+                    currentTrack?.catalogId ?? null,
+                source:
+                    currentTrack?.source ?? null
+            }
         );
     }
 }
@@ -1854,9 +1715,18 @@ function savePlayerState() {
     if (!currentTrack) return;
 
     localStorage.setItem(
-        "player-track",
-        currentTrack.audio
+        "player-track-id",
+        currentTrack.catalogId
     );
+
+    if (currentTrack.source === "local") {
+        localStorage.setItem(
+            "player-track",
+            currentTrack.audio
+        );
+    } else {
+        localStorage.removeItem("player-track");
+    }
 
     localStorage.setItem(
         "player-time",
@@ -1871,27 +1741,134 @@ function savePlayerState() {
 
 
 /*
-Фактическая громкость равна пользовательскому уровню,
-умноженному на временную огибающую плавного перехода.
+Оба интерфейса управляют громкостью единственного Audio.
 */
 function applyPlaybackVolume() {
-    if (crossfadeState) {
-        const angle =
-            crossfadeState.progress * Math.PI / 2;
-
-        crossfadeState.incoming.volume =
-            userVolume * Math.sin(angle);
-
-        crossfadeState.outgoing.volume =
-            userVolume * Math.cos(angle);
-
-        return;
-    }
-
-    audio.volume = userVolume;
-    standbyAudio.volume = 0;
+    audio.volume = Math.min(
+        Math.max(userVolume * transitionGain, 0),
+        1
+    );
 }
 
+
+function cancelVolumeTransition({
+    restoreGain = false
+} = {}) {
+    if (volumeTransitionFrame !== null) {
+        cancelAnimationFrame(volumeTransitionFrame);
+        volumeTransitionFrame = null;
+    }
+
+    window.clearTimeout(volumeTransitionFallbackTimer);
+    volumeTransitionFallbackTimer = null;
+
+    const resolveTransition = volumeTransitionResolve;
+    volumeTransitionResolve = null;
+    resolveTransition?.(false);
+
+    if (restoreGain) {
+        transitionGain = 1;
+        applyPlaybackVolume();
+    }
+}
+
+
+function animateTransitionGain(
+    targetGain,
+    duration,
+    expectedSwitchId
+) {
+    cancelVolumeTransition();
+
+    const safeTarget = Math.min(
+        Math.max(targetGain, 0),
+        1
+    );
+    const startGain = transitionGain;
+
+    if (duration <= 0 || startGain === safeTarget) {
+        transitionGain = safeTarget;
+        applyPlaybackVolume();
+        return Promise.resolve(
+            expectedSwitchId === trackSwitchId
+        );
+    }
+
+    const startTime = performance.now();
+
+    return new Promise((resolve) => {
+        volumeTransitionResolve = resolve;
+
+        function updateGain(now) {
+            if (expectedSwitchId !== trackSwitchId) {
+                volumeTransitionFrame = null;
+                window.clearTimeout(
+                    volumeTransitionFallbackTimer
+                );
+                volumeTransitionFallbackTimer = null;
+                volumeTransitionResolve = null;
+                resolve(false);
+                return;
+            }
+
+            const progress = Math.min(
+                (now - startTime) / duration,
+                1
+            );
+            const easedProgress =
+                progress * progress * (3 - 2 * progress);
+
+            transitionGain =
+                startGain +
+                (safeTarget - startGain) *
+                    easedProgress;
+            applyPlaybackVolume();
+
+            if (progress < 1) {
+                volumeTransitionFrame =
+                    requestAnimationFrame(updateGain);
+                return;
+            }
+
+            volumeTransitionFrame = null;
+            window.clearTimeout(
+                volumeTransitionFallbackTimer
+            );
+            volumeTransitionFallbackTimer = null;
+            volumeTransitionResolve = null;
+            resolve(true);
+        }
+
+        volumeTransitionFrame =
+            requestAnimationFrame(updateGain);
+
+        /*
+        Background tabs and some embedded WebViews can suspend RAF.
+        The fallback completes the same transition without leaving
+        track switching permanently pending.
+        */
+        volumeTransitionFallbackTimer =
+            window.setTimeout(() => {
+                if (expectedSwitchId !== trackSwitchId) {
+                    cancelVolumeTransition();
+                    return;
+                }
+
+                if (volumeTransitionFrame !== null) {
+                    cancelAnimationFrame(
+                        volumeTransitionFrame
+                    );
+                    volumeTransitionFrame = null;
+                }
+
+                volumeTransitionFallbackTimer = null;
+                volumeTransitionResolve = null;
+                transitionGain = safeTarget;
+                applyPlaybackVolume();
+                resolve(true);
+            }, duration + 80);
+    });
+}
 
 /*
 Обновляет визуальное заполнение громкости.
@@ -1937,327 +1914,16 @@ function updateVolumeFromSlider(event) {
 }
 
 
-function clearCrossfadeTimer() {
-    if (crossfadeTimer === null) return;
-
-    window.clearTimeout(crossfadeTimer);
-    crossfadeTimer = null;
-}
-
-
-function resetStandbyAudio(
-    mediaElement = standbyAudio
-) {
-    mediaElement.pause();
-    mediaElement.removeAttribute("src");
-    mediaElement.load();
-    mediaElement.volume = 0;
-}
-
-
-function finishCrossfadeImmediately() {
-    if (!crossfadeState) return;
-
-    clearCrossfadeTimer();
-
-    const oldAudio = crossfadeState.outgoing;
-
-    crossfadeState = null;
-    audio.volume = userVolume;
-
-    oldAudio.pause();
-    resetStandbyAudio(oldAudio);
-    standbyAudio = oldAudio;
-}
-
-
-function cancelCrossfadePreparation() {
-    if (!isCrossfadePreparing) return;
-
-    crossfadeRequestId++;
-    isCrossfadePreparing = false;
-    resetStandbyAudio();
-}
-
-
-function updateCrossfade() {
-    crossfadeTimer = null;
-
-    if (!crossfadeState || crossfadeState.paused) {
-        return;
-    }
-
-    const elapsed =
-        performance.now() - crossfadeState.startedAt;
-
-    crossfadeState.elapsed = Math.min(
-        elapsed,
-        TRACK_CROSSFADE_DURATION
-    );
-
-    crossfadeState.progress =
-        crossfadeState.elapsed /
-        TRACK_CROSSFADE_DURATION;
-
-    applyPlaybackVolume();
-
-    if (crossfadeState.progress >= 1) {
-        finishCrossfadeImmediately();
-        savePlayerState();
-        return;
-    }
-
-    crossfadeTimer = window.setTimeout(
-        updateCrossfade,
-        32
-    );
-}
-
-
-function prepareAudioForTrack(
-    mediaElement,
-    track,
-    requestId
-) {
-    return new Promise((resolve, reject) => {
-        let timeoutId = null;
-
-        function cleanup() {
-            window.clearTimeout(timeoutId);
-
-            mediaElement.removeEventListener(
-                "canplay",
-                handleCanPlay
-            );
-
-            mediaElement.removeEventListener(
-                "error",
-                handleError
-            );
-        }
-
-        function handleCanPlay() {
-            cleanup();
-
-            if (requestId !== crossfadeRequestId) {
-                reject(new DOMException(
-                    "Crossfade cancelled",
-                    "AbortError"
-                ));
-                return;
-            }
-
-            resolve();
-        }
-
-        function handleError() {
-            cleanup();
-            reject(
-                mediaElement.error ||
-                new Error("Track loading failed")
-            );
-        }
-
-        mediaElement.pause();
-        mediaElement.volume = 0;
-        mediaElement.src = track.audio;
-        mediaElement.currentTime = 0;
-
-        mediaElement.addEventListener(
-            "canplay",
-            handleCanPlay
-        );
-
-        mediaElement.addEventListener(
-            "error",
-            handleError
-        );
-
-        timeoutId = window.setTimeout(
-            () => {
-                cleanup();
-                reject(new Error("Track loading timed out"));
-            },
-            10000
-        );
-
-        mediaElement.load();
-
-        if (
-            mediaElement.readyState >=
-            HTMLMediaElement.HAVE_FUTURE_DATA
-        ) {
-            handleCanPlay();
-        }
-    });
-}
-
-
-async function startTrackCrossfade(
-    track,
-    sourceCard = null
-) {
-    if (!track || !track.audio) return;
-
-    if (crossfadeState) {
-        finishCrossfadeImmediately();
-    }
-
-    if (isCrossfadePreparing) {
-        cancelCrossfadePreparation();
-    }
-
-    const outgoing = audio;
-    const incoming = standbyAudio;
-    const requestId = ++crossfadeRequestId;
-
-    isCrossfadePreparing = true;
-
-    try {
-        await prepareAudioForTrack(
-            incoming,
-            track,
-            requestId
-        );
-
-        if (
-            requestId !== crossfadeRequestId ||
-            !isCrossfadePreparing
-        ) {
-            return;
-        }
-
-        await resumeAudioReactionContext();
-        await incoming.play();
-
-        if (
-            requestId !== crossfadeRequestId ||
-            !isCrossfadePreparing
-        ) {
-            incoming.pause();
-            resetStandbyAudio(incoming);
-            return;
-        }
-    } catch (error) {
-        if (requestId !== crossfadeRequestId) {
-            return;
-        }
-
-        isCrossfadePreparing = false;
-        pendingShuffleHistoryIndex = null;
-        resetStandbyAudio(incoming);
-
-        if (outgoing.ended) {
-            setPlayingState(false);
-            settleFullscreenCoverFloat();
-            savePlayerState();
-        }
-
-        console.error(
-            "Не удалось подготовить следующий трек:",
-            error
-        );
-
-        return;
-    }
-
-    isCrossfadePreparing = false;
-
-    audio = incoming;
-    standbyAudio = outgoing;
-
-    crossfadeState = {
-        incoming,
-        outgoing,
-        progress: 0,
-        elapsed: 0,
-        startedAt: performance.now(),
-        paused: false
-    };
-
-    applyPlaybackVolume();
-    resetPlayerProgress();
-
-    playTrack(
-        track,
-        sourceCard,
-        {
-            reuseAudio: true,
-            startPlayback: false
-        }
-    );
-
-    setPlayingState(true);
-    startFullscreenCoverFloat();
-    startAudioReactionLoop();
-    updateCrossfade();
-}
-
-
 function pausePlayback() {
-    if (isCrossfadePreparing) {
-        cancelCrossfadePreparation();
-    }
-
-    if (crossfadeState) {
-        clearCrossfadeTimer();
-
-        crossfadeState.elapsed = Math.min(
-            performance.now() -
-                crossfadeState.startedAt,
-            TRACK_CROSSFADE_DURATION
-        );
-
-        crossfadeState.paused = true;
-        crossfadeState.incoming.pause();
-        crossfadeState.outgoing.pause();
-        return;
-    }
-
+    cancelVolumeTransition({
+        restoreGain: true
+    });
     audio.pause();
 }
 
 
 async function resumePlayback() {
-    if (!crossfadeState) {
-        startAudio();
-        return;
-    }
-
-    const state = crossfadeState;
-    const incomingPlay = state.incoming.play();
-    const outgoingPlay =
-        state.outgoing.ended
-            ? Promise.resolve()
-            : state.outgoing.play();
-
-    await Promise.allSettled([
-        incomingPlay,
-        outgoingPlay,
-        resumeAudioReactionContext()
-    ]);
-
-    if (
-        crossfadeState !== state
-    ) {
-        return;
-    }
-
-    if (state.incoming.paused) {
-        state.outgoing.pause();
-        state.paused = true;
-        setPlayingState(false);
-        settleFullscreenCoverFloat();
-        return;
-    }
-
-    state.paused = false;
-    state.startedAt =
-        performance.now() - state.elapsed;
-
-    setPlayingState(true);
-    startFullscreenCoverFloat();
-    updateCrossfade();
+    await startAudio();
 }
 
 
@@ -2613,7 +2279,7 @@ function updateFullscreenCover(
 
     /*
     Фиксируем скрытое, но уже готовое состояние второго слоя.
-    После этого opacity может безопасно запустить crossfade.
+    После этого opacity может безопасно завершить визуальную смену.
     */
     void fullscreenCoverNext.offsetWidth;
 
@@ -2675,24 +2341,23 @@ function updateFullscreenCover(
 
 async function playTrack(
     track,
-    sourceCard = null,
-    {
-        reuseAudio = false,
-        startPlayback = true
-    } = {}
+    sourceCard = null
 ) {
-    if (!track || !track.audio) return;
+    if (!track) return;
+
+    track =
+        getCatalogTrackById(track.catalogId) ||
+        track;
 
     const card =
         findOriginalCard(sourceCard) ||
         findCardForTrack(track);
 
     const isCurrentTrack =
-        currentTrack &&
-        currentTrack.audio === track.audio;
+        currentTrack?.catalogId === track.catalogId;
 
 
-    if (isCurrentTrack && !reuseAudio) {
+    if (isCurrentTrack) {
         if (isTrackSwitchPending) return;
 
         currentCard = card;
@@ -2714,6 +2379,59 @@ async function playTrack(
 
     const currentSwitchId = ++trackSwitchId;
     isTrackSwitchPending = true;
+    cancelVolumeTransition({
+        restoreGain: true
+    });
+
+    let cover;
+
+    try {
+        track = await ensurePlayableTrackAudio(track);
+        cover = await getPreloadedCover(track);
+    } catch {
+        if (currentSwitchId === trackSwitchId) {
+            isTrackSwitchPending = false;
+            showPlaybackError();
+        }
+
+        console.error(
+            "Не удалось подготовить аудио:",
+            {
+                catalogId: track.catalogId,
+                source: track.source
+            }
+        );
+        return;
+    }
+
+    if (currentSwitchId !== trackSwitchId) {
+        return;
+    }
+
+    const shouldFadeOut =
+        Boolean(currentTrack) &&
+        !audio.paused &&
+        !audio.ended;
+
+    if (shouldFadeOut) {
+        const fadeCompleted =
+            await animateTransitionGain(
+                0,
+                TRACK_FADE_OUT_DURATION_MS,
+                currentSwitchId
+            );
+
+        if (!fadeCompleted) {
+            return;
+        }
+    } else {
+        transitionGain = 0;
+        applyPlaybackVolume();
+    }
+
+    if (currentSwitchId !== trackSwitchId) {
+        return;
+    }
 
     window.clearTimeout(trackSwitchTimer);
     window.clearTimeout(trackSwitchCleanupTimer);
@@ -2735,12 +2453,7 @@ async function playTrack(
     Аудиофайл начинает загружаться сразу, но play()
     вызывается только после актуальной визуальной смены.
     */
-    if (!reuseAudio) {
-        audio.src = track.audio;
-        audio.load();
-    }
-
-    const cover = await getPreloadedCover(track);
+    assignAudioSource(track);
 
     if (currentSwitchId !== trackSwitchId) {
         return;
@@ -2771,9 +2484,7 @@ async function playTrack(
             }
         );
 
-        if (!reuseAudio) {
-            resetPlayerProgress();
-        }
+        resetPlayerProgress();
 
         const duration = formatTime(audio.duration);
 
@@ -2786,9 +2497,7 @@ async function playTrack(
 
         savePlayerState();
 
-        if (startPlayback) {
-            startAudio(track.audio);
-        }
+        startAudio(track.catalogId);
     }
 
     if (
@@ -2839,16 +2548,16 @@ function playCard(selectedCard) {
 
     if (!card) return;
 
-    const audioPath = card.dataset.audio;
+    const catalogId = card.dataset.trackId;
 
-    if (!audioPath) return;
+    if (!catalogId) return;
 
-    const track = findTrackByAudio(audioPath);
+    const track = findTrackByCatalogId(catalogId);
 
     if (!track) {
         console.error(
             "Трек не найден в очереди:",
-            audioPath
+            catalogId
         );
 
         return;
@@ -2856,15 +2565,7 @@ function playCard(selectedCard) {
 
     pendingShuffleHistoryIndex = null;
 
-    if (
-        !currentTrack ||
-        currentTrack.audio === track.audio
-    ) {
-        playTrack(track, card);
-        return;
-    }
-
-    startTrackCrossfade(track, card);
+    playTrack(track, card);
 }
 
 
@@ -2872,11 +2573,7 @@ function playCard(selectedCard) {
    14. СЛЕДУЮЩИЙ ТРЕК
    ========================================================= */
 
-function playNextTrack(
-    {
-        crossfade = false
-    } = {}
-) {
+function playNextTrack() {
     const nextTrack =
         getTrackForNavigation(1);
 
@@ -2889,11 +2586,6 @@ function playNextTrack(
         return;
     }
 
-    if (crossfade && currentTrack) {
-        startTrackCrossfade(nextTrack);
-        return;
-    }
-
     playTrack(nextTrack);
 }
 
@@ -2902,20 +2594,11 @@ function playNextTrack(
    15. ПРЕДЫДУЩИЙ ТРЕК
    ========================================================= */
 
-function playPreviousTrack(
-    {
-        crossfade = false
-    } = {}
-) {
+function playPreviousTrack() {
     const previousTrack =
         getTrackForNavigation(-1);
 
     if (!previousTrack) return;
-
-    if (crossfade && currentTrack) {
-        startTrackCrossfade(previousTrack);
-        return;
-    }
 
     playTrack(previousTrack);
 }
@@ -2982,6 +2665,9 @@ function seekFullscreenAudio(event) {
 function restorePlayerState() {
     restorePlaybackModes();
 
+    const savedTrackId =
+        localStorage.getItem("player-track-id");
+
     const savedTrack =
         localStorage.getItem("player-track");
 
@@ -3012,10 +2698,18 @@ function restorePlayerState() {
     applyPlaybackVolume();
     updateVolumeVisual();
 
-    if (!savedTrack) return;
+    if (!savedTrackId && !savedTrack) return;
 
     const savedTrackObject =
-        findTrackByAudio(savedTrack);
+        (
+            savedTrackId
+                ? findTrackByCatalogId(savedTrackId)
+                : null
+        ) || (
+            savedTrack
+                ? findTrackByAudio(savedTrack)
+                : null
+        );
 
     if (!savedTrackObject) return;
 
@@ -3026,7 +2720,7 @@ function restorePlayerState() {
     currentCard = savedCard;
     resetShuffleHistory();
 
-    audio.src = savedTrackObject.audio;
+    assignAudioSource(savedTrackObject);
 
     updatePlayerInformation(
         savedTrackObject,
@@ -3038,18 +2732,18 @@ function restorePlayerState() {
     сохранённую позицию.
     */
     const restoredAudio = audio;
-    const restoredTrackPath =
-        savedTrackObject.audio;
+    const restoredTrackId =
+        savedTrackObject.catalogId;
 
     restoredAudio.addEventListener(
         "loadedmetadata",
         (event) => {
             if (
                 event.currentTarget !== restoredAudio ||
-                currentTrack?.audio !==
-                    restoredTrackPath ||
+                currentTrack?.catalogId !==
+                    restoredTrackId ||
                 restoredAudio.getAttribute("src") !==
-                    restoredTrackPath
+                    savedTrackObject.audio
             ) {
                 return;
             }
@@ -3175,9 +2869,9 @@ fullscreenCoverNext =
             ".fullscreen-player-artist"
         );
 
-    fullscreenClose =
+    fullscreenDesktopCollapse =
         document.querySelector(
-            ".fullscreen-player-close"
+            ".fullscreen-player-desktop-collapse"
         );
 
     fullscreenToggle =
@@ -3257,24 +2951,6 @@ fullscreenCoverNext =
             resetShuffleHistory();
         }
     );
-
-    audioReactionMotionQuery.addEventListener(
-        "change",
-        () => {
-            const useStaticGlow =
-                applyAudioReactionMode();
-
-            if (
-                !useStaticGlow &&
-                fullscreenPlayer?.classList.contains(
-                    "open"
-                )
-            ) {
-                initializeAudioReaction();
-            }
-        }
-    );
-
 
     /* =========================================================
        DRAG-TO-CLOSE ЧЕРЕЗ POINTER EVENTS
@@ -3590,14 +3266,10 @@ fullscreenCoverNext =
     );
 
 
-    /*
-    Стрелка сверху закрывает экран.
-    */
-    fullscreenClose?.addEventListener(
+    fullscreenDesktopCollapse?.addEventListener(
         "click",
         (event) => {
             event.stopPropagation();
-
             closeFullscreenPlayer();
         }
     );
@@ -3706,9 +3378,7 @@ fullscreenCoverNext =
         (event) => {
             event.stopPropagation();
 
-            playNextTrack({
-                crossfade: true
-            });
+            playNextTrack();
         }
     );
 
@@ -3718,9 +3388,7 @@ fullscreenCoverNext =
         (event) => {
             event.stopPropagation();
 
-            playNextTrack({
-                crossfade: true
-            });
+            playNextTrack();
         }
     );
 
@@ -3734,9 +3402,7 @@ fullscreenCoverNext =
         (event) => {
             event.stopPropagation();
 
-            playPreviousTrack({
-                crossfade: true
-            });
+            playPreviousTrack();
         }
     );
 
@@ -3746,9 +3412,7 @@ fullscreenCoverNext =
         (event) => {
             event.stopPropagation();
 
-            playPreviousTrack({
-                crossfade: true
-            });
+            playPreviousTrack();
         }
     );
 
@@ -3850,9 +3514,6 @@ fullscreenCoverNext =
         (event) => {
             event.preventDefault();
 
-            finishCrossfadeImmediately();
-            cancelCrossfadePreparation();
-
             isSeeking = true;
             playerProgress.classList.add("is-seeking");
 
@@ -3911,9 +3572,6 @@ fullscreenCoverNext =
         "pointerdown",
         (event) => {
             event.preventDefault();
-
-            finishCrossfadeImmediately();
-            cancelCrossfadePreparation();
 
             isSeeking = true;
             fullscreenProgress.classList.add(
@@ -3975,33 +3633,45 @@ fullscreenCoverNext =
        СОБЫТИЯ AUDIO
        ===================================================== */
 
-    audioElements.forEach((mediaElement) => {
-        mediaElement.addEventListener(
-            "play",
-            (event) => {
-                if (event.currentTarget !== audio) {
-                    return;
-                }
+    audio.addEventListener("play", () => {
+        startAudioReactionLoop();
+    });
 
-                setPlayingState(true);
-                startFullscreenCoverFloat();
-                resumeAudioReactionContext();
-                startAudioReactionLoop();
-            }
-        );
+    audio.addEventListener("playing", () => {
+        clearPlaybackError();
+        setPlayingState(true);
+        startFullscreenCoverFloat();
 
-        mediaElement.addEventListener(
-            "pause",
-            (event) => {
-                if (event.currentTarget !== audio) {
-                    return;
-                }
+        if (transitionGain < 1) {
+            void animateTransitionGain(
+                1,
+                TRACK_FADE_IN_DURATION_MS,
+                trackSwitchId
+            );
+        }
+    });
 
-                setPlayingState(false);
+    audio.addEventListener("pause", () => {
+        setPlayingState(false);
+        savePlayerState();
+        settleFullscreenCoverFloat();
+        startAudioReactionLoop();
+    });
 
-                savePlayerState();
-                settleFullscreenCoverFloat();
-                startAudioReactionLoop();
+    audio.addEventListener("error", () => {
+        cancelVolumeTransition({
+            restoreGain: true
+        });
+        showPlaybackError();
+        console.error(
+            "Ошибка аудиопотока:",
+            {
+                catalogId:
+                    currentTrack?.catalogId ?? null,
+                source:
+                    currentTrack?.source ?? null,
+                mediaErrorCode:
+                    audio.error?.code ?? null
             }
         );
     });
@@ -4010,149 +3680,85 @@ fullscreenCoverNext =
     /*
     После завершения включается следующий трек.
     */
-    audioElements.forEach((mediaElement) => {
-        mediaElement.addEventListener(
-            "ended",
-            (event) => {
-                if (event.currentTarget !== audio) {
-                    return;
-                }
-
-                if (isCrossfadePreparing) {
-                    return;
-                }
-
-                if (crossfadeState) {
-                    finishCrossfadeImmediately();
-                }
-
-                playNextTrack({
-                    crossfade: true
-                });
-
-                settleFullscreenCoverFloat();
-                startAudioReactionLoop();
-            }
-        );
+    audio.addEventListener("ended", () => {
+        playNextTrack();
+        settleFullscreenCoverFloat();
+        startAudioReactionLoop();
     });
 
 
     /*
     Показываем длительность после загрузки файла.
     */
-    audioElements.forEach((mediaElement) => {
-        mediaElement.addEventListener(
-            "loadedmetadata",
-            (event) => {
-                if (event.currentTarget !== audio) {
-                    return;
-                }
+    audio.addEventListener("loadedmetadata", () => {
+        const duration = formatTime(audio.duration);
 
-            const duration =
-                formatTime(audio.duration);
+        durationTimeElement.textContent = duration;
 
-            durationTimeElement.textContent =
-                duration;
-
-            if (fullscreenDurationTime) {
-                fullscreenDurationTime.textContent =
-                    duration;
-            }
-            }
-        );
+        if (fullscreenDurationTime) {
+            fullscreenDurationTime.textContent = duration;
+        }
     });
 
 
     /*
     Обновляем прогресс и текущее время.
     */
-    audioElements.forEach((mediaElement) => {
-        mediaElement.addEventListener(
-            "timeupdate",
-            (event) => {
-                if (event.currentTarget !== audio) {
-                    return;
-                }
+    audio.addEventListener("timeupdate", () => {
+        if (!Number.isFinite(audio.duration)) {
+            return;
+        }
 
-            if (
-                !Number.isFinite(audio.duration)
-            ) {
-                return;
-            }
+        const progress =
+            (
+                audio.currentTime /
+                audio.duration
+            ) * 100;
 
-            const progress =
-                (
-                    audio.currentTime /
-                    audio.duration
-                ) * 100;
+        playerProgressFill.style.width =
+            `${progress}%`;
 
-            playerProgressFill.style.width =
-                `${progress}%`;
+        playerProgress.style.setProperty(
+            "--progress",
+            `${progress}%`
+        );
 
-            playerProgress.style.setProperty(
-                "--progress",
-                `${progress}%`
-            );
-
-            currentTimeElement.textContent =
-                formatTime(audio.currentTime);
+        currentTimeElement.textContent =
+            formatTime(audio.currentTime);
 
             /*
             Обновляем большой плеер.
             */
-            if (fullscreenProgressFill) {
-                fullscreenProgressFill.style.width =
-                    `${progress}%`;
-            }
+        if (fullscreenProgressFill) {
+            fullscreenProgressFill.style.width =
+                `${progress}%`;
+        }
 
-            fullscreenProgress?.style.setProperty(
-                "--progress",
-                `${progress}%`
-            );
+        fullscreenProgress?.style.setProperty(
+            "--progress",
+            `${progress}%`
+        );
 
-            if (fullscreenCurrentTime) {
-                fullscreenCurrentTime.textContent =
-                    formatTime(audio.currentTime);
-            }
+        if (fullscreenCurrentTime) {
+            fullscreenCurrentTime.textContent =
+                formatTime(audio.currentTime);
+        }
 
-            const remainingTime =
-                audio.duration - audio.currentTime;
-
-            /*
-            Запускаем единственный автоматический переход
-            примерно за три секунды до конца.
-            */
-            if (
-                remainingTime > 0 &&
-                remainingTime <=
-                    TRACK_CROSSFADE_DURATION / 1000 &&
-                !audio.paused &&
-                !isSeeking &&
-                !crossfadeState &&
-                !isCrossfadePreparing
-            ) {
-                playNextTrack({
-                    crossfade: true
-                });
-            }
-
-            const currentSecond =
-                Math.floor(audio.currentTime);
+        const currentSecond =
+            Math.floor(audio.currentTime);
 
             /*
             Сохраняем позицию каждые пять секунд.
             */
-            if (
-                currentSecond % 5 === 0 &&
-                currentSecond !== lastSavedSecond
-            ) {
-                lastSavedSecond =
-                    currentSecond;
+        if (
+            currentSecond % 5 === 0 &&
+            currentSecond !== lastSavedSecond
+        ) {
+            lastSavedSecond =
+                currentSecond;
 
-                savePlayerState();
-            }
-            }
-        );
+            savePlayerState();
+        }
     });
 
 
@@ -4161,7 +3767,6 @@ fullscreenCoverNext =
        ===================================================== */
 
     restorePlayerState();
-
 
 }
 

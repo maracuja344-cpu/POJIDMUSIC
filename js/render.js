@@ -1,8 +1,26 @@
 import { isPlayableRelease } from "./tracks-utils.js";
 import { isMobileDevice } from "./mobile.js";
+import {
+    getCatalogTracks,
+    sortTracksByReleaseDate
+} from "./catalog-state.js";
 
 let revealObserver = null;
 const REVEAL_FALLBACK_DELAY = 1400;
+
+function revealElement(element) {
+    if (
+        !element ||
+        element.classList.contains("is-visible")
+    ) {
+        return;
+    }
+
+    element.classList.add("is-visible");
+    element.dispatchEvent(
+        new CustomEvent("revealvisible")
+    );
+}
 
 
 /* =========================================================
@@ -12,13 +30,13 @@ const REVEAL_FALLBACK_DELAY = 1400;
 /*
 Возвращает только полноценные релизы.
 
-В tracks.js могут находиться разные типы материалов,
+В runtime-каталоге могут находиться разные типы материалов,
 поэтому здесь мы отбираем только записи:
 
 type: "release"
 */
 function getReleaseTracks() {
-    return tracks.filter(isPlayableRelease);
+    return getCatalogTracks().filter(isPlayableRelease);
 }
 
 
@@ -28,15 +46,10 @@ function getReleaseTracks() {
 Самые новые треки оказываются в начале массива.
 
 Копия [...trackList] нужна, чтобы не менять
-исходный массив tracks.
+исходный runtime-каталог.
 */
 function sortTracksByDate(trackList) {
-    return [...trackList].sort((firstTrack, secondTrack) => {
-        const firstDate = new Date(firstTrack.releaseDate);
-        const secondDate = new Date(secondTrack.releaseDate);
-
-        return secondDate - firstDate;
-    });
+    return sortTracksByReleaseDate(trackList);
 }
 
 
@@ -92,48 +105,35 @@ export function createTrackCard(track) {
     */
     card.className = "release-card reveal-item";
 
-    /*
-    data-audio хранит путь к аудиофайлу.
+    card.dataset.trackId = track.catalogId;
 
-    В HTML это будет выглядеть примерно так:
+    const coverWrap = document.createElement("div");
+    coverWrap.className = "cover-wrap";
 
-    <div
-        class="release-card"
-        data-audio="music/song.mp3"
-    >
-    */
-    card.dataset.audio = track.audio;
+    const cover = document.createElement("img");
+    cover.className = "cover";
+    cover.src = track.cover;
+    cover.alt = `Обложка трека ${track.title}`;
 
-    /*
-    Внутреннее содержимое карточки.
-    Данные берутся из объекта track в tracks.js.
-    */
-    card.innerHTML = `
-        <div class="cover-wrap">
-            <img
-                class="cover"
-                src="${track.cover}"
-                alt="Обложка трека ${track.title}"
-            >
+    const playState = document.createElement("div");
+    playState.className = "play-state";
+    playState.setAttribute("aria-hidden", "true");
+    playState.textContent = "❚❚";
 
-            <div
-                class="play-state"
-                aria-hidden="true"
-            >
-                ❚❚
-            </div>
-        </div>
+    const info = document.createElement("div");
+    info.className = "release-info";
 
-        <div class="release-info">
-            <h2 class="track-title">
-                ${track.title}
-            </h2>
+    const title = document.createElement("h2");
+    title.className = "track-title";
+    title.textContent = track.title;
 
-            <p class="artist-name">
-                ${track.artist}
-            </p>
-        </div>
-    `;
+    const artist = document.createElement("p");
+    artist.className = "artist-name";
+    artist.textContent = track.artist;
+
+    coverWrap.append(cover, playState);
+    info.append(title, artist);
+    card.append(coverWrap, info);
 
     return card;
 }
@@ -154,25 +154,26 @@ export function createRecommendationCard(track) {
     const card = document.createElement("div");
 
     card.className = "recommendation-card";
-    card.dataset.audio = track.audio;
+    card.dataset.trackId = track.catalogId;
 
-    card.innerHTML = `
-        <img
-            class="recommendation-cover cover"
-            src="${track.cover}"
-            alt="Обложка трека ${track.title}"
-        >
+    const cover = document.createElement("img");
+    cover.className = "recommendation-cover cover";
+    cover.src = track.cover;
+    cover.alt = `Обложка трека ${track.title}`;
 
-        <div class="recommendation-info">
-            <div class="recommendation-title track-title">
-                ${track.title}
-            </div>
+    const info = document.createElement("div");
+    info.className = "recommendation-info";
 
-            <div class="recommendation-artist artist-name">
-                ${track.artist}
-            </div>
-        </div>
-    `;
+    const title = document.createElement("div");
+    title.className = "recommendation-title track-title";
+    title.textContent = track.title;
+
+    const artist = document.createElement("div");
+    artist.className = "recommendation-artist artist-name";
+    artist.textContent = track.artist;
+
+    info.append(title, artist);
+    card.append(cover, info);
 
     return card;
 }
@@ -319,7 +320,7 @@ export function observeRevealElement(element) {
         !("IntersectionObserver" in window) ||
         !revealObserver
     ) {
-        element.classList.add("is-visible");
+        revealElement(element);
         return;
     }
 
@@ -336,12 +337,12 @@ export function observeRevealElement(element) {
                     "is-visible"
                 )
             ) {
-                element.classList.add("is-visible");
+                revealElement(element);
                 revealObserver?.unobserve(element);
             }
         }, REVEAL_FALLBACK_DELAY);
     } catch (error) {
-        element.classList.add("is-visible");
+        revealElement(element);
     }
 }
 
@@ -360,15 +361,7 @@ export function initializeCardAnimations() {
                     entries.forEach((entry) => {
                         if (!entry.isIntersecting) return;
 
-                        entry.target.classList.add(
-                            "is-visible"
-                        );
-
-                        entry.target.dispatchEvent(
-                            new CustomEvent(
-                                "revealvisible"
-                            )
-                        );
+                        revealElement(entry.target);
 
                         observer.unobserve(entry.target);
                     });

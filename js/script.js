@@ -63,17 +63,60 @@ import {
 } from "./carousel.js";
 
 
-/* =========================================================
-   5. НАВИГАЦИЯ ПО РАЗДЕЛАМ
-   ========================================================= */
-
-import {
-    initializeSectionNavigation
-} from "./navigation.js";
-
 import {
     initializeMobileEnvironment
 } from "./mobile.js";
+import { setCatalogTracks } from "./catalog-state.js";
+
+const CATALOG_LOAD_TIMEOUT_MS = 5000;
+let websiteInitializationPromise = null;
+
+function withTimeout(promise, timeoutMs) {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+            reject(new Error("Превышено время загрузки каталога."));
+        }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => {
+        window.clearTimeout(timeoutId);
+    });
+}
+
+function getLocalCatalogTracks() {
+    if (typeof tracks === "undefined" || !Array.isArray(tracks)) {
+        throw new Error("Локальный каталог tracks.js недоступен.");
+    }
+
+    return tracks.map((track, index) => Object.freeze({
+        ...track,
+        catalogId: `local:${String(track.id ?? index)}`,
+        source: "local"
+    }));
+}
+
+async function prepareCatalog() {
+    const localTracks = getLocalCatalogTracks();
+    let remoteTracks = [];
+
+    try {
+        remoteTracks = await withTimeout(
+            import("./tracks-api.js").then(({ getPublishedTracks }) => {
+                return getPublishedTracks();
+            }),
+            CATALOG_LOAD_TIMEOUT_MS
+        );
+    } catch (error) {
+        console.warn(
+            error instanceof Error
+                ? error.message
+                : "Каталог Supabase недоступен. Используется локальный каталог."
+        );
+    }
+
+    setCatalogTracks([...localTracks, ...remoteTracks]);
+}
 
 
 /* =========================================================
@@ -94,7 +137,9 @@ import {
 Плеер и карусель должны запускаться только после того,
 как карточки уже появились в HTML.
 */
-function initializeWebsite() {
+async function initializeWebsiteOnce() {
+    await prepareCatalog();
+
     /*
     Мобильный режим определяется до создания карточек:
     WebView сразу получает облегчённые эффекты и надёжный рендер.
@@ -122,8 +167,77 @@ function initializeWebsite() {
     /* Запускаем карусель рекомендаций */
     initializeRecommendationsCarousel();
 
-    /* Следим за текущим видимым разделом */
-    initializeSectionNavigation();
+}
+
+function initializeWebsite() {
+    if (!websiteInitializationPromise) {
+        websiteInitializationPromise = initializeWebsiteOnce().catch((error) => {
+            console.error(
+                "Не удалось инициализировать сайт:",
+                error instanceof Error ? error.message : "неизвестная ошибка"
+            );
+        });
+    }
+
+    return websiteInitializationPromise;
+}
+
+
+/*
+Auth подключается после основной логики сайта.
+Если внешний Supabase SDK временно недоступен,
+каталог, поиск и плеер продолжают работать.
+*/
+async function initializeAuthFeature() {
+    let authReady = false;
+
+    try {
+        const {
+            initializeAuth
+        } = await import("./auth.js");
+
+        initializeAuth();
+        authReady = true;
+    } catch {
+        const authButton =
+            document.querySelector(".auth-open-button");
+        const authControls =
+            document.querySelector(".auth-controls");
+
+        if (authControls) {
+            authControls.dataset.authReady = "true";
+        }
+
+        if (authButton) {
+            authButton.disabled = true;
+            authButton.title =
+                "Авторизация временно недоступна";
+        }
+    }
+
+    if (!authReady) return;
+
+    try {
+        const {
+            initializeTrackUpload
+        } = await import("./track-upload.js");
+
+        initializeTrackUpload();
+    } catch (error) {
+        const uploadButton =
+            document.querySelector(
+                ".track-upload-open-button"
+            );
+
+        if (uploadButton) {
+            uploadButton.hidden = true;
+        }
+
+        console.error(
+            "Интерфейс загрузки трека временно недоступен.",
+            error
+        );
+    }
 }
 
 
@@ -137,4 +251,5 @@ function initializeWebsite() {
 
 Поэтому отдельный DOMContentLoaded здесь не нужен.
 */
-initializeWebsite();
+void initializeWebsite();
+void initializeAuthFeature();

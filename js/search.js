@@ -4,6 +4,7 @@ import {
     unobserveRevealElement
 } from "./render.js";
 import { isPlayableRelease } from "./tracks-utils.js";
+import { getCatalogTracks } from "./catalog-state.js";
 import {
     clearSearchPlaybackQueue,
     setSearchPlaybackQueue
@@ -21,7 +22,7 @@ import {
 без пробелов по краям и в нижнем регистре.
 */
 function findTracks(query) {
-    return tracks.filter((track) => {
+    return getCatalogTracks().filter((track) => {
         if (!isPlayableRelease(track)) {
             return false;
         }
