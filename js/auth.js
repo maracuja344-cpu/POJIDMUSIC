@@ -8,6 +8,7 @@ let authSubscription = null;
 let previouslyFocusedElement = null;
 let profileRequestId = 0;
 let renderedAuthUserId;
+let activeAuthElements = null;
 const authStateListeners = new Set();
 let currentAuthState = Object.freeze({
     session: null,
@@ -300,7 +301,7 @@ async function findProfile(userId) {
             error
         } = await supabase
             .from("profiles")
-            .select("id, display_name, role")
+            .select("id, username, display_name, avatar_url, role")
             .eq("id", userId)
             .maybeSingle();
 
@@ -358,9 +359,10 @@ async function refreshProfile(elements, user, session) {
             ? result.profile.display_name.trim()
             : "";
 
-    if (displayName) {
-        setUserIdentity(elements, displayName);
-    }
+    setUserIdentity(
+        elements,
+        displayName || getFallbackIdentity(user)
+    );
 
     publishAuthState({
         session,
@@ -378,6 +380,25 @@ async function refreshProfile(elements, user, session) {
             "Профиль временно недоступен";
         elements.profileNote.hidden = false;
     }
+
+    return result.profile;
+}
+
+
+export async function reloadCurrentProfile() {
+    if (
+        !activeAuthElements ||
+        !currentAuthState.user ||
+        !currentAuthState.session
+    ) {
+        return null;
+    }
+
+    return refreshProfile(
+        activeAuthElements,
+        currentAuthState.user,
+        currentAuthState.session
+    );
 }
 
 
@@ -689,6 +710,7 @@ export function initializeAuth() {
     }
 
     authInitialized = true;
+    activeAuthElements = elements;
 
     elements.openButton.addEventListener(
         "click",

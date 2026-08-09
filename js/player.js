@@ -6,10 +6,12 @@ import {
     sortTracksByReleaseDate
 } from "./catalog-state.js";
 import {
-    activateSearchWave,
     getPlaybackContext,
-    restartSearchPlaybackQueue
+    reconcilePlaybackContext,
+    setPlaybackContext,
+    setPlaybackContextCurrent
 } from "./playback-context.js";
+import { renderArtistLinks } from "./artist-utils.js";
 
 
 /* =========================================================
@@ -101,6 +103,8 @@ let repeatMode = "off";
 let shuffleHistory = [];
 let shuffleHistoryIndex = -1;
 let pendingShuffleHistoryIndex = null;
+let shuffleCycleIds = new Set();
+let autoplayErrorAttempts = 0;
 let playerAccentRequestId = 0;
 const coverAccentCache = new Map();
 const audioRefreshPromises = new Map();
@@ -254,17 +258,7 @@ function getCurrentTrackIndex(
 }
 
 function findTrackByCatalogId(catalogId) {
-    const queuedTrack =
-        getPlaybackQueue().find((track) => {
-            return track.catalogId === catalogId;
-        }) || null;
-
-    if (!queuedTrack) return null;
-
-    return (
-        getCatalogTrackById(catalogId) ||
-        queuedTrack
-    );
+    return getCatalogTrackById(catalogId) || null;
 }
 
 
@@ -287,14 +281,11 @@ function savePlaybackModes() {
 
 function getPlaybackQueue() {
     const context = getPlaybackContext();
+    const queue = context.queueIds
+        .map((catalogId) => getCatalogTrackById(catalogId))
+        .filter((track) => track && isPlayableRelease(track));
 
-    if (
-        context.searchActive &&
-        !context.waveActive
-    ) {
-        return context.searchTracks;
-    }
-
+    if (queue.length || context.type !== "catalog") return queue;
     return getCatalogPlaybackQueue();
 }
 
@@ -370,16 +361,14 @@ function resetShuffleHistory(
         shuffleHistory.length - 1;
 
     pendingShuffleHistoryIndex = null;
+    shuffleCycleIds = new Set(
+        initialTrack ? [initialTrack.catalogId] : []
+    );
 }
 
 
 function recordTrackInShuffleHistory(track) {
-    const context = getPlaybackContext();
-    const shouldRecordHistory =
-        shuffleEnabled ||
-        context.searchActive;
-
-    if (!shouldRecordHistory || !track) return;
+    if (!track) return;
 
     if (
         pendingShuffleHistoryIndex !== null &&
@@ -391,6 +380,7 @@ function recordTrackInShuffleHistory(track) {
             pendingShuffleHistoryIndex;
 
         pendingShuffleHistoryIndex = null;
+        shuffleCycleIds.add(track.catalogId);
         return;
     }
 
@@ -412,27 +402,20 @@ function recordTrackInShuffleHistory(track) {
     shuffleHistory.push(track.catalogId);
     shuffleHistoryIndex =
         shuffleHistory.length - 1;
+    shuffleCycleIds.add(track.catalogId);
+
+    if (shuffleHistory.length > 100) {
+        const removed = shuffleHistory.length - 100;
+        shuffleHistory = shuffleHistory.slice(removed);
+        shuffleHistoryIndex = Math.max(0, shuffleHistoryIndex - removed);
+    }
 }
 
 
 function toggleShuffleMode() {
     shuffleEnabled = !shuffleEnabled;
-
-    const context = getPlaybackContext();
-
-    /*
-    Внутри результатов поиска история одновременно отмечает,
-    какие найденные треки уже прозвучали. При переключении
-    Shuffle её нельзя терять.
-    */
-    if (
-        !context.searchActive ||
-        context.waveActive
-    ) {
-        resetShuffleHistory();
-    } else {
-        pendingShuffleHistoryIndex = null;
-    }
+    pendingShuffleHistoryIndex = null;
+    shuffleCycleIds = new Set(currentTrack ? [currentTrack.catalogId] : []);
 
     savePlaybackModes();
     updatePlaybackModeButtons();
@@ -474,10 +457,7 @@ function restorePlaybackModes() {
 }
 
 
-function getSequentialTrack(
-    direction,
-    playbackQueue
-) {
+function getSequentialTrack(direction, playbackQueue) {
     const currentIndex =
         getCurrentTrackIndex(playbackQueue);
 
@@ -506,77 +486,7 @@ function getSequentialTrack(
         ];
 }
 
-
-function getSequentialSearchTrack(
-    direction,
-    playbackQueue
-) {
-    if (direction < 0) {
-        return getSequentialTrack(
-            direction,
-            playbackQueue
-        );
-    }
-
-    /*
-    Repeat All зацикливает несколько результатов поиска.
-    Один результат не повторяется: исключение сделано
-    только для Repeat One выше, в getTrackForNavigation().
-    */
-    if (
-        repeatMode === "all" &&
-        playbackQueue.length > 1
-    ) {
-        return getSequentialTrack(
-            direction,
-            playbackQueue
-        );
-    }
-
-    const playedTrackIds = new Set(
-        shuffleHistory
-    );
-    const currentIndex =
-        getCurrentTrackIndex(playbackQueue);
-
-    for (
-        let offset = 1;
-        offset <= playbackQueue.length;
-        offset++
-    ) {
-        const targetIndex =
-            currentIndex === -1
-                ? offset - 1
-                : (
-                    currentIndex + offset
-                ) % playbackQueue.length;
-        const candidate =
-            playbackQueue[targetIndex];
-
-        if (
-            candidate.catalogId !==
-                currentTrack?.catalogId &&
-            !playedTrackIds.has(
-                candidate.catalogId
-            )
-        ) {
-            return candidate;
-        }
-    }
-
-    return null;
-}
-
-
-function getShuffledTrack(
-    direction,
-    playbackQueue
-) {
-    const context = getPlaybackContext();
-    const isSearchResultQueue =
-        context.searchActive &&
-        !context.waveActive;
-
+function getShuffledTrack(direction, playbackQueue) {
     if (!currentTrack) {
         return playbackQueue[
             Math.floor(
@@ -587,10 +497,7 @@ function getShuffledTrack(
     }
 
     if (playbackQueue.length === 1) {
-        return (
-            repeatMode === "all" &&
-            !isSearchResultQueue
-        )
+        return repeatMode === "all"
             ? currentTrack
             : null;
     }
@@ -621,40 +528,16 @@ function getShuffledTrack(
         return null;
     }
 
-    let candidates = playbackQueue.filter(
-        (track) => {
-            return (
-                track.catalogId !== currentTrack.catalogId
-            );
-        }
-    );
+    let candidates = playbackQueue.filter((track) => (
+        track.catalogId !== currentTrack.catalogId &&
+        !shuffleCycleIds.has(track.catalogId)
+    ));
 
-    if (isSearchResultQueue) {
-        const playedTrackIds = new Set(
-            shuffleHistory
-        );
-
-        candidates = candidates.filter((track) => {
-            return !playedTrackIds.has(
-                track.catalogId
-            );
-        });
-
-        if (
-            candidates.length === 0 &&
-            repeatMode === "all"
-        ) {
-            resetShuffleHistory();
-
-            candidates = playbackQueue.filter(
-                (track) => {
-                    return (
-                        track.catalogId !==
-                        currentTrack.catalogId
-                    );
-                }
-            );
-        }
+    if (candidates.length === 0 && repeatMode === "all") {
+        shuffleCycleIds = new Set([currentTrack.catalogId]);
+        candidates = playbackQueue.filter((track) => (
+            track.catalogId !== currentTrack.catalogId
+        ));
     }
 
     return candidates[
@@ -665,81 +548,80 @@ function getShuffledTrack(
     ] || null;
 }
 
+function getHistoryTrack(direction) {
+    const targetIndex = shuffleHistoryIndex + direction;
+    if (targetIndex < 0 || targetIndex >= shuffleHistory.length) return null;
+    const track = getCatalogTrackById(shuffleHistory[targetIndex]);
+    if (!track || !isPlayableRelease(track)) return null;
+    pendingShuffleHistoryIndex = targetIndex;
+    return track;
+}
 
-function getTrackForNavigation(direction) {
-    pendingShuffleHistoryIndex = null;
-
-    const context = getPlaybackContext();
-    const playbackQueue = getPlaybackQueue();
-
-    if (playbackQueue.length === 0) {
-        return null;
+function shuffled(values) {
+    const result = [...values];
+    for (let index = result.length - 1; index > 0; index -= 1) {
+        const target = Math.floor(Math.random() * (index + 1));
+        [result[index], result[target]] = [result[target], result[index]];
     }
+    return result;
+}
+
+function beginAutoplay() {
+    if (getPlaybackContext().type !== "autoplay") {
+        autoplayErrorAttempts = 0;
+    }
+    const catalog = getCatalogPlaybackQueue();
+    if (!catalog.length) return null;
+    const recentIds = new Set(shuffleHistory.slice(-15));
+    let candidates = catalog.filter((track) => (
+        track.catalogId !== currentTrack?.catalogId &&
+        !recentIds.has(track.catalogId)
+    ));
+    if (!candidates.length) {
+        candidates = catalog.filter((track) => (
+            track.catalogId !== currentTrack?.catalogId
+        ));
+    }
+    if (!candidates.length) candidates = [...catalog];
+    candidates = shuffled(candidates);
+    setPlaybackContext({
+        type: "autoplay",
+        id: `autoplay:${Date.now()}`,
+        label: "Автовоспроизведение",
+        queueIds: candidates.map((track) => track.catalogId)
+    });
+    shuffleCycleIds = new Set();
+    return candidates[0] || null;
+}
+
+function getTrackForNavigation(
+    direction,
+    { fromError = false, reason = "manual" } = {}
+) {
+    pendingShuffleHistoryIndex = null;
+    if (direction < 0) return getHistoryTrack(-1);
 
     if (
+        reason === "ended" &&
+        !fromError &&
         repeatMode === "one" &&
         currentTrack
     ) {
         return currentTrack;
     }
 
-    if (context.waveActive) {
-        return getShuffledTrack(
-            direction,
-            playbackQueue
-        );
-    }
+    const futureHistoryTrack = getHistoryTrack(1);
+    if (futureHistoryTrack && !fromError) return futureHistoryTrack;
+    pendingShuffleHistoryIndex = null;
 
-    let targetTrack;
-
-    if (
-        context.searchActive &&
-        !context.waveActive
-    ) {
-        targetTrack = shuffleEnabled
-            ? getShuffledTrack(
-                direction,
-                playbackQueue
-            )
-            : getSequentialSearchTrack(
-                direction,
-                playbackQueue
-            );
-    } else {
-        targetTrack = shuffleEnabled
-            ? getShuffledTrack(
-                direction,
-                playbackQueue
-            )
-            : getSequentialTrack(
-                direction,
-                playbackQueue
-            );
-    }
-
-    if (targetTrack) {
+    const playbackQueue = getPlaybackQueue();
+    const targetTrack = shuffleEnabled
+        ? getShuffledTrack(1, playbackQueue)
+        : getSequentialTrack(1, playbackQueue);
+    if (targetTrack && (!fromError || targetTrack.catalogId !== currentTrack?.catalogId)) {
         return targetTrack;
     }
-
-    /*
-    После последнего найденного трека начинается
-    «Моя волна по запросу»: случайный трек каталога,
-    отличный от текущего.
-    */
-    if (
-        direction > 0 &&
-        context.searchActive &&
-        !context.waveActive &&
-        playbackQueue.length > 0 &&
-        activateSearchWave()
-    ) {
-        return getShuffledTrack(
-            1,
-            getCatalogPlaybackQueue()
-        );
-    }
-
-    return null;
+    return beginAutoplay();
 }
 
 
@@ -1399,7 +1281,11 @@ function updatePlayerInformation(
         `Обложка трека ${title}`;
 
     playerTitle.textContent = title;
-    playerArtist.textContent = artist;
+    if (track.artists?.length) {
+        renderArtistLinks(playerArtist, track);
+    } else {
+        playerArtist.textContent = artist;
+    }
 
     miniPlayer.classList.add("active");
 
@@ -1421,7 +1307,11 @@ function updatePlayerInformation(
     }
 
     if (fullscreenArtist) {
-        fullscreenArtist.textContent = artist;
+        if (track.artists?.length) {
+            renderArtistLinks(fullscreenArtist, track);
+        } else {
+            fullscreenArtist.textContent = artist;
+        }
     }
 
     /*
@@ -1444,14 +1334,16 @@ function updatePlayerInformation(
 /*
 Удаляет playing у всех карточек.
 */
-function clearPlayingClasses() {
+function clearTrackCardStateClasses() {
     document
         .querySelectorAll(
+            ".release-card.current, " +
             ".release-card.playing, " +
+            ".recommendation-card.current, " +
             ".recommendation-card.playing"
         )
         .forEach((card) => {
-            card.classList.remove("playing");
+            card.classList.remove("current", "playing");
         });
 }
 
@@ -1459,24 +1351,33 @@ function clearPlayingClasses() {
 /*
 Подсвечивает все карточки текущего трека.
 */
-function setPlayingState(isPlaying) {
-    clearPlayingClasses();
+export function syncRenderedTrackCardsWithPlayerState(root = document) {
+    const selector = ".release-card, .recommendation-card";
+    const cards = [];
 
-    if (isPlaying && currentTrack) {
-        document
-            .querySelectorAll(
-                ".release-card, " +
-                ".recommendation-card"
-            )
-            .forEach((card) => {
-                if (
-                    card.dataset.trackId ===
-                    currentTrack.catalogId
-                ) {
-                    card.classList.add("playing");
-                }
-            });
+    if (root instanceof Element && root.matches(selector)) {
+        cards.push(root);
     }
+
+    cards.push(...root.querySelectorAll(selector));
+
+    const currentCatalogId = currentTrack?.catalogId ?? null;
+    const isPlaying = Boolean(currentCatalogId) &&
+        !audio.paused &&
+        !audio.ended;
+
+    cards.forEach((card) => {
+        const isCurrent = Boolean(currentCatalogId) &&
+            card.dataset.trackId === currentCatalogId;
+
+        card.classList.toggle("current", isCurrent);
+        card.classList.toggle("playing", isCurrent && isPlaying);
+    });
+}
+
+
+function setPlayingState(isPlaying) {
+    syncRenderedTrackCardsWithPlayerState();
 
     playerToggle.classList.toggle(
         "playing",
@@ -1487,6 +1388,88 @@ function setPlayingState(isPlaying) {
         "playing",
         isPlaying
     );
+}
+
+export function reconcilePlayerWithCatalog() {
+    const catalogQueue = getCatalogPlaybackQueue();
+    reconcilePlaybackContext(
+        catalogQueue.map((track) => track.catalogId),
+        catalogQueue.map((track) => track.catalogId)
+    );
+
+    if (!currentTrack) {
+        return "idle";
+    }
+
+    const previousTrack = currentTrack;
+    const nextTrack = getCatalogTrackById(
+        previousTrack.catalogId
+    );
+
+    if (!nextTrack) {
+        ++trackSwitchId;
+        isTrackSwitchPending = false;
+        window.clearTimeout(trackSwitchTimer);
+        window.clearTimeout(trackSwitchCleanupTimer);
+        cancelVolumeTransition({ restoreGain: true });
+
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+
+        currentTrack = null;
+        currentCard = null;
+        resetShuffleHistory(null);
+        clearTrackCardStateClasses();
+        setPlayingState(false);
+        resetPlayerProgress();
+        closeFullscreenPlayer();
+
+        miniPlayer?.classList.remove("active");
+        localStorage.removeItem("player-track-id");
+        localStorage.removeItem("player-track");
+        localStorage.removeItem("player-time");
+
+        return "removed";
+    }
+
+    const sourceChanged =
+        previousTrack.source === "supabase"
+            ? previousTrack.storageAudioPath !==
+                nextTrack.storageAudioPath
+            : previousTrack.audio !== nextTrack.audio;
+    const wasPlaying = !audio.paused && !audio.ended;
+
+    const canKeepCurrentSignedAudio =
+        previousTrack.source === "supabase" &&
+        !sourceChanged &&
+        previousTrack.audio !== nextTrack.audio;
+
+    currentTrack = canKeepCurrentSignedAudio
+        ? Object.freeze({
+            ...nextTrack,
+            audio: previousTrack.audio,
+            audioExpiresAt: previousTrack.audioExpiresAt
+        })
+        : nextTrack;
+    currentCard = findCardForTrack(nextTrack);
+    setPlaybackContextCurrent(currentTrack.catalogId);
+
+    if (sourceChanged) {
+        assignAudioSource(nextTrack, {
+            preserveCurrentTime: true
+        });
+
+        if (wasPlaying) {
+            void startAudio(nextTrack.catalogId);
+        }
+    }
+
+    updatePlayerInformation(currentTrack, currentCard);
+    setPlayingState(wasPlaying);
+    savePlayerState();
+
+    return "retained";
 }
 
 
@@ -1627,11 +1610,11 @@ function clearPlaybackError() {
     if (!currentTrack) return;
 
     if (playerArtist) {
-        playerArtist.textContent = currentTrack.artist;
+        renderArtistLinks(playerArtist, currentTrack);
     }
 
     if (fullscreenArtist) {
-        fullscreenArtist.textContent = currentTrack.artist;
+        renderArtistLinks(fullscreenArtist, currentTrack);
     }
 }
 
@@ -1736,6 +1719,14 @@ function savePlayerState() {
     localStorage.setItem(
         "player-volume",
         userVolume
+    );
+
+    localStorage.setItem(
+        "player-history-v2",
+        JSON.stringify({
+            ids: shuffleHistory,
+            index: shuffleHistoryIndex
+        })
     );
 }
 
@@ -2392,6 +2383,7 @@ async function playTrack(
         if (currentSwitchId === trackSwitchId) {
             isTrackSwitchPending = false;
             showPlaybackError();
+            handleAutoplayFailure();
         }
 
         console.error(
@@ -2447,6 +2439,7 @@ async function playTrack(
 
     currentTrack = track;
     currentCard = card;
+    setPlaybackContextCurrent(track.catalogId);
     recordTrackInShuffleHistory(track);
 
     /*
@@ -2521,29 +2514,72 @@ async function playTrack(
 /*
 Запускает трек по нажатой карточке.
 */
-function playCard(selectedCard) {
-    const isSearchResult =
-        Boolean(
-            selectedCard.closest(
-                "#search-results"
-            )
-        );
+function getCardIds(container) {
+    const seen = new Set();
+    return Array.from(container?.querySelectorAll(
+        ".release-card:not([data-clone]), .recommendation-card:not([data-clone])"
+    ) || [])
+        .map((card) => card.dataset.trackId)
+        .filter((id) => {
+            if (!id || seen.has(id) || !getCatalogTrackById(id)) return false;
+            seen.add(id);
+            return true;
+        });
+}
 
-    if (isSearchResult) {
-        /*
-        Клик по результату возвращает очередь из «Моей волны»
-        к найденным трекам и начинает новый проход с выбранного.
-        */
-        restartSearchPlaybackQueue();
+function setContextFromCard(card) {
+    const artistContainer = card.closest("[data-artist-tracks]");
+    const myTracksContainer = card.closest("[data-my-tracks-list]");
+    const searchContainer = card.closest(".search-results-list");
+    const recommendationsContainer = card.closest(".recommendations-track");
+    let context;
 
-        /*
-        Новый проход по результатам начинается именно с нажатой
-        карточки. Старый текущий трек не должен считаться уже
-        проигранным результатом этого прохода.
-        */
-        resetShuffleHistory(null);
+    if (artistContainer) {
+        const slug = new URL(window.location.href).searchParams.get("artist") || "artist";
+        context = {
+            type: "artist",
+            id: `artist:${slug}`,
+            label: "Релизы артиста",
+            queueIds: getCardIds(artistContainer)
+        };
+    } else if (myTracksContainer) {
+        context = {
+            type: "my-tracks",
+            id: "my-tracks",
+            label: "Мои треки",
+            queueIds: getCardIds(myTracksContainer)
+        };
+    } else if (searchContainer) {
+        const query = document.querySelector(".search-input")?.value?.trim() || "";
+        context = {
+            type: "search",
+            id: `search:${query.toLocaleLowerCase()}`,
+            label: `Поиск: ${query}`,
+            queueIds: getCardIds(searchContainer)
+        };
+    } else if (recommendationsContainer) {
+        context = {
+            type: "recommendations",
+            id: "recommendations",
+            label: "Рекомендации",
+            queueIds: getCardIds(recommendationsContainer)
+        };
+    } else {
+        const catalog = getCatalogPlaybackQueue();
+        context = {
+            type: "catalog",
+            id: "catalog",
+            label: "Каталог",
+            queueIds: catalog.map((track) => track.catalogId)
+        };
     }
 
+    context.currentIndex = context.queueIds.indexOf(card.dataset.trackId);
+    setPlaybackContext(context);
+}
+
+function playCard(selectedCard) {
+    setContextFromCard(selectedCard);
     const card = findOriginalCard(selectedCard);
 
     if (!card) return;
@@ -2573,9 +2609,9 @@ function playCard(selectedCard) {
    14. СЛЕДУЮЩИЙ ТРЕК
    ========================================================= */
 
-function playNextTrack() {
+function playNextTrack({ fromError = false, reason = "manual" } = {}) {
     const nextTrack =
-        getTrackForNavigation(1);
+        getTrackForNavigation(1, { fromError, reason });
 
     if (!nextTrack) {
         if (audio.ended) {
@@ -2586,7 +2622,26 @@ function playNextTrack() {
         return;
     }
 
+    if (nextTrack.catalogId === currentTrack?.catalogId) {
+        audio.currentTime = 0;
+        void startAudio(nextTrack.catalogId);
+        return;
+    }
+
     playTrack(nextTrack);
+}
+
+function handleAutoplayFailure() {
+    if (getPlaybackContext().type !== "autoplay") return;
+    if (autoplayErrorAttempts >= 5) {
+        setPlayingState(false);
+        return;
+    }
+    autoplayErrorAttempts += 1;
+    window.setTimeout(() => playNextTrack({
+        fromError: true,
+        reason: "error"
+    }), 0);
 }
 
 
@@ -2711,14 +2766,48 @@ function restorePlayerState() {
                 : null
         );
 
-    if (!savedTrackObject) return;
+    if (!savedTrackObject) {
+        /*
+        A removed local catalog entry must not keep a dead audio path or
+        playback position alive. Remote IDs are left intact when Supabase is
+        temporarily unavailable so they can be restored on a later refresh.
+        */
+        if (savedTrackId?.startsWith("local:") || (!savedTrackId && savedTrack)) {
+            localStorage.removeItem("player-track-id");
+            localStorage.removeItem("player-track");
+            localStorage.removeItem("player-time");
+        }
+
+        return;
+    }
 
     const savedCard =
         findCardForTrack(savedTrackObject);
 
     currentTrack = savedTrackObject;
     currentCard = savedCard;
-    resetShuffleHistory();
+    setPlaybackContextCurrent(savedTrackObject.catalogId);
+    try {
+        const savedHistory = JSON.parse(
+            localStorage.getItem("player-history-v2")
+        );
+        shuffleHistory = Array.isArray(savedHistory?.ids)
+            ? savedHistory.ids.filter((id) => getCatalogTrackById(id)).slice(-100)
+            : [];
+        shuffleHistoryIndex = Math.min(
+            Math.max(Number(savedHistory?.index) || 0, 0),
+            Math.max(shuffleHistory.length - 1, 0)
+        );
+    } catch {
+        shuffleHistory = [];
+        shuffleHistoryIndex = -1;
+    }
+    if (!shuffleHistory.includes(savedTrackObject.catalogId)) {
+        shuffleHistory.push(savedTrackObject.catalogId);
+        shuffleHistoryIndex = shuffleHistory.length - 1;
+    }
+    pendingShuffleHistoryIndex = null;
+    shuffleCycleIds = new Set([savedTrackObject.catalogId]);
 
     assignAudioSource(savedTrackObject);
 
@@ -2726,6 +2815,7 @@ function restorePlayerState() {
         savedTrackObject,
         savedCard
     );
+    syncRenderedTrackCardsWithPlayerState();
 
     /*
     После загрузки метаданных возвращаем
@@ -2948,7 +3038,10 @@ fullscreenCoverNext =
     window.addEventListener(
         "playbackcontextchange",
         () => {
-            resetShuffleHistory();
+            pendingShuffleHistoryIndex = null;
+            shuffleCycleIds = new Set(
+                currentTrack ? [currentTrack.catalogId] : []
+            );
         }
     );
 
@@ -3303,6 +3396,17 @@ fullscreenCoverNext =
 
             if (!clickedCard) return;
 
+            const interactiveTarget = event.target.closest(
+                "a, button, input, select, textarea, [role='button']"
+            );
+
+            if (
+                interactiveTarget &&
+                clickedCard.contains(interactiveTarget)
+            ) {
+                return;
+            }
+
             playCard(clickedCard);
         }
     );
@@ -3638,6 +3742,7 @@ fullscreenCoverNext =
     });
 
     audio.addEventListener("playing", () => {
+        autoplayErrorAttempts = 0;
         clearPlaybackError();
         setPlayingState(true);
         startFullscreenCoverFloat();
@@ -3674,6 +3779,7 @@ fullscreenCoverNext =
                     audio.error?.code ?? null
             }
         );
+        handleAutoplayFailure();
     });
 
 
@@ -3681,7 +3787,7 @@ fullscreenCoverNext =
     После завершения включается следующий трек.
     */
     audio.addEventListener("ended", () => {
-        playNextTrack();
+        playNextTrack({ reason: "ended" });
         settleFullscreenCoverFloat();
         startAudioReactionLoop();
     });

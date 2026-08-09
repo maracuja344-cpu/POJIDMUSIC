@@ -3,12 +3,11 @@ import {
     observeRevealElement,
     unobserveRevealElement
 } from "./render.js";
+import { getTrackArtists } from "./artist-utils.js";
 import { isPlayableRelease } from "./tracks-utils.js";
 import { getCatalogTracks } from "./catalog-state.js";
-import {
-    clearSearchPlaybackQueue,
-    setSearchPlaybackQueue
-} from "./playback-context.js";
+import { isMobileDevice } from "./mobile.js";
+import { syncRenderedTrackCardsWithPlayerState } from "./player.js";
 
 
 /* =========================================================
@@ -35,11 +34,14 @@ function findTracks(query) {
         от больших и маленьких букв.
         */
         const title = track.title.toLowerCase();
-        const artist = track.artist.toLowerCase();
+        const artists = getTrackArtists(track)
+            .map((artist) => artist.displayName.toLowerCase());
+        const fallbackArtist = String(track.artist || "").toLowerCase();
 
         return (
             title.includes(query) ||
-            artist.includes(query)
+            fallbackArtist.includes(query) ||
+            artists.some((artist) => artist.includes(query))
         );
     });
 }
@@ -115,6 +117,8 @@ function renderSearchResults(
         container.append(card);
         observeRevealElement(card);
     });
+
+    syncRenderedTrackCardsWithPlayerState(container);
 }
 
 
@@ -151,8 +155,6 @@ function resetSearch({
     searchEmpty,
     mainSections
 }) {
-    clearSearchPlaybackQueue();
-
     /*
     Удаляем карточки прошлого поиска.
     */
@@ -241,8 +243,27 @@ function showSearchSection(searchResultsSection) {
 7. Создаёт карточки.
 8. Обновляет сообщение об отсутствии результатов.
 */
+let activeSearchContext = null;
+
+function getNormalizedQuery(value) {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase();
+}
+
+function updateClearButton(searchInput, clearButton) {
+    if (!clearButton) return;
+
+    const shouldShow =
+        getNormalizedQuery(searchInput.value) !== "";
+
+    clearButton.hidden = !shouldShow;
+    clearButton.disabled = !shouldShow;
+}
+
 function handleSearch({
     searchInput,
+    clearButton,
     searchResultsSection,
     searchResultsList,
     searchEmpty,
@@ -254,9 +275,9 @@ function handleSearch({
     toLowerCase() делает поиск независимым
     от регистра букв.
     */
-    const query = searchInput.value
-        .trim()
-        .toLowerCase();
+    const query = getNormalizedQuery(searchInput.value);
+
+    updateClearButton(searchInput, clearButton);
 
     /*
     Удаляем результаты предыдущего запроса.
@@ -295,12 +316,6 @@ function handleSearch({
     const foundTracks = findTracks(query);
 
     /*
-    Плеер получает тот же список и тот же порядок,
-    который сейчас показан в результатах поиска.
-    */
-    setSearchPlaybackQueue(foundTracks);
-
-    /*
     Создаём карточки найденных треков.
     */
     renderSearchResults(
@@ -333,6 +348,10 @@ export function initializeSearch() {
     */
     const searchInput = document.querySelector(
         ".search-input"
+    );
+
+    const clearButton = document.querySelector(
+        ".search-clear-button"
     );
 
     /*
@@ -369,11 +388,43 @@ export function initializeSearch() {
     */
     if (
         !searchInput ||
+        !clearButton ||
         !searchResultsSection ||
         !searchResultsList ||
         !searchEmpty
     ) {
         return;
+    }
+
+    activeSearchContext = {
+        searchInput,
+        clearButton,
+        searchResultsSection,
+        searchResultsList,
+        searchEmpty,
+        mainSections
+    };
+
+    if (searchInput.dataset.searchInitialized === "true") {
+        handleSearch(activeSearchContext);
+        return;
+    }
+
+    searchInput.dataset.searchInitialized = "true";
+
+    function clearSearch({ preserveDesktopFocus = true } = {}) {
+        if (getNormalizedQuery(searchInput.value) === "") {
+            return;
+        }
+
+        searchInput.value = "";
+        handleSearch(activeSearchContext);
+
+        if (isMobileDevice()) {
+            searchInput.blur();
+        } else if (preserveDesktopFocus) {
+            searchInput.focus({ preventScroll: true });
+        }
     }
 
     /*
@@ -385,12 +436,60 @@ export function initializeSearch() {
     - очистке строки.
     */
     searchInput.addEventListener("input", () => {
-        handleSearch({
-            searchInput,
-            searchResultsSection,
-            searchResultsList,
-            searchEmpty,
-            mainSections
-        });
+        handleSearch(activeSearchContext);
     });
+
+    clearButton.addEventListener("click", () => {
+        clearSearch();
+    });
+
+    searchInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+
+        if (getNormalizedQuery(searchInput.value) !== "") {
+            event.preventDefault();
+            clearSearch();
+            return;
+        }
+
+        if (document.activeElement === searchInput) {
+            searchInput.blur();
+        }
+    });
+
+    updateClearButton(searchInput, clearButton);
+}
+
+export function refreshActiveSearch() {
+    if (!activeSearchContext) return false;
+
+    const query = getNormalizedQuery(
+        activeSearchContext.searchInput.value
+    );
+
+    updateClearButton(
+        activeSearchContext.searchInput,
+        activeSearchContext.clearButton
+    );
+
+    if (query === "") return false;
+
+    handleSearch(activeSearchContext);
+    return true;
+}
+
+
+export function clearActiveSearch({
+    preserveDesktopFocus = false
+} = {}) {
+    if (!activeSearchContext) return false;
+
+    activeSearchContext.searchInput.value = "";
+    handleSearch(activeSearchContext);
+
+    if (!preserveDesktopFocus) {
+        activeSearchContext.searchInput.blur();
+    }
+
+    return true;
 }

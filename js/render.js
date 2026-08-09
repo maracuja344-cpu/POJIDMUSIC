@@ -4,6 +4,8 @@ import {
     getCatalogTracks,
     sortTracksByReleaseDate
 } from "./catalog-state.js";
+import { renderArtistLinks } from "./artist-utils.js";
+import { syncRenderedTrackCardsWithPlayerState } from "./player.js";
 
 let revealObserver = null;
 const REVEAL_FALLBACK_DELAY = 1400;
@@ -129,7 +131,7 @@ export function createTrackCard(track) {
 
     const artist = document.createElement("p");
     artist.className = "artist-name";
-    artist.textContent = track.artist;
+    renderArtistLinks(artist, track);
 
     coverWrap.append(cover, playState);
     info.append(title, artist);
@@ -170,7 +172,7 @@ export function createRecommendationCard(track) {
 
     const artist = document.createElement("div");
     artist.className = "recommendation-artist artist-name";
-    artist.textContent = track.artist;
+    renderArtistLinks(artist, track);
 
     info.append(title, artist);
     card.append(cover, info);
@@ -224,6 +226,8 @@ function renderCards(
 
         container.append(card);
     });
+
+    syncRenderedTrackCardsWithPlayerState(container);
 }
 
 

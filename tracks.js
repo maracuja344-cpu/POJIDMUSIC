@@ -11,36 +11,6 @@ const tracks = [
     },
 
     {
-     id: 2,
-     title: "Жопа",
-     artist: "Zhorik feat. cwa",
-     type: "release",
-     releaseDate: "2026-07-28",
-     cover: "img/cover2.jpg",
-     audio: "music/жопа feat cwa.mp3"
-    },
-
-    {
-    id: 3,
-     title: "vb cb",
-     artist: "Lufy feat. cwa",
-     type: "release",
-     releaseDate: "2026-07-28",
-     cover: "img/4ylLVqTwAPQ.jpg",
-     audio: "music/vb cb.mp3"
-    },
-
-    {
-     id: 4,
-     title: "Не прочухал",
-     artist: "Lufy feat. cwa",
-     type: "release",
-     releaseDate: "2026-07-28", 
-     cover: "img/rg54hbeRTpc.jpg",
-     audio: "music/не прочухал.mp3"
-    },
-
-    {
      id: 5,
      title: "Avario",
      artist: "triplepeepy",
@@ -73,7 +43,7 @@ const tracks = [
     {
     id: 8,
     title: "Labuba",
-    artist: "Frenbat9 feat.triplepeepy",
+    artist: "Frenbat9 feat. triplepeepy",
     type: "release",
     releaseDate: "2026-07-28",
     cover: "img/2.jpg",
@@ -89,46 +59,6 @@ const tracks = [
     cover: "img/3.jpg",
     audio: "music/siniorita.mp3"
     },
-
-    {
-    id: 10,
-    title: "Root",
-    artist: "Amoqly",
-    type: "release",
-    releaseDate: "2026-07-28",
-    cover: "img/Ksi8G89j33I.jpg",
-    audio: "music/roots sved.wav"
-},
-
-{
-    id: 11,
-    title: "Breath",
-    artist: "Amoqly",
-    type: "release",
-    releaseDate: "2026-07-28",
-    cover: "img/JgfYplI_obo.jpg",
-    audio: "music/Breathee.wav"
-},
-
-{
-    id: 12,
-    title: "Probka",
-    artist: "Amoqly",
-    type: "release",
-    releaseDate: "2026-07-28",
-    cover: "img/N4vceftPNYs.jpg",
-    audio: "music/probka.mp3"
-},
-
-{
-    id: 13,
-    title: "More",
-    artist: "Amoqly",
-    type: "release",
-    releaseDate: "2026-07-28",
-    cover: "img/0ECQjImSo2E.jpg",
-    audio: "music/mors.mp3"
-},
 
 {
     id: 14,

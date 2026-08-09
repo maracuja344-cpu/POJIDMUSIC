@@ -27,7 +27,8 @@ import {
 - сообщение, если ничего не найдено.
 */
 import {
-    initializeSearch
+    initializeSearch,
+    refreshActiveSearch
 } from "./search.js";
 
 
@@ -46,7 +47,8 @@ import {
 - сохранение состояния.
 */
 import {
-    initializePlayer
+    initializePlayer,
+    reconcilePlayerWithCatalog
 } from "./player.js";
 
 
@@ -66,10 +68,30 @@ import {
 import {
     initializeMobileEnvironment
 } from "./mobile.js";
-import { setCatalogTracks } from "./catalog-state.js";
+import {
+    getCatalogTracks,
+    setCatalogTracks
+} from "./catalog-state.js";
+import {
+    initializePullToRefresh
+} from "./pull-to-refresh.js";
+import {
+    normalizeArtistName,
+    parseLegacyArtistCredit
+} from "./artist-utils.js";
+import {
+    initializeAppNavigation,
+    refreshActiveRoute
+} from "./app-navigation.js";
 
-const CATALOG_LOAD_TIMEOUT_MS = 5000;
+const CATALOG_REQUEST_TIMEOUT_MS = 10000;
+export const CATALOG_STALE_MS = 60 * 1000;
 let websiteInitializationPromise = null;
+let activeRefreshPromise = null;
+let isRefreshing = false;
+let refreshGeneration = 0;
+let lastSuccessfulCatalogRefreshAt = 0;
+let refreshFeaturesInitialized = false;
 
 function withTimeout(promise, timeoutMs) {
     let timeoutId;
@@ -92,8 +114,92 @@ function getLocalCatalogTracks() {
     return tracks.map((track, index) => Object.freeze({
         ...track,
         catalogId: `local:${String(track.id ?? index)}`,
-        source: "local"
+        source: "local",
+        artists: Object.freeze(
+            Array.isArray(track.artists) && track.artists.length
+                ? track.artists
+                : parseLegacyArtistCredit(track.artist)
+        )
     }));
+}
+
+function mergeCatalogTracks(localTracks, remoteTracks) {
+    const tracksByCatalogId = new Map();
+    const storedArtistsByName = new Map();
+
+    remoteTracks.forEach((track) => {
+        track.artists?.forEach((artist) => {
+            if (!artist.isFallback) {
+                storedArtistsByName.set(
+                    normalizeArtistName(artist.displayName),
+                    artist
+                );
+            }
+        });
+    });
+
+    [...localTracks, ...remoteTracks].forEach((track) => {
+        if (!track?.catalogId) return;
+
+        const artists = track.artists?.map((artist) => {
+            const storedArtist = storedArtistsByName.get(
+                normalizeArtistName(artist.displayName)
+            );
+
+            if (!storedArtist) return artist;
+
+            return Object.freeze({
+                ...storedArtist,
+                role: artist.role,
+                position: artist.position
+            });
+        });
+
+        tracksByCatalogId.set(
+            track.catalogId,
+            artists
+                ? Object.freeze({
+                    ...track,
+                    artists: Object.freeze(artists)
+                })
+                : track
+        );
+    });
+
+    return [...tracksByCatalogId.values()];
+}
+
+function getStableTrackSnapshot(track) {
+    return Object.keys(track)
+        .filter((key) => {
+            return !["audio", "audioExpiresAt"].includes(key);
+        })
+        .sort()
+        .reduce((snapshot, key) => {
+            snapshot[key] = track[key];
+            return snapshot;
+        }, {});
+}
+
+function getCatalogFingerprint(trackList) {
+    return JSON.stringify(
+        trackList
+            .map(getStableTrackSnapshot)
+            .sort((left, right) => {
+                return String(left.catalogId).localeCompare(
+                    String(right.catalogId)
+                );
+            })
+    );
+}
+
+async function loadPublishedTracks(existingTracks = []) {
+    return withTimeout(
+        import("./tracks-api.js").then(({ getPublishedTracks }) => {
+            return getPublishedTracks({ existingTracks });
+        }),
+        CATALOG_REQUEST_TIMEOUT_MS
+    );
 }
 
 async function prepareCatalog() {
@@ -101,12 +207,8 @@ async function prepareCatalog() {
     let remoteTracks = [];
 
     try {
-        remoteTracks = await withTimeout(
-            import("./tracks-api.js").then(({ getPublishedTracks }) => {
-                return getPublishedTracks();
-            }),
-            CATALOG_LOAD_TIMEOUT_MS
-        );
+        remoteTracks = await loadPublishedTracks();
+        lastSuccessfulCatalogRefreshAt = Date.now();
     } catch (error) {
         console.warn(
             error instanceof Error
@@ -115,7 +217,132 @@ async function prepareCatalog() {
         );
     }
 
-    setCatalogTracks([...localTracks, ...remoteTracks]);
+    setCatalogTracks(
+        mergeCatalogTracks(localTracks, remoteTracks)
+    );
+}
+
+function renderUpdatedCatalog() {
+    renderNewTracks();
+    renderAllTracks();
+    renderRecommendations();
+    initializeCardAnimations();
+    refreshActiveSearch();
+    initializeRecommendationsCarousel();
+    reconcilePlayerWithCatalog();
+    refreshActiveRoute();
+}
+
+export function getIsCatalogRefreshing() {
+    return isRefreshing;
+}
+
+export function refreshCatalog({
+    force = false,
+    source = "manual"
+} = {}) {
+    if (activeRefreshPromise) {
+        return activeRefreshPromise;
+    }
+
+    if (
+        !force &&
+        Date.now() - lastSuccessfulCatalogRefreshAt <
+            CATALOG_STALE_MS
+    ) {
+        return Promise.resolve({ status: "unchanged" });
+    }
+
+    isRefreshing = true;
+    const generation = ++refreshGeneration;
+    const previousTracks = getCatalogTracks();
+    const existingRemoteTracks = previousTracks.filter(
+        (track) => track.source === "supabase"
+    );
+
+    activeRefreshPromise = (async () => {
+        try {
+            const remoteTracks = await loadPublishedTracks(
+                existingRemoteTracks
+            );
+            const nextTracks = mergeCatalogTracks(
+                getLocalCatalogTracks(),
+                remoteTracks
+            );
+
+            if (generation !== refreshGeneration) {
+                return { status: "unchanged" };
+            }
+
+            lastSuccessfulCatalogRefreshAt = Date.now();
+
+            if (
+                getCatalogFingerprint(previousTracks) ===
+                getCatalogFingerprint(nextTracks)
+            ) {
+                return { status: "unchanged" };
+            }
+
+            setCatalogTracks(nextTracks);
+            renderUpdatedCatalog();
+
+            return { status: "updated" };
+        } catch (error) {
+            console.warn(
+                `Не удалось обновить каталог (${source}).`,
+                error instanceof Error
+                    ? error.message
+                    : "Неизвестная ошибка"
+            );
+
+            return { status: "error" };
+        } finally {
+            if (generation === refreshGeneration) {
+                isRefreshing = false;
+                activeRefreshPromise = null;
+            }
+        }
+    })();
+
+    return activeRefreshPromise;
+}
+
+function initializeCatalogRefreshFeatures() {
+    if (refreshFeaturesInitialized) return;
+    refreshFeaturesInitialized = true;
+
+    initializePullToRefresh({
+        refreshCatalog,
+        getIsRefreshing: getIsCatalogRefreshing
+    });
+
+    const refreshIfStale = () => {
+        if (document.hidden) return;
+        void refreshCatalog({ source: "lifecycle" });
+    };
+
+    document.addEventListener("visibilitychange", refreshIfStale);
+    window.addEventListener("pageshow", refreshIfStale);
+    window.addEventListener("focus", refreshIfStale);
+}
+
+function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+
+    window.addEventListener(
+        "load",
+        () => {
+            void navigator.serviceWorker
+                .register("./service-worker.js")
+                .catch((error) => {
+                    console.warn(
+                        "Service worker не зарегистрирован.",
+                        error
+                    );
+                });
+        },
+        { once: true }
+    );
 }
 
 
@@ -164,8 +391,13 @@ async function initializeWebsiteOnce() {
     /* Подключаем мини-плеер */
     initializePlayer();
 
+    /* Лёгкая SPA-навигация не пересоздаёт Audio и плеер. */
+    initializeAppNavigation();
+
     /* Запускаем карусель рекомендаций */
     initializeRecommendationsCarousel();
+
+    initializeCatalogRefreshFeatures();
 
 }
 
@@ -253,3 +485,4 @@ async function initializeAuthFeature() {
 */
 void initializeWebsite();
 void initializeAuthFeature();
+registerServiceWorker();

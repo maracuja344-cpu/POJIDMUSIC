@@ -12,6 +12,7 @@
         name="apple-mobile-web-app-capable"
         content="yes"
     >
+    <meta name="mobile-web-app-capable" content="yes">
 
     <meta
         name="apple-mobile-web-app-status-bar-style"
@@ -25,15 +26,59 @@
 
     <title>POJIDMUSIC</title>
 
+    <meta name="theme-color" content="#111111">
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="48x48"
+        href="icons/favicon-48.png?v=3"
+    >
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="32x32"
+        href="icons/favicon-32.png?v=3"
+    >
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="16x16"
+        href="icons/favicon-16.png?v=3"
+    >
+    <link
+        rel="apple-touch-icon"
+        sizes="180x180"
+        href="icons/apple-touch-icon.png"
+    >
+    <link rel="manifest" href="manifest.webmanifest">
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
+    <div
+        class="pull-to-refresh"
+        data-state="idle"
+        role="status"
+        aria-live="polite"
+        aria-hidden="true"
+    >
+        <span class="pull-to-refresh-spinner" aria-hidden="true"></span>
+        <span class="pull-to-refresh-label"></span>
+    </div>
+
     <!-- Шапка сайта -->
 
     <header class="header">
-        <div class="logo">POJIDMUSIC</div>
+        <div class="header-spacer" aria-hidden="true"></div>
+        <button
+            class="logo"
+            type="button"
+            data-nav-home
+            aria-label="На главную"
+        >POJIDMUSIC</button>
 
         <div
             class="auth-controls"
@@ -98,21 +143,8 @@
                         type="button"
                         role="menuitem"
                         data-profile-action="profile"
-                        disabled
-                        title="Раздел профиля появится позже"
                     >
                         Профиль
-                    </button>
-
-                    <button
-                        class="profile-menu-item"
-                        type="button"
-                        role="menuitem"
-                        data-profile-action="tracks"
-                        disabled
-                        title="Раздел с треками появится позже"
-                    >
-                        Мои треки
                     </button>
 
                     <button
@@ -364,17 +396,80 @@
                     required
                 >
 
-                <label for="track-upload-artist">
-                    Исполнитель
-                </label>
-                <input
-                    id="track-upload-artist"
-                    name="artist_name"
-                    type="text"
-                    maxlength="200"
-                    autocomplete="name"
-                    required
+                <fieldset
+                    class="track-upload-credits"
+                    data-artist-picker="primary"
                 >
+                    <legend>Основные артисты</legend>
+                    <div
+                        class="track-upload-credit-list"
+                        data-artist-credit-list
+                    ></div>
+                    <div class="track-upload-artist-picker">
+                        <label for="track-upload-primary-artist">
+                            Добавить основного артиста
+                        </label>
+                        <input
+                            id="track-upload-primary-artist"
+                            type="search"
+                            maxlength="200"
+                            autocomplete="off"
+                            placeholder="Начните вводить имя или @handle"
+                            role="combobox"
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-controls="track-upload-primary-suggestions"
+                            data-artist-picker-input
+                        >
+                        <div
+                            id="track-upload-primary-suggestions"
+                            class="track-upload-artist-suggestions"
+                            role="listbox"
+                            data-artist-suggestions
+                            hidden
+                        ></div>
+                    </div>
+                </fieldset>
+
+                <fieldset
+                    class="track-upload-credits"
+                    data-artist-picker="featured"
+                >
+                    <legend>
+                        Фит / приглашённые
+                        <span class="track-upload-optional">
+                            необязательно
+                        </span>
+                    </legend>
+                    <div
+                        class="track-upload-credit-list"
+                        data-artist-credit-list
+                    ></div>
+                    <div class="track-upload-artist-picker">
+                        <label for="track-upload-featured-artist">
+                            Добавить приглашённого артиста
+                        </label>
+                        <input
+                            id="track-upload-featured-artist"
+                            type="search"
+                            maxlength="200"
+                            autocomplete="off"
+                            placeholder="Начните вводить имя или @handle"
+                            role="combobox"
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-controls="track-upload-featured-suggestions"
+                            data-artist-picker-input
+                        >
+                        <div
+                            id="track-upload-featured-suggestions"
+                            class="track-upload-artist-suggestions"
+                            role="listbox"
+                            data-artist-suggestions
+                            hidden
+                        ></div>
+                    </div>
+                </fieldset>
 
                 <label for="track-upload-description">
                     Описание
@@ -462,6 +557,191 @@
     </div>
 
 
+    <main
+        id="account-profile"
+        class="app-profile-view account-profile-view"
+        hidden
+    >
+        <section class="profile-surface" aria-labelledby="account-profile-title">
+            <div class="account-profile-heading">
+                <div class="profile-avatar" data-account-avatar aria-hidden="true"></div>
+                <div>
+                    <p class="profile-kicker">Аккаунт</p>
+                    <h1 id="account-profile-title" data-account-name>Профиль</h1>
+                    <p class="profile-meta" data-account-meta></p>
+                </div>
+            </div>
+
+            <dl class="account-profile-details">
+                <div>
+                    <dt>Имя пользователя</dt>
+                    <dd data-account-username>—</dd>
+                </div>
+                <div>
+                    <dt>Роль</dt>
+                    <dd data-account-role>—</dd>
+                </div>
+                <div class="profile-email-row">
+                    <dt>Email</dt>
+                    <dd data-account-email>—</dd>
+                </div>
+            </dl>
+
+            <div class="profile-actions" data-account-actions hidden>
+                <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-account-avatar-input
+                    hidden
+                >
+                <button class="profile-action-button" type="button" data-account-my-tracks hidden>
+                    Мои треки
+                </button>
+                <button class="profile-action-button" type="button" data-account-artist-page hidden>
+                    Страница артиста
+                </button>
+                <button class="profile-action-button" type="button" data-change-account-avatar>
+                    Изменить аватар
+                </button>
+            </div>
+            <p class="profile-form-message" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+
+    <main
+        id="my-tracks"
+        class="app-profile-view my-tracks-view"
+        hidden
+    >
+        <section class="my-tracks-surface" aria-labelledby="my-tracks-title">
+            <p class="profile-kicker">Личный раздел</p>
+            <h1 id="my-tracks-title">Мои треки</h1>
+            <p class="my-tracks-description" data-my-tracks-description></p>
+            <div class="tracks-row" data-my-tracks-list></div>
+            <p class="artist-empty" data-my-tracks-empty hidden>
+                У тебя пока нет опубликованных треков.
+            </p>
+        </section>
+    </main>
+
+    <main
+        id="artist-profile"
+        class="app-profile-view artist-profile-view"
+        hidden
+    >
+        <section class="artist-hero" aria-labelledby="artist-profile-title">
+            <div class="artist-banner" data-artist-banner>
+                <button class="artist-media-edit artist-banner-edit" type="button" data-change-artist-banner hidden aria-label="Изменить баннер">✎</button>
+            </div>
+            <div class="artist-hero-content">
+                <div class="artist-profile-summary">
+                    <div class="profile-avatar artist-avatar" data-artist-avatar>
+                        <button class="artist-media-edit artist-avatar-edit" type="button" data-change-artist-avatar hidden aria-label="Изменить аватар">✎</button>
+                    </div>
+                    <div class="artist-identity">
+                        <h1 id="artist-profile-title" data-artist-name>Артист</h1>
+                        <p class="artist-release-count" data-artist-release-count></p>
+                    </div>
+                </div>
+                <div class="artist-owner-actions" data-artist-owner-actions hidden>
+                    <button class="artist-quick-upload" type="button" data-profile-quick-upload>Загрузить трек</button>
+                    <button class="artist-settings-button" type="button" data-open-artist-settings aria-label="Настройки профиля">⚙</button>
+                </div>
+            </div>
+            <div class="artist-media-controls" data-artist-media-controls hidden>
+                <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-artist-avatar-input
+                    hidden
+                >
+                <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-artist-banner-input
+                    hidden
+                >
+                <p class="artist-media-status" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <section class="artist-releases" aria-labelledby="artist-releases-title">
+            <h2 id="artist-releases-title" class="section-title">РЕЛИЗЫ</h2>
+            <div class="tracks-row" data-artist-tracks></div>
+            <p class="artist-empty" data-artist-empty hidden>
+                У артиста пока нет опубликованных релизов.
+            </p>
+        </section>
+    </main>
+
+    <div class="profile-editor-modal" data-profile-editor-modal hidden>
+        <div class="profile-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-editor-title">
+            <div class="profile-editor-heading">
+                <h2 id="profile-editor-title">Настройки профиля</h2>
+                <button type="button" data-close-profile-editor aria-label="Закрыть">×</button>
+            </div>
+            <form data-profile-editor-form>
+                <label>Имя артиста<input name="display_name" maxlength="200" required></label>
+                <label data-profile-username-field>Никнейм<input name="handle" readonly></label>
+                <label>Email<input name="email" type="email" readonly></label>
+                <label>Роль<input name="role" readonly></label>
+                <p data-profile-editor-status role="status" aria-live="polite"></p>
+                <div class="profile-editor-actions">
+                    <button type="button" data-close-profile-editor>Отмена</button>
+                    <button class="profile-editor-save" type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="crop-modal" data-crop-modal hidden>
+        <div class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="crop-title">
+            <h2 id="crop-title" data-crop-title>Кадрирование</h2>
+            <canvas class="crop-canvas" data-crop-canvas aria-label="Перетащите изображение для выбора кадра"></canvas>
+            <label class="crop-zoom-label">Масштаб
+                <input data-crop-zoom type="range" min="1" max="4" step="0.01" value="1">
+            </label>
+            <input
+                data-crop-replace-input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                hidden
+            >
+            <div class="crop-actions">
+                <button type="button" data-crop-replace>Заменить изображение</button>
+                <button type="button" data-crop-cancel>Отмена</button>
+                <button type="button" data-crop-save>Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="track-editor-modal" data-track-editor-modal hidden>
+        <div class="track-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="track-editor-title">
+            <div class="profile-editor-heading">
+                <h2 id="track-editor-title">Редактировать трек</h2>
+                <button type="button" data-close-track-editor aria-label="Закрыть">×</button>
+            </div>
+            <form data-track-editor-form>
+                <label>Название<input name="title" maxlength="200" required></label>
+                <fieldset><legend>Основные артисты</legend><div data-edit-primary-artists></div><button type="button" data-add-edit-primary>+ артист</button></fieldset>
+                <fieldset><legend>При участии</legend><div data-edit-featured-artists></div><button type="button" data-add-edit-featured>+ артист</button></fieldset>
+                <div class="track-cover-editor">
+                    <img data-edit-cover-preview alt="Предпросмотр обложки трека">
+                    <div class="track-cover-editor-copy">
+                        <button type="button" data-edit-cover>Изменить обложку</button>
+                        <span data-edit-cover-status aria-live="polite"></span>
+                    </div>
+                </div>
+                <p data-track-editor-status role="status" aria-live="polite"></p>
+                <div class="track-editor-actions">
+                    <button type="button" data-close-track-editor>Отмена</button>
+                    <button class="profile-editor-save" type="submit">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main id="catalog-view">
     <!-- Поиск -->
 
     <div class="search-wrap">
@@ -471,6 +751,17 @@
             placeholder="Найти трек или артиста..."
             aria-label="Поиск по трекам и артистам"
         >
+        <button
+            class="search-clear-button"
+            type="button"
+            aria-label="Очистить поиск"
+            hidden
+            disabled
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6L18 18M18 6L6 18"></path>
+            </svg>
+        </button>
     </div>
 
 
@@ -534,6 +825,7 @@
             <div class="recommendations-track"></div>
         </div>
     </section>
+    </main>
 
 
     <!-- Мини-плеер -->
