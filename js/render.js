@@ -4,8 +4,12 @@ import {
     getCatalogTracks,
     sortTracksByReleaseDate
 } from "./catalog-state.js";
-import { renderArtistLinks } from "./artist-utils.js";
+import {
+    renderArtistActionMenu,
+    renderArtistLinks
+} from "./artist-utils.js";
 import { syncRenderedTrackCardsWithPlayerState } from "./player.js";
+import { configureTrackArtworkImage } from "./artwork.js";
 
 let revealObserver = null;
 const REVEAL_FALLBACK_DELAY = 1400;
@@ -99,7 +103,7 @@ function shuffleTracks(trackList) {
 - Все треки
 - Результаты поиска
 */
-export function createTrackCard(track) {
+export function createTrackCard(track, { loading = "lazy" } = {}) {
     const card = document.createElement("div");
 
     /*
@@ -114,7 +118,7 @@ export function createTrackCard(track) {
 
     const cover = document.createElement("img");
     cover.className = "cover";
-    cover.src = track.cover;
+    configureTrackArtworkImage(cover, track.cover, { loading });
     cover.alt = `Обложка трека ${track.title}`;
 
     const playState = document.createElement("div");
@@ -133,9 +137,12 @@ export function createTrackCard(track) {
     artist.className = "artist-name";
     renderArtistLinks(artist, track);
 
+    const artistActions = document.createElement("div");
+    renderArtistActionMenu(artistActions, track);
+
     coverWrap.append(cover, playState);
     info.append(title, artist);
-    card.append(coverWrap, info);
+    card.append(coverWrap, info, artistActions);
 
     return card;
 }
@@ -152,7 +159,7 @@ export function createTrackCard(track) {
 - текст под изображением;
 - горизонтальная карусель.
 */
-export function createRecommendationCard(track) {
+export function createRecommendationCard(track, { loading = "lazy" } = {}) {
     const card = document.createElement("div");
 
     card.className = "recommendation-card";
@@ -160,7 +167,11 @@ export function createRecommendationCard(track) {
 
     const cover = document.createElement("img");
     cover.className = "recommendation-cover cover";
-    cover.src = track.cover;
+    configureTrackArtworkImage(cover, track.cover, {
+        loading,
+        sizes: "228px",
+        recommendation: true
+    });
     cover.alt = `Обложка трека ${track.title}`;
 
     const info = document.createElement("div");
@@ -221,8 +232,8 @@ function renderCards(
     */
     container.innerHTML = "";
 
-    trackList.forEach((track) => {
-        const card = createCard(track);
+    trackList.forEach((track, index) => {
+        const card = createCard(track, index);
 
         container.append(card);
     });
@@ -250,7 +261,7 @@ export function renderNewTracks() {
     renderCards(
         container,
         newestTracks,
-        createTrackCard
+        (track) => createTrackCard(track, { loading: "eager" })
     );
 }
 

@@ -1,6 +1,6 @@
 import {
     createClient
-} from "https://esm.sh/@supabase/supabase-js@2";
+} from "https://esm.sh/@supabase/supabase-js@2.112.2?bundle";
 
 import {
     SUPABASE_PUBLISHABLE_KEY,

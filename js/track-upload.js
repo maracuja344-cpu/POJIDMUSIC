@@ -7,6 +7,7 @@ import {
     supabase
 } from "./supabase/client.js";
 import { openImageCropper } from "./image-cropper.js";
+import { getArtistRow } from "./data-repository.js";
 
 
 const AUDIO_BUCKET = "track-audio";
@@ -441,14 +442,14 @@ async function addCurrentArtistDefault(elements) {
     }
 
     defaultArtistHandledForUserId = userId;
-    const { data, error } = await supabase
-        .from("artists")
-        .select("id,display_name,normalized_name,slug")
-        .eq("linked_profile_id", userId)
-        .maybeSingle();
+    let data = null;
+    try {
+        data = await getArtistRow("linked_profile_id", userId);
+    } catch {
+        return;
+    }
 
     if (
-        error ||
         !data ||
         getCurrentAuthState().user?.id !== userId ||
         defaultArtistHandledForUserId !== userId
@@ -1050,6 +1051,7 @@ async function handleUploadSubmit(event, elements) {
             "Трек успешно загружен. Трек отправлен на проверку.",
             "success"
         );
+        window.dispatchEvent(new CustomEvent("managedtrackchange"));
     } catch (error) {
         const uploadError =
             error instanceof TrackUploadError

@@ -1,0 +1,1701 @@
+{
+  "desktop-1920x1080": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1
+    },
+    "classes": "",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 1905,
+        "height": 1080,
+        "right": 1905,
+        "bottom": 1080,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 672.5,
+        "y": 119.9,
+        "width": 560,
+        "height": 840.3,
+        "right": 1232.5,
+        "bottom": 960.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 672.5,
+        "y": 119.9,
+        "width": 520,
+        "height": 44,
+        "right": 1192.5,
+        "bottom": 163.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 1148.5,
+        "y": 119.9,
+        "width": 44,
+        "height": 44,
+        "right": 1192.5,
+        "bottom": 163.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 672.5,
+        "y": 175.9,
+        "width": 520,
+        "height": 520,
+        "right": 1192.5,
+        "bottom": 695.9,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 672.5,
+        "y": 719.9,
+        "width": 520,
+        "height": 61.3,
+        "right": 1192.5,
+        "bottom": 781.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 672.5,
+        "y": 719.9,
+        "width": 520,
+        "height": 31.2,
+        "right": 1192.5,
+        "bottom": 751,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 672.5,
+        "y": 759,
+        "width": 520,
+        "height": 22.1,
+        "right": 1192.5,
+        "bottom": 781.1,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 672.5,
+        "y": 809.1,
+        "width": 520,
+        "height": 53,
+        "right": 1192.5,
+        "bottom": 862.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 672.5,
+        "y": 888.1,
+        "width": 560,
+        "height": 72,
+        "right": 1232.5,
+        "bottom": 960.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "32px",
+      "right": "32px",
+      "bottom": "32px",
+      "left": "32px"
+    },
+    "contentOverflow": {
+      "clientHeight": 1080,
+      "scrollHeight": 1373,
+      "contentHeight": 840.3
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 44,
+        "height": 44,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 83,
+        "height": 19,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 72,
+        "height": 72,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 164,
+        "height": 24,
+        "clipped": false
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 520,
+        "height": 31.1875,
+        "scrollWidth": 1164,
+        "clientWidth": 520,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 520,
+        "height": 22.09375,
+        "scrollWidth": 632,
+        "clientWidth": 520,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\desktop-1920x1080.png"
+  },
+  "desktop-1440x900": {
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "dpr": 1
+    },
+    "classes": "",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 1425,
+        "height": 900,
+        "right": 1425,
+        "bottom": 900,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 432.5,
+        "y": 29.9,
+        "width": 560,
+        "height": 840.3,
+        "right": 992.5,
+        "bottom": 870.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 432.5,
+        "y": 29.9,
+        "width": 520,
+        "height": 44,
+        "right": 952.5,
+        "bottom": 73.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 908.5,
+        "y": 29.9,
+        "width": 44,
+        "height": 44,
+        "right": 952.5,
+        "bottom": 73.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 432.5,
+        "y": 85.1,
+        "width": 520,
+        "height": 520,
+        "right": 952.5,
+        "bottom": 605.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 432.5,
+        "y": 629.9,
+        "width": 520,
+        "height": 61.3,
+        "right": 952.5,
+        "bottom": 691.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 432.5,
+        "y": 629.9,
+        "width": 520,
+        "height": 31.2,
+        "right": 952.5,
+        "bottom": 661,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 432.5,
+        "y": 669,
+        "width": 520,
+        "height": 22.1,
+        "right": 952.5,
+        "bottom": 691.1,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 432.5,
+        "y": 719.1,
+        "width": 520,
+        "height": 53,
+        "right": 952.5,
+        "bottom": 772.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 432.5,
+        "y": 798.1,
+        "width": 560,
+        "height": 72,
+        "right": 992.5,
+        "bottom": 870.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "32px",
+      "right": "32px",
+      "bottom": "32px",
+      "left": "32px"
+    },
+    "contentOverflow": {
+      "clientHeight": 900,
+      "scrollHeight": 1165,
+      "contentHeight": 840.3
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 44,
+        "height": 44,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 83,
+        "height": 19,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 72,
+        "height": 72,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 164,
+        "height": 24,
+        "clipped": true
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 520,
+        "height": 31.1875,
+        "scrollWidth": 1164,
+        "clientWidth": 520,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 520,
+        "height": 22.09375,
+        "scrollWidth": 632,
+        "clientWidth": 520,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\desktop-1440x900.png"
+  },
+  "desktop-1366x768": {
+    "viewport": {
+      "width": 1366,
+      "height": 768,
+      "dpr": 1
+    },
+    "classes": "",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 1351,
+        "height": 768,
+        "right": 1351,
+        "bottom": 768,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 395.5,
+        "y": 1.1,
+        "width": 560,
+        "height": 765.7,
+        "right": 955.5,
+        "bottom": 766.9,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 395.5,
+        "y": 1.1,
+        "width": 445.4,
+        "height": 44,
+        "right": 840.9,
+        "bottom": 45.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 796.9,
+        "y": 1.1,
+        "width": 44,
+        "height": 44,
+        "right": 840.9,
+        "bottom": 45.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 395.5,
+        "y": 56.9,
+        "width": 445.4,
+        "height": 445.4,
+        "right": 840.9,
+        "bottom": 502.3,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 395.5,
+        "y": 526.6,
+        "width": 445.4,
+        "height": 61.3,
+        "right": 840.9,
+        "bottom": 587.9,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 395.5,
+        "y": 526.6,
+        "width": 445.4,
+        "height": 31.2,
+        "right": 840.9,
+        "bottom": 557.8,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 395.5,
+        "y": 565.8,
+        "width": 445.4,
+        "height": 22.1,
+        "right": 840.9,
+        "bottom": 587.9,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 395.5,
+        "y": 615.9,
+        "width": 445.4,
+        "height": 53,
+        "right": 840.9,
+        "bottom": 668.9,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 395.5,
+        "y": 694.9,
+        "width": 560,
+        "height": 72,
+        "right": 955.5,
+        "bottom": 766.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "32px",
+      "right": "32px",
+      "bottom": "32px",
+      "left": "32px"
+    },
+    "contentOverflow": {
+      "clientHeight": 768,
+      "scrollHeight": 1013,
+      "contentHeight": 765.7
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 44,
+        "height": 44,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 83,
+        "height": 19,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 72,
+        "height": 72,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 164,
+        "height": 24,
+        "clipped": true
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 445.4375,
+        "height": 31.1875,
+        "scrollWidth": 1164,
+        "clientWidth": 445,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 445.4375,
+        "height": 22.09375,
+        "scrollWidth": 632,
+        "clientWidth": 445,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\desktop-1366x768.png"
+  },
+  "desktop-narrow-1024x700": {
+    "viewport": {
+      "width": 1024,
+      "height": 700,
+      "dpr": 1
+    },
+    "classes": "",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 1009,
+        "height": 700,
+        "right": 1009,
+        "bottom": 700,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 224.5,
+        "y": 30.9,
+        "width": 560,
+        "height": 638.3,
+        "right": 784.5,
+        "bottom": 669.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 740.5,
+        "y": 30.9,
+        "width": 44,
+        "height": 44,
+        "right": 784.5,
+        "bottom": 74.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 740.5,
+        "y": 30.9,
+        "width": 44,
+        "height": 44,
+        "right": 784.5,
+        "bottom": 74.9,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 224.5,
+        "y": 30.4,
+        "width": 406,
+        "height": 406,
+        "right": 630.5,
+        "bottom": 436.4,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 224.5,
+        "y": 450.9,
+        "width": 406,
+        "height": 61.3,
+        "right": 630.5,
+        "bottom": 512.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 224.5,
+        "y": 450.9,
+        "width": 406,
+        "height": 31.2,
+        "right": 630.5,
+        "bottom": 482,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 224.5,
+        "y": 490,
+        "width": 406,
+        "height": 22.1,
+        "right": 630.5,
+        "bottom": 512.1,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 224.5,
+        "y": 528.1,
+        "width": 406,
+        "height": 53,
+        "right": 630.5,
+        "bottom": 581.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 224.5,
+        "y": 597.1,
+        "width": 560,
+        "height": 72,
+        "right": 784.5,
+        "bottom": 669.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "32px",
+      "right": "32px",
+      "bottom": "32px",
+      "left": "32px"
+    },
+    "contentOverflow": {
+      "clientHeight": 700,
+      "scrollHeight": 935,
+      "contentHeight": 638.3
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 44,
+        "height": 44,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 83,
+        "height": 19,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 72,
+        "height": 72,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 56,
+        "height": 56,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 164,
+        "height": 24,
+        "clipped": true
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 406,
+        "height": 31.1875,
+        "scrollWidth": 1164,
+        "clientWidth": 406,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 406,
+        "height": 22.09375,
+        "scrollWidth": 632,
+        "clientWidth": 406,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\desktop-narrow-1024x700.png"
+  },
+  "mobile-390x844": {
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "classes": "mobile-device",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "right": 390,
+        "bottom": 844,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 16,
+        "y": 121.5,
+        "width": 358,
+        "height": 601.1,
+        "right": 374,
+        "bottom": 722.5,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "none",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "inline-block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 17.8,
+        "y": 121.5,
+        "width": 354.5,
+        "height": 354.5,
+        "right": 372.2,
+        "bottom": 475.9,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 16,
+        "y": 491.9,
+        "width": 358,
+        "height": 79.6,
+        "right": 374,
+        "bottom": 571.5,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 16,
+        "y": 491.9,
+        "width": 358,
+        "height": 27.6,
+        "right": 374,
+        "bottom": 519.5,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 16,
+        "y": 527.5,
+        "width": 358,
+        "height": 44,
+        "right": 374,
+        "bottom": 571.5,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 16,
+        "y": 587.5,
+        "width": 358,
+        "height": 53,
+        "right": 374,
+        "bottom": 640.5,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 16,
+        "y": 654.5,
+        "width": 358,
+        "height": 68,
+        "right": 374,
+        "bottom": 722.5,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "0px",
+      "right": "16px",
+      "bottom": "0px",
+      "left": "16px"
+    },
+    "contentOverflow": {
+      "clientHeight": 844,
+      "scrollHeight": 1070,
+      "contentHeight": 601.1
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 84,
+        "height": 51,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 68,
+        "height": 68,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 358,
+        "height": 27.59375,
+        "scrollWidth": 1030,
+        "clientWidth": 358,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 358,
+        "height": 44,
+        "scrollWidth": 595,
+        "clientWidth": 358,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\mobile-390x844.png"
+  },
+  "mobile-393x852-safe": {
+    "viewport": {
+      "width": 393,
+      "height": 852,
+      "dpr": 1
+    },
+    "classes": "mobile-device",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852,
+        "right": 393,
+        "bottom": 852,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 16,
+        "y": 130.3,
+        "width": 361,
+        "height": 604.4,
+        "right": 377,
+        "bottom": 734.7,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "none",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "inline-block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 17.6,
+        "y": 130.3,
+        "width": 357.8,
+        "height": 357.8,
+        "right": 375.4,
+        "bottom": 488.1,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 16.5,
+        "y": 504.1,
+        "width": 360,
+        "height": 79.6,
+        "right": 376.5,
+        "bottom": 583.7,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 16.5,
+        "y": 504.1,
+        "width": 360,
+        "height": 27.6,
+        "right": 376.5,
+        "bottom": 531.7,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 16.5,
+        "y": 539.7,
+        "width": 360,
+        "height": 44,
+        "right": 376.5,
+        "bottom": 583.7,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 16.5,
+        "y": 599.7,
+        "width": 360,
+        "height": 53,
+        "right": 376.5,
+        "bottom": 652.7,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 16,
+        "y": 666.7,
+        "width": 361,
+        "height": 68,
+        "right": 377,
+        "bottom": 734.7,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "47px",
+      "right": "16px",
+      "bottom": "34px",
+      "left": "16px"
+    },
+    "contentOverflow": {
+      "clientHeight": 852,
+      "scrollHeight": 1079,
+      "contentHeight": 604.4
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 84,
+        "height": 51,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 68,
+        "height": 68,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 47,
+        "height": 47,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 360,
+        "height": 27.59375,
+        "scrollWidth": 1030,
+        "clientWidth": 360,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 360,
+        "height": 44,
+        "scrollWidth": 595,
+        "clientWidth": 360,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": true,
+    "requestedSafeArea": [
+      47,
+      34
+    ],
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\mobile-393x852-safe.png"
+  },
+  "mobile-narrow-360x740": {
+    "viewport": {
+      "width": 360,
+      "height": 740,
+      "dpr": 1
+    },
+    "classes": "mobile-device",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 740,
+        "right": 360,
+        "bottom": 740,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 16,
+        "y": 92.9,
+        "width": 328,
+        "height": 554.2,
+        "right": 344,
+        "bottom": 647.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "none",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "inline-block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 24.6,
+        "y": 92.9,
+        "width": 310.8,
+        "height": 310.8,
+        "right": 335.4,
+        "bottom": 403.7,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 16,
+        "y": 419.7,
+        "width": 328,
+        "height": 79.6,
+        "right": 344,
+        "bottom": 499.3,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 16,
+        "y": 419.7,
+        "width": 328,
+        "height": 27.6,
+        "right": 344,
+        "bottom": 447.3,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 16,
+        "y": 455.3,
+        "width": 328,
+        "height": 44,
+        "right": 344,
+        "bottom": 499.3,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 16,
+        "y": 515.3,
+        "width": 328,
+        "height": 53,
+        "right": 344,
+        "bottom": 568.3,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 16,
+        "y": 582.3,
+        "width": 328,
+        "height": 64.8,
+        "right": 344,
+        "bottom": 647.1,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "0px",
+      "right": "16px",
+      "bottom": "0px",
+      "left": "16px"
+    },
+    "contentOverflow": {
+      "clientHeight": 740,
+      "scrollHeight": 954,
+      "contentHeight": 554.2
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 84,
+        "height": 51,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 43,
+        "height": 43,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 43,
+        "height": 43,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 65,
+        "height": 65,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 43,
+        "height": 43,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 43,
+        "height": 43,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 328,
+        "height": 27.59375,
+        "scrollWidth": 1030,
+        "clientWidth": 328,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 328,
+        "height": 44,
+        "scrollWidth": 595,
+        "clientWidth": 328,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\mobile-narrow-360x740.png"
+  },
+  "mobile-landscape-844x390": {
+    "viewport": {
+      "width": 844,
+      "height": 390,
+      "dpr": 1
+    },
+    "classes": "mobile-device",
+    "rects": {
+      "player": {
+        "x": 0,
+        "y": 0,
+        "width": 844,
+        "height": 390,
+        "right": 844,
+        "bottom": 390,
+        "display": "flex",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "content": {
+        "x": 142,
+        "y": 22.6,
+        "width": 560,
+        "height": 344.9,
+        "right": 702,
+        "bottom": 367.4,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "actions": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "none",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "collapse": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0,
+        "display": "inline-block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "artwork": {
+        "x": 355.7,
+        "y": 22.6,
+        "width": 132.6,
+        "height": 132.6,
+        "right": 488.3,
+        "bottom": 155.2,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "info": {
+        "x": 308.9,
+        "y": 165.2,
+        "width": 226.2,
+        "height": 61.3,
+        "right": 535.1,
+        "bottom": 226.4,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "title": {
+        "x": 308.9,
+        "y": 165.2,
+        "width": 226.2,
+        "height": 31.2,
+        "right": 535.1,
+        "bottom": 196.3,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "artist": {
+        "x": 308.9,
+        "y": 204.3,
+        "width": 226.2,
+        "height": 22.1,
+        "right": 535.1,
+        "bottom": 226.4,
+        "display": "block",
+        "overflow": "hidden",
+        "clipped": false
+      },
+      "progress": {
+        "x": 308.9,
+        "y": 236.4,
+        "width": 226.2,
+        "height": 53,
+        "right": 535.1,
+        "bottom": 289.4,
+        "display": "block",
+        "overflow": "visible",
+        "clipped": false
+      },
+      "controls": {
+        "x": 142,
+        "y": 299.4,
+        "width": 560,
+        "height": 68,
+        "right": 702,
+        "bottom": 367.4,
+        "display": "flex",
+        "overflow": "visible",
+        "clipped": false
+      }
+    },
+    "playerPadding": {
+      "top": "0px",
+      "right": "16px",
+      "bottom": "0px",
+      "left": "16px"
+    },
+    "contentOverflow": {
+      "clientHeight": 390,
+      "scrollHeight": 561,
+      "contentHeight": 344.9
+    },
+    "text": {
+      "title": "Avario",
+      "titleOverflow": false,
+      "artist": "triplepeepy",
+      "artistOverflow": false,
+      "artistAlign": "center",
+      "artistJustify": "normal"
+    },
+    "focusables": [
+      {
+        "className": "fullscreen-player-desktop-collapse",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      },
+      {
+        "className": "artist-link",
+        "width": 89,
+        "height": 52,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-shuffle",
+        "width": 48,
+        "height": 48,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-prev",
+        "width": 48,
+        "height": 48,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-toggle playing",
+        "width": 68,
+        "height": 68,
+        "clipped": false
+      },
+      {
+        "className": "fullscreen-player-next",
+        "width": 48,
+        "height": 48,
+        "clipped": false
+      },
+      {
+        "className": "player-mode-button fullscreen-player-repeat",
+        "width": 48,
+        "height": 48,
+        "clipped": false
+      },
+      {
+        "className": "volume-slider fullscreen-volume-slider",
+        "width": 0,
+        "height": 0,
+        "clipped": false
+      }
+    ],
+    "currentTrackId": "local:5",
+    "bodyLocked": true,
+    "longText": {
+      "title": {
+        "width": 226.1875,
+        "height": 31.1875,
+        "scrollWidth": 1164,
+        "clientWidth": 226,
+        "overflow": true,
+        "clipped": false
+      },
+      "artist": {
+        "width": 226.1875,
+        "height": 22.09375,
+        "scrollWidth": 632,
+        "clientWidth": 226,
+        "overflow": true,
+        "clipped": false
+      }
+    },
+    "safeAreaEmulated": false,
+    "requestedSafeArea": null,
+    "screenshot": "C:\\Users\\eblan\\Documents\\XXXXXX\\POJIDMUSIC\\tests\\screenshots\\fullscreen\\baseline\\mobile-landscape-844x390.png"
+  }
+}

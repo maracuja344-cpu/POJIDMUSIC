@@ -1,6 +1,11 @@
 import { supabase } from "./supabase/client.js";
-import { getTrackArtists } from "./artist-utils.js";
+import {
+    announceExclusivePopupOpen,
+    EXCLUSIVE_POPUP_OPEN_EVENT,
+    getTrackArtists
+} from "./artist-utils.js";
 import { openImageCropper } from "./image-cropper.js";
+import { invalidateSignedAudioPath } from "./audio-url-resolver.js";
 
 const COVER_BUCKET = "track-covers";
 const AUDIO_BUCKET = "track-audio";
@@ -108,6 +113,7 @@ function closeEditor({ restoreFocus = true } = {}) {
 }
 
 function openEditor(track, returnFocus) {
+    announceExclusivePopupOpen(modal());
     revokePendingCoverPreview();
     const credits = getTrackArtists(track);
     editDraft = {
@@ -264,6 +270,7 @@ async function deleteTrack(track) {
     if (error) throw error;
     const coverPath = data?.cover_path;
     const audioPath = data?.audio_path;
+    invalidateSignedAudioPath(audioPath);
     if (coverPath) await supabase.storage.from(COVER_BUCKET).remove([coverPath]);
     if (audioPath) await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
     await refreshAfterMutation();
@@ -295,11 +302,23 @@ export function decorateManagedTrackCard(card, track) {
         });
         menu.append(item);
     });
-    button.addEventListener("click", (event) => { event.stopPropagation(); menu.hidden = !menu.hidden; });
+    button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const willOpen = menu.hidden;
+        if (willOpen) announceExclusivePopupOpen(menu);
+        menu.hidden = !willOpen;
+    });
     card.append(button, menu);
 }
 
 export function initializeTrackManagement() {
+    window.addEventListener(EXCLUSIVE_POPUP_OPEN_EVENT, (event) => {
+        const owner = event.detail?.owner;
+        document.querySelectorAll(".track-manage-menu:not([hidden])")
+            .forEach((menu) => {
+                if (menu !== owner && !menu.contains(owner)) menu.hidden = true;
+            });
+    });
     document.querySelectorAll("[data-close-track-editor]")
         .forEach((button) => button.addEventListener("click", () => closeEditor()));
     document.querySelector("[data-edit-cover]")?.addEventListener("click", () => void chooseCover());

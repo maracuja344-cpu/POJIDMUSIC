@@ -1,4 +1,8 @@
 import { supabase } from "./supabase/client.js";
+import {
+    invalidateArtistData,
+    invalidateProfileData
+} from "./data-repository.js";
 
 const PROFILE_BUCKET = "profile-avatars";
 const ARTIST_BUCKET = "artist-media";
@@ -144,6 +148,7 @@ export async function uploadAccountAvatar(file, { user, profile } = {}) {
         await supabase.storage.from(PROFILE_BUCKET).remove([oldPath]);
     }
 
+    invalidateProfileData(user.id);
     window.dispatchEvent(new CustomEvent("profilemediachange"));
     return publicUrl;
 }
@@ -192,6 +197,7 @@ export async function uploadArtistMedia(file, artist, kind, crop = { x: 0.5, y: 
         await supabase.storage.from(ARTIST_BUCKET).remove([previousPath]);
     }
 
+    invalidateArtistData();
     window.dispatchEvent(new CustomEvent("artistmediachange", {
         detail: { artistId: artist.id, kind }
     }));
@@ -210,6 +216,7 @@ export async function saveArtistCrop(artist, kind, crop) {
         zoom_value: crop.zoom
     });
     if (error) throw error;
+    invalidateArtistData();
     window.dispatchEvent(new CustomEvent("artistmediachange", {
         detail: { artistId: artist.id, kind }
     }));

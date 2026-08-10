@@ -5,7 +5,13 @@
 export function isPlayableRelease(track) {
     return (
         track.type === "release" &&
-        typeof track.audio === "string" &&
-        track.audio.trim() !== ""
+        (
+            (typeof track.audio === "string" && track.audio.trim() !== "") ||
+            (
+                track.source === "supabase" &&
+                typeof track.storageAudioPath === "string" &&
+                track.storageAudioPath.trim() !== ""
+            )
+        )
     );
 }

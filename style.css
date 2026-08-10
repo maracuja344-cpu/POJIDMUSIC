@@ -3987,7 +3987,7 @@ pointer-events: none не даёт частицам
 
 .fullscreen-player-artist {
     margin:
-        8px
+        3px
         0
         0;
 
@@ -4437,8 +4437,10 @@ Desktop-ползунок вынесен из потока и привязан
 Когда полноэкранный плеер открыт,
 страница под ним не должна прокручиваться.
 */
+html.fullscreen-player-open,
 body.fullscreen-player-open {
     overflow: hidden;
+    overscroll-behavior: none;
 }
 
 
@@ -5325,11 +5327,11 @@ html.mobile-device .fullscreen-player-controls {
 html.mobile-device .fullscreen-player-prev,
 html.mobile-device .fullscreen-player-next,
 html.mobile-device
-.fullscreen-player-controls
-.player-mode-button {
-    width: clamp(42px, 12vw, 48px);
-    height: clamp(42px, 12vw, 48px);
-}
+    .fullscreen-player-controls
+    .player-mode-button {
+        width: clamp(44px, 12vw, 48px);
+        height: clamp(44px, 12vw, 48px);
+    }
 
 html.mobile-device .fullscreen-player-toggle {
     width: clamp(60px, 18vw, 68px);
@@ -5527,6 +5529,421 @@ html.mobile-device
     .fullscreen-player-progress-area,
     html.mobile-device
     .fullscreen-player-controls {
+        margin-top: 10px;
+    }
+}
+
+
+@media
+    (min-width: 769px) and
+    (max-height: 900px) and
+    (hover: hover) and
+    (pointer: fine) {
+    .fullscreen-player-desktop-actions {
+        position: fixed;
+        top: 16px;
+        right: 24px;
+        z-index: 3;
+
+        width: auto;
+        margin: 0;
+    }
+
+    .fullscreen-player-cover-float,
+    .fullscreen-player-info,
+    .fullscreen-player-progress-area {
+        width: min(
+            100%,
+            58vh,
+            520px,
+            max(180px, calc(100dvh - 370px))
+        );
+    }
+}
+
+
+@media
+    (orientation: landscape) and
+    (max-height: 500px) and
+    (pointer: coarse) {
+    html.mobile-device .fullscreen-player-content {
+        width: min(100%, 720px);
+
+        display: grid;
+        grid-template-columns:
+            minmax(0, 300px)
+            minmax(260px, 360px);
+        grid-template-areas:
+            "cover info"
+            "cover progress"
+            "cover controls"
+            "cover identity";
+        align-items: center;
+        justify-content: center;
+        column-gap: 24px;
+        row-gap: 6px;
+    }
+
+    html.mobile-device .fullscreen-player-cover-float {
+        grid-area: cover;
+
+        width: min(
+            100%,
+            calc(
+                100dvh -
+                env(safe-area-inset-top) -
+                env(safe-area-inset-bottom) -
+                24px
+            ),
+            300px
+        );
+    }
+
+    html.mobile-device .fullscreen-player-info {
+        grid-area: info;
+        align-self: end;
+        margin-top: 0;
+    }
+
+    html.mobile-device
+    .fullscreen-player-progress-area {
+        grid-area: progress;
+        margin-top: 0;
+    }
+
+    html.mobile-device .fullscreen-player-controls {
+        grid-area: controls;
+        align-self: start;
+        margin-top: 0;
+    }
+
+    html.mobile-device .fullscreen-player-artist-identity {
+        grid-area: identity;
+        align-self: start;
+        margin-top: 0;
+    }
+}
+
+
+.fullscreen-player-progress:focus-visible,
+.fullscreen-player-toggle:focus-visible,
+.fullscreen-player-prev:focus-visible,
+.fullscreen-player-next:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+    .fullscreen-player-artist {
+        justify-content: safe center;
+    }
+}
+
+
+/* =========================================================
+   MOBILE PLAYER UX POLISH
+   ========================================================= */
+
+.artist-action-menu {
+    display: none;
+}
+
+.artist-action-menu-popover[hidden] {
+    display: none !important;
+}
+
+.artist-action-menu-card {
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    z-index: 7;
+}
+
+.artist-action-menu-toggle {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    background: rgba(10, 10, 12, 0.82);
+    color: white;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: 0;
+    cursor: pointer;
+}
+
+.artist-action-menu-popover {
+    position: absolute;
+    right: 0;
+    bottom: 44px;
+    width: max-content;
+    min-width: 184px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(20, 20, 23, 0.98);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.46);
+}
+
+.artist-action-menu-item {
+    display: block;
+    min-height: 44px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    line-height: 20px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.artist-action-menu-item:hover,
+.artist-action-menu-item:focus-visible {
+    color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.08);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    text-shadow: none;
+}
+
+.release-card:has(.artist-action-menu.is-open) {
+    z-index: 12;
+}
+
+html.mobile-device .artist-action-menu-card {
+    display: block;
+}
+
+.fullscreen-player-artist-identity {
+    display: none;
+}
+
+html.mobile-device .fullscreen-player-artist-identity {
+    width: min(100%, 520px);
+    margin-top: 14px;
+    display: block;
+}
+
+html.mobile-device .fullscreen-player-artist-identity[hidden] {
+    display: none;
+}
+
+.fullscreen-player-artist-identity-link {
+    min-height: 56px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(12, 12, 14, 0.58);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(18px) saturate(125%);
+    -webkit-backdrop-filter: blur(18px) saturate(125%);
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 11px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.fullscreen-player-artist-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.fullscreen-player-artist-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fullscreen-player-artist-identity-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.fullscreen-player-artist-identity-label {
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.fullscreen-player-artist-identity-name {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fullscreen-player-artist-identity-arrow {
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 24px;
+    line-height: 1;
+    text-align: center;
+}
+
+.fullscreen-player-artist-identity-link:focus-visible {
+    outline: 2px solid var(--accent-color, #b46cff);
+    outline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+    .fullscreen-volume-control {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .artist-action-menu-card {
+        display: block;
+    }
+
+    .release-card .release-info {
+        padding-right: 36px;
+    }
+
+    .release-card .track-title {
+        margin-bottom: 2px;
+    }
+
+    .release-card .artist-name {
+        min-height: 20px;
+        overflow: hidden;
+    }
+
+    .release-card .artist-name .artist-link {
+        padding: 3px 0;
+        margin: -3px 0;
+    }
+
+    #search-results .search-results-list .release-card {
+        min-height: 108px;
+    }
+
+    #search-results .search-results-list .release-info {
+        padding-right: 42px;
+    }
+
+    #search-results .search-results-list .artist-action-menu-card {
+        top: 50%;
+        bottom: auto;
+        transform: translateY(-50%);
+    }
+
+    #search-results .search-results-list .artist-action-menu-popover {
+        top: 44px;
+        bottom: auto;
+    }
+
+    .mini-player {
+        height: 72px;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        grid-template-rows: 44px;
+        gap: 8px;
+        padding: 10px;
+        cursor: pointer;
+    }
+
+    .mini-player .player-main {
+        grid-column: 1;
+        grid-row: 1;
+        position: relative;
+        z-index: 1;
+    }
+
+    .mini-player .player-controls {
+        grid-column: 2;
+        grid-row: 1;
+        width: 44px;
+        height: 44px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .mini-player .player-controls .player-mode-button,
+    .mini-player .player-prev,
+    .mini-player .player-next,
+    .mini-player .volume-control {
+        display: none;
+    }
+
+    .mini-player .player-toggle {
+        width: 44px;
+        height: 44px;
+        margin: 0;
+    }
+
+    .mini-player .player-progress {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+        cursor: default;
+    }
+
+    .mini-player .player-progress-track {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background: transparent;
+    }
+
+    .mini-player .player-progress-fill {
+        background:
+            color-mix(
+                in srgb,
+                var(--player-accent) 22%,
+                transparent
+            );
+    }
+
+    .mini-player .player-progress-thumb {
+        display: none;
+    }
+
+    .mini-player .player-artist .artist-link {
+        pointer-events: none;
+    }
+
+    body:has(.mini-player.active) {
+        padding-bottom:
+            calc(96px + env(safe-area-inset-bottom));
+    }
+
+    html.mobile-device .fullscreen-player-info {
+        margin-top: 12px;
+    }
+
+    html.mobile-device .fullscreen-player-artist {
+        min-height: 28px;
+    }
+
+    html.mobile-device .fullscreen-player-artist .artist-link {
+        padding: 5px 3px;
+        margin: -5px -3px;
+    }
+
+    html.mobile-device .fullscreen-player-progress-area {
+        margin-top: 8px;
+    }
+
+    html.mobile-device .fullscreen-player-controls {
         margin-top: 10px;
     }
 }

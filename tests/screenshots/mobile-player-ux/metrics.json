@@ -1,0 +1,20 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "mobileClass": true,
+  "mini": {
+    "width": 366,
+    "height": 72
+  },
+  "searchCard": {
+    "width": 370,
+    "height": 110
+  },
+  "visibleMiniButtons": [
+    "Воспроизвести"
+  ],
+  "durationBeforeReload": "1:15",
+  "restoredDuration": "1:15"
+}

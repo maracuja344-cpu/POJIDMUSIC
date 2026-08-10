@@ -1,6 +1,14 @@
 import {
     supabase
 } from "./supabase/client.js";
+import {
+    clearUserScopedData,
+    getProfileById
+} from "./data-repository.js";
+import {
+    announceExclusivePopupOpen,
+    EXCLUSIVE_POPUP_OPEN_EVENT
+} from "./artist-utils.js";
 
 
 let authInitialized = false;
@@ -233,6 +241,9 @@ function setProfileMenuOpen(
         focusFirstItem = false
     } = {}
 ) {
+    if (open) {
+        announceExclusivePopupOpen(elements.userControls);
+    }
     elements.profileMenu.hidden = !open;
     elements.profileButton.setAttribute(
         "aria-expanded",
@@ -294,23 +305,15 @@ function renderSignedIn(elements, user) {
 }
 
 
-async function findProfile(userId) {
+async function findProfile(userId, {
+    force = false,
+    onUpdate
+} = {}) {
     try {
-        const {
-            data,
-            error
-        } = await supabase
-            .from("profiles")
-            .select("id, username, display_name, avatar_url, role")
-            .eq("id", userId)
-            .maybeSingle();
-
-        if (error) {
-            return {
-                state: "unavailable",
-                profile: null
-            };
-        }
+        const data = await getProfileById(userId, {
+            force,
+            onUpdate
+        });
 
         return {
             state: data ? "ready" : "missing",
@@ -329,7 +332,17 @@ async function refreshProfile(elements, user, session) {
     if (!user?.id) return;
 
     const requestId = ++profileRequestId;
-    let result = await findProfile(user.id);
+    const refreshFromBackground = () => {
+        if (
+            currentAuthState.user?.id === user.id &&
+            !elements.userControls.hidden
+        ) {
+            void refreshProfile(elements, user, session);
+        }
+    };
+    let result = await findProfile(user.id, {
+        onUpdate: refreshFromBackground
+    });
 
     /*
     Auth-trigger работает синхронно, но короткий повтор защищает
@@ -344,7 +357,10 @@ async function refreshProfile(elements, user, session) {
             window.setTimeout(resolve, 250);
         });
 
-        result = await findProfile(user.id);
+        result = await findProfile(user.id, {
+            force: true,
+            onUpdate: refreshFromBackground
+        });
     }
 
     if (
@@ -394,6 +410,7 @@ export async function reloadCurrentProfile() {
         return null;
     }
 
+    clearUserScopedData();
     return refreshProfile(
         activeAuthElements,
         currentAuthState.user,
@@ -634,6 +651,7 @@ async function handleSignOut(elements) {
             return;
         }
 
+        clearUserScopedData();
         applyAuthSession(elements, null);
     } catch {
         elements.profileNote.textContent =
@@ -758,6 +776,15 @@ export function initializeAuth() {
         }
 
         setProfileMenuOpen(elements, false);
+    });
+
+    window.addEventListener(EXCLUSIVE_POPUP_OPEN_EVENT, (event) => {
+        if (
+            !elements.profileMenu.hidden &&
+            !elements.userControls.contains(event.detail?.owner)
+        ) {
+            setProfileMenuOpen(elements, false);
+        }
     });
 
     elements.userControls.addEventListener(

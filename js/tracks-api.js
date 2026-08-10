@@ -1,11 +1,8 @@
 import { supabase } from "./supabase/client.js";
 import { parseLegacyArtistCredit } from "./artist-utils.js";
 
-const AUDIO_BUCKET = "track-audio";
 const COVER_BUCKET = "track-covers";
 const ARTIST_MEDIA_BUCKET = "artist-media";
-const AUDIO_SIGNED_URL_TTL_SECONDS = 60 * 60;
-const AUDIO_SIGNED_URL_REUSE_LEEWAY_MS = 60 * 1000;
 const FALLBACK_COVER = "img/cover.jpg";
 const RELEASE_TYPES = new Set(["demo", "single", "album_track"]);
 const TRACK_COLUMNS = [
@@ -97,7 +94,7 @@ function getEffectiveReleaseDate(row) {
     return createdAt && Number.isFinite(Date.parse(createdAt)) ? createdAt : "";
 }
 
-export function mapSupabaseTrackToCatalogTrack(row, urls) {
+export function mapSupabaseTrackToCatalogTrack(row, urls = {}) {
     const structuredArtists = Array.isArray(row.track_artists)
         ? row.track_artists
             .filter((credit) => credit?.artist?.slug)
@@ -157,8 +154,8 @@ export function mapSupabaseTrackToCatalogTrack(row, urls) {
         type: "release",
         releaseType: row.release_type,
         releaseDate: getEffectiveReleaseDate(row),
-        cover: urls.coverUrl,
-        audio: urls.audioUrl,
+        cover: urls.coverUrl ?? FALLBACK_COVER,
+        audio: urls.audioUrl ?? "",
         audioExpiresAt: urls.audioExpiresAt ?? null,
         storageAudioPath: row.audio_path.trim()
         ,storageCoverPath: row.cover_path.trim()
@@ -178,88 +175,7 @@ function getManagedRowValidationError(row) {
     return null;
 }
 
-async function createAudioSignedUrl(path) {
-    const { data, error } = await supabase.storage
-        .from(AUDIO_BUCKET)
-        .createSignedUrl(path, AUDIO_SIGNED_URL_TTL_SECONDS);
-
-    const signedUrl = error
-        ? null
-        : getNonEmptyString(data?.signedUrl);
-
-    if (!signedUrl) return null;
-
-    return {
-        signedUrl,
-        expiresAt:
-            Date.now() + AUDIO_SIGNED_URL_TTL_SECONDS * 1000
-    };
-}
-
-function getReusableSignedAudio(existingTracks, path) {
-    const existingTrack = existingTracks.find((track) => {
-        return (
-            track?.source === "supabase" &&
-            track.storageAudioPath === path
-        );
-    });
-
-    if (
-        !getNonEmptyString(existingTrack?.audio) ||
-        Number(existingTrack?.audioExpiresAt) <=
-            Date.now() + AUDIO_SIGNED_URL_REUSE_LEEWAY_MS
-    ) {
-        return null;
-    }
-
-    return {
-        signedUrl: existingTrack.audio,
-        expiresAt: existingTrack.audioExpiresAt
-    };
-}
-
-async function createAudioSignedUrls(
-    rows,
-    existingTracks = []
-) {
-    const urlsByPath = new Map();
-    const results = await Promise.all(
-        rows.map(async (row) => {
-            const path = row.audio_path.trim();
-            const reusableSignedAudio =
-                getReusableSignedAudio(existingTracks, path);
-
-            if (reusableSignedAudio) {
-                return {
-                    path,
-                    signedAudio: reusableSignedAudio
-                };
-            }
-
-            try {
-                return {
-                    path,
-                    signedAudio:
-                        await createAudioSignedUrl(path)
-                };
-            } catch {
-                return { path, signedAudio: null };
-            }
-        })
-    );
-
-    results.forEach(({ path, signedAudio }) => {
-        if (signedAudio) {
-            urlsByPath.set(path, signedAudio);
-        }
-    });
-
-    return urlsByPath;
-}
-
-export async function getPublishedTracks({
-    existingTracks = []
-} = {}) {
+export async function getPublishedTracks() {
     let { data, error } = await supabase
         .from("tracks")
         .select(TRACK_COLUMNS_WITH_ARTIST_MEDIA)
@@ -332,62 +248,26 @@ export async function getPublishedTracks({
 
     if (!uniqueRows.length) return [];
 
-    const audioUrlsByPath = await createAudioSignedUrls(
-        uniqueRows,
-        existingTracks
-    );
     const result = [];
 
     for (const row of uniqueRows) {
         const publicCoverUrl = getCoverUrl(row.cover_path.trim());
         const coverUrl = publicCoverUrl ?? FALLBACK_COVER;
-        const signedAudio =
-            audioUrlsByPath.get(row.audio_path.trim());
-
         if (!publicCoverUrl) {
             console.warn(
                 `Supabase-трек ${row.id}: используется fallback-обложка.`
             );
         }
 
-        if (!signedAudio) {
-            warnSkippedTrack(row, "не удалось сформировать временный URL аудио");
-            continue;
-        }
-
         result.push(mapSupabaseTrackToCatalogTrack(row, {
-            coverUrl,
-            audioUrl: signedAudio.signedUrl,
-            audioExpiresAt: signedAudio.expiresAt
+            coverUrl
         }));
     }
 
     return result;
 }
 
-export async function refreshSupabaseTrackAudio(track) {
-    const audioPath =
-        getNonEmptyString(track?.storageAudioPath);
-
-    if (track?.source !== "supabase" || !audioPath) {
-        throw new Error("Невозможно обновить ссылку аудио.");
-    }
-
-    const signedAudio =
-        await createAudioSignedUrl(audioPath);
-
-    if (!signedAudio) {
-        throw new Error("Не удалось обновить временную ссылку аудио.");
-    }
-
-    return Object.freeze({
-        ...track,
-        audio: signedAudio.signedUrl,
-        audioExpiresAt: signedAudio.expiresAt
-    });
-}
-
-export async function getOwnedArtistTracks(artistId, { existingTracks = [] } = {}) {
+export async function getOwnedArtistTracks(artistId) {
     if (!artistId) return [];
     const { data, error } = await supabase
         .from("tracks")
@@ -399,13 +279,9 @@ export async function getOwnedArtistTracks(artistId, { existingTracks = [] } = {
         !getManagedRowValidationError(row) &&
         row.track_artists?.some((credit) => credit?.artist?.id === artistId)
     ));
-    const audioUrls = await createAudioSignedUrls(rows, existingTracks);
     return rows.map((row) => {
-        const signed = audioUrls.get(row.audio_path.trim());
         return mapSupabaseTrackToCatalogTrack(row, {
-            coverUrl: getCoverUrl(row.cover_path.trim()) ?? FALLBACK_COVER,
-            audioUrl: signed?.signedUrl || "",
-            audioExpiresAt: signed?.expiresAt ?? null
+            coverUrl: getCoverUrl(row.cover_path.trim()) ?? FALLBACK_COVER
         });
     });
 }

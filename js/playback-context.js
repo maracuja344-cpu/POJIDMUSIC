@@ -1,4 +1,8 @@
-const STORAGE_KEY = "player-playback-context-v2";
+import { reconcileQueueSnapshot } from "./queue-decisions.js";
+import {
+    readPlayerSnapshot,
+    updatePlayerSnapshot
+} from "./player-persistence.js";
 const CONTEXT_TYPES = new Set([
     "catalog",
     "artist",
@@ -36,17 +40,28 @@ function normalizeContext(value) {
 }
 
 function restoreContext() {
-    try {
-        return normalizeContext(JSON.parse(localStorage.getItem(STORAGE_KEY)));
-    } catch {
-        return normalizeContext(null);
-    }
+    const snapshot = readPlayerSnapshot();
+    return normalizeContext({
+        ...snapshot.source,
+        queueIds: snapshot.queue.ids,
+        currentIndex: snapshot.queue.currentIndex
+    });
 }
 
 let playbackContext = restoreContext();
 
 function persistContext() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(playbackContext));
+    updatePlayerSnapshot({
+        queue: {
+            ids: playbackContext.queueIds,
+            currentIndex: playbackContext.currentIndex
+        },
+        source: {
+            type: playbackContext.type,
+            id: playbackContext.id,
+            label: playbackContext.label
+        }
+    });
 }
 
 function notifyPlaybackContextChange() {
@@ -77,16 +92,27 @@ export function getPlaybackContext() {
     };
 }
 
+export function restorePlaybackContext(snapshot) {
+    playbackContext = normalizeContext({
+        ...snapshot?.source,
+        queueIds: snapshot?.queue?.ids,
+        currentIndex: snapshot?.queue?.currentIndex
+    });
+    notifyPlaybackContextChange();
+    return getPlaybackContext();
+}
+
 export function reconcilePlaybackContext(validIds, catalogIds = []) {
-    const valid = new Set(uniqueIds(validIds));
-    const nextIds = playbackContext.queueIds.filter((id) => valid.has(id));
-
-    if (playbackContext.type === "catalog" && nextIds.length === 0) {
-        nextIds.push(...uniqueIds(catalogIds).filter((id) => valid.has(id)));
-    }
-
-    const currentId = playbackContext.queueIds[playbackContext.currentIndex];
-    const currentIndex = currentId ? nextIds.indexOf(currentId) : -1;
+    const {
+        queueIds: nextIds,
+        currentIndex
+    } = reconcileQueueSnapshot({
+        queueIds: playbackContext.queueIds,
+        currentIndex: playbackContext.currentIndex,
+        sourceType: playbackContext.type,
+        validIds,
+        catalogIds
+    });
 
     if (nextIds.length === playbackContext.queueIds.length &&
         currentIndex === playbackContext.currentIndex &&

@@ -8,10 +8,33 @@ import {
 import {
     getPlaybackContext,
     reconcilePlaybackContext,
+    restorePlaybackContext,
     setPlaybackContext,
     setPlaybackContextCurrent
 } from "./playback-context.js";
-import { renderArtistLinks } from "./artist-utils.js";
+import {
+    renderFullscreenArtistIdentity,
+    renderArtistLinks
+} from "./artist-utils.js";
+import {
+    getHistoryDecision,
+    getSequentialQueueId,
+    getShuffleDecision,
+    shouldRepeatCurrentTrack
+} from "./queue-decisions.js";
+import {
+    prefetchTrackAudio,
+    refreshTrackAudio,
+    resolveTrackAudio,
+    shouldRetrySignedAudioError
+} from "./audio-url-resolver.js";
+import { getTrackCardArtwork } from "./artwork.js";
+import {
+    loadPlayerSnapshot,
+    reconcilePlayerSnapshot,
+    savePlayerSnapshot
+} from "./player-persistence.js";
+import { createMediaSessionController } from "./media-session.js";
 
 
 /* =========================================================
@@ -34,7 +57,6 @@ const FALLBACK_PLAYER_ACCENT = {
     blue: 255
 };
 const COVER_COLOR_SAMPLE_SIZE = 32;
-const SIGNED_URL_REFRESH_LEEWAY_MS = 30 * 1000;
 const TRACK_FADE_OUT_DURATION_MS = 220;
 const TRACK_FADE_IN_DURATION_MS = 360;
 const REPEAT_MODES = [
@@ -77,10 +99,14 @@ let isSeeking = false;
 
 
 /*
-Последняя секунда, на которой состояние
-уже сохранялось в localStorage.
+Время последней throttled-записи позиции
+в versioned player snapshot.
 */
-let lastSavedSecond = -1;
+let lastPositionSaveTime = -Infinity;
+let pendingSnapshotSaveTimer = null;
+let pendingRestoredPosition = 0;
+let knownDuration = 0;
+let playbackIntentId = 0;
 
 /*
 Таймер плавной смены трека.
@@ -92,11 +118,15 @@ let trackSwitchTimer = null;
 let trackSwitchCleanupTimer = null;
 let trackSwitchId = 0;
 let isTrackSwitchPending = false;
+let pendingTrackCatalogId = null;
 let transitionGain = 1;
 let volumeTransitionFrame = null;
 let volumeTransitionFallbackTimer = null;
 let volumeTransitionResolve = null;
 let fullscreenCloseTimer = null;
+let fullscreenReturnFocus = null;
+let fullscreenArtistIdentity = null;
+let fullscreenArtworkRequestId = 0;
 let coverFloatSettleTimer = null;
 let shuffleEnabled = false;
 let repeatMode = "off";
@@ -105,9 +135,16 @@ let shuffleHistoryIndex = -1;
 let pendingShuffleHistoryIndex = null;
 let shuffleCycleIds = new Set();
 let autoplayErrorAttempts = 0;
+let audioErrorRecoveryPending = false;
+let audioErrorRetrySwitchId = -1;
 let playerAccentRequestId = 0;
 const coverAccentCache = new Map();
-const audioRefreshPromises = new Map();
+let mediaSessionController = {
+    updateMetadata() {},
+    clear() {},
+    syncPlaybackState() {},
+    syncPosition() {}
+};
 
 
 /* =========================================================
@@ -228,6 +265,46 @@ function getCatalogPlaybackQueue() {
 }
 
 
+function updateFullscreenProgressAccessibility(
+    position = audio.currentTime,
+    duration = audio.duration
+) {
+    if (!fullscreenProgress) return;
+
+    const safeDuration = Number.isFinite(duration) && duration > 0
+        ? duration
+        : 0;
+    const safePosition = safeDuration > 0 && Number.isFinite(position)
+        ? Math.min(Math.max(position, 0), safeDuration)
+        : 0;
+
+    fullscreenProgress.setAttribute(
+        "aria-valuemax",
+        String(Math.round(safeDuration))
+    );
+    fullscreenProgress.setAttribute(
+        "aria-valuenow",
+        String(Math.round(safePosition))
+    );
+    fullscreenProgress.setAttribute(
+        "aria-valuetext",
+        `${formatTime(safePosition)} из ${formatTime(safeDuration)}`
+    );
+}
+
+
+function setFullscreenLoadingState(isLoading) {
+    fullscreenPlayer?.setAttribute(
+        "aria-busy",
+        String(Boolean(isLoading))
+    );
+    fullscreenPlayer?.classList.toggle(
+        "is-buffering",
+        Boolean(isLoading)
+    );
+}
+
+
 /* =========================================================
    6. ПОИСК ТРЕКА В ОЧЕРЕДИ
    ========================================================= */
@@ -267,15 +344,7 @@ function findTrackByCatalogId(catalogId) {
    ========================================================= */
 
 function savePlaybackModes() {
-    localStorage.setItem(
-        "player-shuffle",
-        String(shuffleEnabled)
-    );
-
-    localStorage.setItem(
-        "player-repeat",
-        repeatMode
-    );
+    savePlayerState();
 }
 
 
@@ -436,21 +505,10 @@ function cycleRepeatMode() {
 }
 
 
-function restorePlaybackModes() {
-    shuffleEnabled =
-        localStorage.getItem(
-            "player-shuffle"
-        ) === "true";
-
-    const savedRepeatMode =
-        localStorage.getItem(
-            "player-repeat"
-        );
-
-    repeatMode = REPEAT_MODES.includes(
-        savedRepeatMode
-    )
-        ? savedRepeatMode
+function restorePlaybackModes(snapshot) {
+    shuffleEnabled = snapshot.shuffle;
+    repeatMode = REPEAT_MODES.includes(snapshot.repeatMode)
+        ? snapshot.repeatMode
         : "off";
 
     updatePlaybackModeButtons();
@@ -458,103 +516,41 @@ function restorePlaybackModes() {
 
 
 function getSequentialTrack(direction, playbackQueue) {
-    const currentIndex =
-        getCurrentTrackIndex(playbackQueue);
-
-    if (currentIndex === -1) {
-        return playbackQueue[0] || null;
-    }
-
-    const targetIndex =
-        currentIndex + direction;
-
-    if (
-        targetIndex >= 0 &&
-        targetIndex < playbackQueue.length
-    ) {
-        return playbackQueue[targetIndex];
-    }
-
-    if (repeatMode !== "all") {
-        return null;
-    }
-
-    return direction > 0
-        ? playbackQueue[0]
-        : playbackQueue[
-            playbackQueue.length - 1
-        ];
+    const catalogId = getSequentialQueueId({
+        queueIds: playbackQueue.map((track) => track.catalogId),
+        currentId: currentTrack?.catalogId,
+        direction,
+        repeatMode
+    });
+    return playbackQueue.find((track) => track.catalogId === catalogId) || null;
 }
 
 function getShuffledTrack(direction, playbackQueue) {
-    if (!currentTrack) {
-        return playbackQueue[
-            Math.floor(
-                Math.random() *
-                playbackQueue.length
-            )
-        ] || null;
-    }
-
-    if (playbackQueue.length === 1) {
-        return repeatMode === "all"
-            ? currentTrack
-            : null;
-    }
-
-    const historyTargetIndex =
-        shuffleHistoryIndex + direction;
-
-    if (
-        historyTargetIndex >= 0 &&
-        historyTargetIndex <
-            shuffleHistory.length
-    ) {
-        const historyTrack = findTrackByCatalogId(
-            shuffleHistory[
-                historyTargetIndex
-            ]
-        );
-
-        if (historyTrack) {
-            pendingShuffleHistoryIndex =
-                historyTargetIndex;
-
-            return historyTrack;
-        }
-    }
-
-    if (direction < 0) {
-        return null;
-    }
-
-    let candidates = playbackQueue.filter((track) => (
-        track.catalogId !== currentTrack.catalogId &&
-        !shuffleCycleIds.has(track.catalogId)
-    ));
-
-    if (candidates.length === 0 && repeatMode === "all") {
-        shuffleCycleIds = new Set([currentTrack.catalogId]);
-        candidates = playbackQueue.filter((track) => (
-            track.catalogId !== currentTrack.catalogId
-        ));
-    }
-
-    return candidates[
-        Math.floor(
-            Math.random() *
-            candidates.length
-        )
-    ] || null;
+    const decision = getShuffleDecision({
+        queueIds: playbackQueue.map((track) => track.catalogId),
+        currentId: currentTrack?.catalogId,
+        direction,
+        repeatMode,
+        historyIds: shuffleHistory,
+        historyIndex: shuffleHistoryIndex,
+        validHistoryIds: getCatalogTracks().map((track) => track.catalogId),
+        cycleIds: [...shuffleCycleIds]
+    });
+    pendingShuffleHistoryIndex = decision.historyIndex;
+    shuffleCycleIds = new Set(decision.cycleIds);
+    return findTrackByCatalogId(decision.catalogId);
 }
 
 function getHistoryTrack(direction) {
-    const targetIndex = shuffleHistoryIndex + direction;
-    if (targetIndex < 0 || targetIndex >= shuffleHistory.length) return null;
-    const track = getCatalogTrackById(shuffleHistory[targetIndex]);
-    if (!track || !isPlayableRelease(track)) return null;
-    pendingShuffleHistoryIndex = targetIndex;
-    return track;
+    const validTracks = getCatalogPlaybackQueue();
+    const decision = getHistoryDecision({
+        historyIds: shuffleHistory,
+        historyIndex: shuffleHistoryIndex,
+        direction,
+        validIds: validTracks.map((track) => track.catalogId)
+    });
+    pendingShuffleHistoryIndex = decision.historyIndex;
+    return findTrackByCatalogId(decision.catalogId);
 }
 
 function shuffled(values) {
@@ -601,12 +597,12 @@ function getTrackForNavigation(
     pendingShuffleHistoryIndex = null;
     if (direction < 0) return getHistoryTrack(-1);
 
-    if (
-        reason === "ended" &&
-        !fromError &&
-        repeatMode === "one" &&
-        currentTrack
-    ) {
+    if (shouldRepeatCurrentTrack({
+        reason,
+        fromError,
+        repeatMode,
+        currentId: currentTrack?.catalogId
+    })) {
         return currentTrack;
     }
 
@@ -704,6 +700,15 @@ function openFullscreenPlayer() {
 
     window.clearTimeout(fullscreenCloseTimer);
 
+    if (
+        document.activeElement instanceof HTMLElement &&
+        !fullscreenPlayer.contains(document.activeElement)
+    ) {
+        fullscreenReturnFocus = document.activeElement;
+    } else if (!fullscreenReturnFocus) {
+        fullscreenReturnFocus = playerCover;
+    }
+
     fullscreenPlayer.classList.remove(
         "closing",
         "is-dragging"
@@ -734,6 +739,46 @@ function openFullscreenPlayer() {
     document.body.classList.add(
         "fullscreen-player-open"
     );
+    document.documentElement.classList.add(
+        "fullscreen-player-open"
+    );
+
+    void promoteFullscreenArtwork();
+
+    window.setTimeout(() => {
+        if (!fullscreenPlayer.classList.contains("open")) return;
+
+        const initialControl =
+            fullscreenDesktopCollapse?.getClientRects().length
+                ? fullscreenDesktopCollapse
+                : fullscreenToggle;
+        initialControl?.focus();
+    }, 100);
+}
+
+async function promoteFullscreenArtwork() {
+    const track = currentTrack;
+    const requestedCover = track?.cover || FALLBACK_COVER;
+    const requestId = ++fullscreenArtworkRequestId;
+
+    if (!track || !fullscreenPlayer?.classList.contains("open")) return;
+
+    try {
+        const cover = await preloadImage(requestedCover);
+        if (
+            requestId !== fullscreenArtworkRequestId ||
+            currentTrack?.catalogId !== track.catalogId ||
+            !fullscreenPlayer.classList.contains("open")
+        ) return;
+
+        if (fullscreenCover) fullscreenCover.src = cover;
+        fullscreenBackground?.style.setProperty(
+            "--fullscreen-cover",
+            `url("${cover}")`
+        );
+    } catch {
+        // The already rendered compact artwork remains as the visual fallback.
+    }
 }
 
 
@@ -834,6 +879,9 @@ function closeFullscreenPlayer(fromDrag = false) {
         document.body.classList.remove(
             "fullscreen-player-open"
         );
+        document.documentElement.classList.remove(
+            "fullscreen-player-open"
+        );
 
         fullscreenPlayer.style.removeProperty(
             "transition"
@@ -864,6 +912,20 @@ function closeFullscreenPlayer(fromDrag = false) {
         );
 
         stopAudioReactionLoop();
+
+        const returnTarget = fullscreenReturnFocus;
+        fullscreenReturnFocus = null;
+
+        if (
+            returnTarget instanceof HTMLElement &&
+            returnTarget.isConnected
+        ) {
+            returnTarget.focus();
+        } else if (
+            document.activeElement instanceof HTMLElement
+        ) {
+            document.activeElement.blur();
+        }
     }, 340);
 }
 
@@ -1258,11 +1320,16 @@ function updatePlayerInformation(
     /*
     Собираем готовые данные текущего трека.
     */
-    const cover =
-        coverSource ||
+    const originalCover =
         track.cover ||
         fallbackCover ||
         FALLBACK_COVER;
+    const compactCover = getTrackCardArtwork(originalCover).small;
+    const cover = coverSource || (
+        fullscreenPlayer?.classList.contains("open")
+            ? originalCover
+            : compactCover
+    );
 
     const title =
         track.title || fallbackTitle;
@@ -1271,11 +1338,17 @@ function updatePlayerInformation(
         track.artist || fallbackArtist;
 
     updatePlayerAccent(track, cover);
+    mediaSessionController.updateMetadata({
+        ...track,
+        title,
+        artist,
+        cover: originalCover
+    });
 
     /*
     Обновляем нижний мини-плеер.
     */
-    playerCover.src = cover;
+    playerCover.src = compactCover;
 
     playerCover.alt =
         `Обложка трека ${title}`;
@@ -1318,6 +1391,16 @@ function updatePlayerInformation(
     Передаём обложку в размытый фон
     через CSS-переменную.
     */
+    if (fullscreenArtistIdentity) {
+        renderFullscreenArtistIdentity(
+            fullscreenArtistIdentity,
+            track,
+            {
+                onSelect: closeFullscreenPlayer
+            }
+        );
+    }
+
     if (fullscreenBackground) {
         fullscreenBackground.style.setProperty(
             "--fullscreen-cover",
@@ -1388,6 +1471,15 @@ function setPlayingState(isPlaying) {
         "playing",
         isPlaying
     );
+
+    const toggleLabel = isPlaying
+        ? "Поставить на паузу"
+        : "Воспроизвести";
+    playerToggle.setAttribute("aria-label", toggleLabel);
+    fullscreenToggle?.setAttribute("aria-label", toggleLabel);
+    mediaSessionController.syncPlaybackState(
+        currentTrack ? (isPlaying ? "playing" : "paused") : "none"
+    );
 }
 
 export function reconcilePlayerWithCatalog() {
@@ -1409,6 +1501,7 @@ export function reconcilePlayerWithCatalog() {
     if (!nextTrack) {
         ++trackSwitchId;
         isTrackSwitchPending = false;
+        pendingTrackCatalogId = null;
         window.clearTimeout(trackSwitchTimer);
         window.clearTimeout(trackSwitchCleanupTimer);
         cancelVolumeTransition({ restoreGain: true });
@@ -1426,9 +1519,9 @@ export function reconcilePlayerWithCatalog() {
         closeFullscreenPlayer();
 
         miniPlayer?.classList.remove("active");
-        localStorage.removeItem("player-track-id");
-        localStorage.removeItem("player-track");
-        localStorage.removeItem("player-time");
+        pendingRestoredPosition = 0;
+        mediaSessionController.clear();
+        savePlayerState();
 
         return "removed";
     }
@@ -1508,47 +1601,30 @@ function stopAudioReactionLoop() {
 async function ensurePlayableTrackAudio(track) {
     const latestTrack =
         getCatalogTrackById(track?.catalogId) || track;
+    const playableTrack = await resolveTrackAudio(latestTrack);
+    if (playableTrack !== latestTrack) replaceCatalogTrack(playableTrack);
+    return playableTrack;
+}
 
-    if (latestTrack?.source !== "supabase") {
-        return latestTrack;
-    }
-
-    const expiresAt =
-        Number(latestTrack.audioExpiresAt) || 0;
-
+function getLikelyNextTrackForPrefetch() {
     if (
-        latestTrack.audio &&
-        expiresAt >
-            Date.now() + SIGNED_URL_REFRESH_LEEWAY_MS
+        !currentTrack ||
+        shuffleEnabled ||
+        shuffleHistoryIndex < shuffleHistory.length - 1
     ) {
-        return latestTrack;
+        return null;
     }
 
-    let refreshPromise =
-        audioRefreshPromises.get(latestTrack.catalogId);
+    return getSequentialTrack(1, getPlaybackQueue());
+}
 
-    if (!refreshPromise) {
-        refreshPromise = import("./tracks-api.js")
-            .then(({ refreshSupabaseTrackAudio }) => {
-                return refreshSupabaseTrackAudio(latestTrack);
-            })
-            .then((refreshedTrack) => {
-                replaceCatalogTrack(refreshedTrack);
-                return refreshedTrack;
-            })
-            .finally(() => {
-                audioRefreshPromises.delete(
-                    latestTrack.catalogId
-                );
-            });
-
-        audioRefreshPromises.set(
-            latestTrack.catalogId,
-            refreshPromise
-        );
-    }
-
-    return refreshPromise;
+function prefetchLikelyNextAudio(expectedCatalogId) {
+    window.setTimeout(() => {
+        if (currentTrack?.catalogId !== expectedCatalogId) return;
+        const nextTrack = getLikelyNextTrackForPrefetch();
+        if (nextTrack?.source !== "supabase") return;
+        void prefetchTrackAudio(nextTrack).catch(() => {});
+    }, 0);
 }
 
 function assignAudioSource(
@@ -1572,6 +1648,25 @@ function assignAudioSource(
 
     audio.src = track.audio;
     audio.load();
+
+    if (pendingRestoredPosition > 0) {
+        const restoredTrackId = track.catalogId;
+        const restoredSource = track.audio;
+        const applyRestoredPosition = () => {
+            if (
+                currentTrack?.catalogId !== restoredTrackId ||
+                audio.getAttribute("src") !== restoredSource ||
+                !Number.isFinite(audio.duration)
+            ) {
+                return;
+            }
+            audio.currentTime = Math.min(pendingRestoredPosition, audio.duration);
+            pendingRestoredPosition = 0;
+            mediaSessionController.syncPosition(audio, { force: true });
+        };
+        if (audio.readyState >= 1) applyRestoredPosition();
+        else audio.addEventListener("loadedmetadata", applyRestoredPosition, { once: true });
+    }
 
     if (previousTime > 0) {
         audio.addEventListener(
@@ -1627,9 +1722,11 @@ function clearPlaybackError() {
 Пытается запустить текущий аудиофайл.
 */
 async function startAudio(
-    expectedCatalogId = currentTrack?.catalogId
+    expectedCatalogId = currentTrack?.catalogId,
+    expectedPlaybackIntentId = playbackIntentId
 ) {
     const targetAudio = audio;
+    setFullscreenLoadingState(true);
 
     try {
         const playableTrack =
@@ -1638,7 +1735,8 @@ async function startAudio(
         if (
             !playableTrack ||
             currentTrack?.catalogId !==
-                expectedCatalogId
+                expectedCatalogId ||
+            playbackIntentId !== expectedPlaybackIntentId
         ) {
             return;
         }
@@ -1657,14 +1755,18 @@ async function startAudio(
         if (
             targetAudio !== audio ||
             currentTrack?.catalogId !==
-                expectedCatalogId
+                expectedCatalogId ||
+            playbackIntentId !== expectedPlaybackIntentId
         ) {
             return;
         }
+
+        prefetchLikelyNextAudio(expectedCatalogId);
     } catch {
         if (
             currentTrack?.catalogId !==
-                expectedCatalogId
+                expectedCatalogId ||
+            playbackIntentId !== expectedPlaybackIntentId
         ) {
             return;
         }
@@ -1672,6 +1774,7 @@ async function startAudio(
         cancelVolumeTransition({
             restoreGain: true
         });
+        setFullscreenLoadingState(false);
         showPlaybackError();
         console.error(
             "Не удалось запустить аудио:",
@@ -1695,39 +1798,46 @@ async function startAudio(
 позицию воспроизведения и громкость.
 */
 function savePlayerState() {
-    if (!currentTrack) return;
-
-    localStorage.setItem(
-        "player-track-id",
-        currentTrack.catalogId
-    );
-
-    if (currentTrack.source === "local") {
-        localStorage.setItem(
-            "player-track",
-            currentTrack.audio
-        );
-    } else {
-        localStorage.removeItem("player-track");
-    }
-
-    localStorage.setItem(
-        "player-time",
-        audio.currentTime
-    );
-
-    localStorage.setItem(
-        "player-volume",
-        userVolume
-    );
-
-    localStorage.setItem(
-        "player-history-v2",
-        JSON.stringify({
+    window.clearTimeout(pendingSnapshotSaveTimer);
+    pendingSnapshotSaveTimer = null;
+    const context = getPlaybackContext();
+    savePlayerSnapshot({
+        currentTrackId: currentTrack?.catalogId ?? null,
+        position: currentTrack
+            ? (pendingRestoredPosition > 0
+                ? pendingRestoredPosition
+                : Number.isFinite(audio.currentTime)
+                ? audio.currentTime
+                : 0)
+            : 0,
+        duration: currentTrack
+            ? (Number.isFinite(audio.duration) && audio.duration > 0
+                ? audio.duration
+                : knownDuration)
+            : 0,
+        volume: userVolume,
+        repeatMode,
+        shuffle: shuffleEnabled,
+        queue: {
+            ids: context.queueIds,
+            currentIndex: context.currentIndex
+        },
+        history: {
             ids: shuffleHistory,
             index: shuffleHistoryIndex
-        })
-    );
+        },
+        source: {
+            type: context.type,
+            id: context.id,
+            label: context.label
+        },
+        paused: audio.paused
+    });
+}
+
+function schedulePlayerStateSave(delay = 250) {
+    window.clearTimeout(pendingSnapshotSaveTimer);
+    pendingSnapshotSaveTimer = window.setTimeout(savePlayerState, delay);
 }
 
 
@@ -1901,11 +2011,13 @@ function updateVolumeFromSlider(event) {
 
     applyPlaybackVolume();
     updateVolumeVisual();
-    savePlayerState();
+    schedulePlayerStateSave();
 }
 
 
 function pausePlayback() {
+    ++playbackIntentId;
+    setFullscreenLoadingState(false);
     cancelVolumeTransition({
         restoreGain: true
     });
@@ -1914,7 +2026,8 @@ function pausePlayback() {
 
 
 async function resumePlayback() {
-    await startAudio();
+    const intentId = ++playbackIntentId;
+    await startAudio(currentTrack?.catalogId, intentId);
 }
 
 
@@ -1923,6 +2036,7 @@ async function resumePlayback() {
    ========================================================= */
 
 function resetPlayerProgress() {
+    knownDuration = 0;
     playerProgressFill.style.width = "0%";
     playerProgress.style.setProperty(
         "--progress",
@@ -1949,7 +2063,9 @@ function resetPlayerProgress() {
         fullscreenDurationTime.textContent = "0:00";
     }
 
-    lastSavedSecond = -1;
+    updateFullscreenProgressAccessibility(0, 0);
+
+    lastPositionSaveTime = -Infinity;
 }
 
 
@@ -2367,9 +2483,12 @@ async function playTrack(
         return;
     }
 
+    const requestedPlaybackIntentId = ++playbackIntentId;
+
 
     const currentSwitchId = ++trackSwitchId;
     isTrackSwitchPending = true;
+    pendingTrackCatalogId = track.catalogId;
     cancelVolumeTransition({
         restoreGain: true
     });
@@ -2382,6 +2501,7 @@ async function playTrack(
     } catch {
         if (currentSwitchId === trackSwitchId) {
             isTrackSwitchPending = false;
+            pendingTrackCatalogId = null;
             showPlaybackError();
             handleAutoplayFailure();
         }
@@ -2439,6 +2559,8 @@ async function playTrack(
 
     currentTrack = track;
     currentCard = card;
+    pendingRestoredPosition = 0;
+    knownDuration = 0;
     setPlaybackContextCurrent(track.catalogId);
     recordTrackInShuffleHistory(track);
 
@@ -2447,6 +2569,8 @@ async function playTrack(
     вызывается только после актуальной визуальной смены.
     */
     assignAudioSource(track);
+    savePlayerState();
+    syncRenderedTrackCardsWithPlayerState();
 
     if (currentSwitchId !== trackSwitchId) {
         return;
@@ -2467,6 +2591,7 @@ async function playTrack(
         }
 
         isTrackSwitchPending = false;
+        pendingTrackCatalogId = null;
 
         updatePlayerInformation(
             track,
@@ -2479,6 +2604,9 @@ async function playTrack(
 
         resetPlayerProgress();
 
+        knownDuration = Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : 0;
         const duration = formatTime(audio.duration);
 
         durationTimeElement.textContent = duration;
@@ -2490,7 +2618,7 @@ async function playTrack(
 
         savePlayerState();
 
-        startAudio(track.catalogId);
+        startAudio(track.catalogId, requestedPlaybackIntentId);
     }
 
     if (
@@ -2588,6 +2716,14 @@ function playCard(selectedCard) {
 
     if (!catalogId) return;
 
+    if (
+        isTrackSwitchPending &&
+        pendingTrackCatalogId === catalogId
+    ) {
+        cancelPendingTrackSwitch();
+        return;
+    }
+
     const track = findTrackByCatalogId(catalogId);
 
     if (!track) {
@@ -2604,12 +2740,38 @@ function playCard(selectedCard) {
     playTrack(track, card);
 }
 
+function cancelPendingTrackSwitch() {
+    const canceledCatalogId = pendingTrackCatalogId;
+    if (!isTrackSwitchPending) return null;
+    ++trackSwitchId;
+    isTrackSwitchPending = false;
+    pendingTrackCatalogId = null;
+    cancelVolumeTransition({ restoreGain: true });
+    return canceledCatalogId;
+}
+
 
 /* =========================================================
    14. СЛЕДУЮЩИЙ ТРЕК
    ========================================================= */
 
 function playNextTrack({ fromError = false, reason = "manual" } = {}) {
+    const canceledCatalogId = cancelPendingTrackSwitch();
+    if (canceledCatalogId && !shuffleEnabled) {
+        const queue = getPlaybackQueue();
+        const targetId = getSequentialQueueId({
+            queueIds: queue.map((track) => track.catalogId),
+            currentId: canceledCatalogId,
+            direction: 1,
+            repeatMode
+        });
+        const targetTrack = queue.find((track) => track.catalogId === targetId);
+        if (targetTrack) {
+            playTrack(targetTrack);
+            return;
+        }
+    }
+
     const nextTrack =
         getTrackForNavigation(1, { fromError, reason });
 
@@ -2624,7 +2786,7 @@ function playNextTrack({ fromError = false, reason = "manual" } = {}) {
 
     if (nextTrack.catalogId === currentTrack?.catalogId) {
         audio.currentTime = 0;
-        void startAudio(nextTrack.catalogId);
+        void resumePlayback();
         return;
     }
 
@@ -2644,12 +2806,68 @@ function handleAutoplayFailure() {
     }), 0);
 }
 
+function reportAudioStreamError() {
+    cancelVolumeTransition({ restoreGain: true });
+    showPlaybackError();
+    console.error(
+        "Ошибка аудиопотока:",
+        {
+            catalogId: currentTrack?.catalogId ?? null,
+            source: currentTrack?.source ?? null,
+            mediaErrorCode: audio.error?.code ?? null
+        }
+    );
+    handleAutoplayFailure();
+}
+
+function canRetrySignedAudioError() {
+    return shouldRetrySignedAudioError({
+        track: currentTrack,
+        errorCode: audio.error?.code,
+        recoveryPending: audioErrorRecoveryPending,
+        retryAlreadyUsed: audioErrorRetrySwitchId === trackSwitchId
+    });
+}
+
+async function recoverSignedAudioAfterError() {
+    const expectedSwitchId = trackSwitchId;
+    const expectedCatalogId = currentTrack?.catalogId;
+    const expectedPlaybackIntentId = playbackIntentId;
+    audioErrorRecoveryPending = true;
+    audioErrorRetrySwitchId = expectedSwitchId;
+
+    try {
+        const refreshedTrack = await refreshTrackAudio(currentTrack);
+        if (
+            expectedSwitchId !== trackSwitchId ||
+            currentTrack?.catalogId !== expectedCatalogId
+        ) {
+            return;
+        }
+
+        replaceCatalogTrack(refreshedTrack);
+        currentTrack = refreshedTrack;
+        assignAudioSource(refreshedTrack, { preserveCurrentTime: true });
+        await startAudio(expectedCatalogId, expectedPlaybackIntentId);
+    } catch {
+        if (
+            expectedSwitchId === trackSwitchId &&
+            currentTrack?.catalogId === expectedCatalogId
+        ) {
+            reportAudioStreamError();
+        }
+    } finally {
+        audioErrorRecoveryPending = false;
+    }
+}
+
 
 /* =========================================================
    15. ПРЕДЫДУЩИЙ ТРЕК
    ========================================================= */
 
 function playPreviousTrack() {
+    cancelPendingTrackSwitch();
     const previousTrack =
         getTrackForNavigation(-1);
 
@@ -2718,134 +2936,72 @@ function seekFullscreenAudio(event) {
    ========================================================= */
 
 function restorePlayerState() {
-    restorePlaybackModes();
-
-    const savedTrackId =
-        localStorage.getItem("player-track-id");
-
-    const savedTrack =
-        localStorage.getItem("player-track");
-
-    const savedTime =
-        Number(
-            localStorage.getItem("player-time")
-        ) || 0;
-
-    const savedVolume =
-        localStorage.getItem("player-volume");
-
-    /*
-    Возвращаем сохранённую громкость.
-    */
-    if (savedVolume !== null) {
-        const parsedVolume =
-            Number(savedVolume);
-
-        if (
-            Number.isFinite(parsedVolume) &&
-            parsedVolume >= 0 &&
-            parsedVolume <= 1
-        ) {
-            userVolume = parsedVolume;
-        }
-    }
+    const catalogIds = getCatalogPlaybackQueue()
+        .map((track) => track.catalogId);
+    const loadedSnapshot = loadPlayerSnapshot({
+        resolveLegacyTrackId: (audioPath) => (
+            audioPath ? findTrackByAudio(audioPath)?.catalogId : null
+        )
+    });
+    const snapshot = reconcilePlayerSnapshot(
+        loadedSnapshot,
+        catalogIds,
+        catalogIds
+    );
+    savePlayerSnapshot(snapshot);
+    restorePlaybackContext(snapshot);
+    restorePlaybackModes(snapshot);
+    userVolume = snapshot.volume;
 
     applyPlaybackVolume();
     updateVolumeVisual();
 
-    if (!savedTrackId && !savedTrack) return;
-
-    const savedTrackObject =
-        (
-            savedTrackId
-                ? findTrackByCatalogId(savedTrackId)
-                : null
-        ) || (
-            savedTrack
-                ? findTrackByAudio(savedTrack)
-                : null
-        );
-
-    if (!savedTrackObject) {
-        /*
-        A removed local catalog entry must not keep a dead audio path or
-        playback position alive. Remote IDs are left intact when Supabase is
-        temporarily unavailable so they can be restored on a later refresh.
-        */
-        if (savedTrackId?.startsWith("local:") || (!savedTrackId && savedTrack)) {
-            localStorage.removeItem("player-track-id");
-            localStorage.removeItem("player-track");
-            localStorage.removeItem("player-time");
-        }
-
+    if (!snapshot.currentTrackId) {
+        mediaSessionController.clear();
         return;
     }
 
+    const savedTrackObject = findTrackByCatalogId(snapshot.currentTrackId);
+    if (!savedTrackObject) return;
     const savedCard =
         findCardForTrack(savedTrackObject);
 
     currentTrack = savedTrackObject;
     currentCard = savedCard;
-    setPlaybackContextCurrent(savedTrackObject.catalogId);
-    try {
-        const savedHistory = JSON.parse(
-            localStorage.getItem("player-history-v2")
-        );
-        shuffleHistory = Array.isArray(savedHistory?.ids)
-            ? savedHistory.ids.filter((id) => getCatalogTrackById(id)).slice(-100)
-            : [];
-        shuffleHistoryIndex = Math.min(
-            Math.max(Number(savedHistory?.index) || 0, 0),
-            Math.max(shuffleHistory.length - 1, 0)
-        );
-    } catch {
-        shuffleHistory = [];
-        shuffleHistoryIndex = -1;
-    }
+    shuffleHistory = [...snapshot.history.ids];
+    shuffleHistoryIndex = snapshot.history.index;
     if (!shuffleHistory.includes(savedTrackObject.catalogId)) {
         shuffleHistory.push(savedTrackObject.catalogId);
         shuffleHistoryIndex = shuffleHistory.length - 1;
     }
     pendingShuffleHistoryIndex = null;
     shuffleCycleIds = new Set([savedTrackObject.catalogId]);
+    pendingRestoredPosition = snapshot.position;
+    knownDuration = snapshot.duration;
 
-    assignAudioSource(savedTrackObject);
+    if (savedTrackObject.source === "local") {
+        assignAudioSource(savedTrackObject);
+    }
 
     updatePlayerInformation(
         savedTrackObject,
         savedCard
     );
     syncRenderedTrackCardsWithPlayerState();
-
-    /*
-    После загрузки метаданных возвращаем
-    сохранённую позицию.
-    */
-    const restoredAudio = audio;
-    const restoredTrackId =
-        savedTrackObject.catalogId;
-
-    restoredAudio.addEventListener(
-        "loadedmetadata",
-        (event) => {
-            if (
-                event.currentTarget !== restoredAudio ||
-                currentTrack?.catalogId !==
-                    restoredTrackId ||
-                restoredAudio.getAttribute("src") !==
-                    savedTrackObject.audio
-            ) {
-                return;
-            }
-
-            if (savedTime < restoredAudio.duration) {
-                restoredAudio.currentTime = savedTime;
-            }
-        },
-        {
-            once: true
-        }
+    currentTimeElement.textContent = formatTime(snapshot.position);
+    durationTimeElement.textContent = formatTime(knownDuration);
+    if (fullscreenCurrentTime) {
+        fullscreenCurrentTime.textContent = formatTime(snapshot.position);
+    }
+    if (fullscreenDurationTime) {
+        fullscreenDurationTime.textContent = formatTime(knownDuration);
+    }
+    updateFullscreenProgressAccessibility(
+        snapshot.position,
+        knownDuration
     );
+    setPlayingState(false);
+    savePlayerState();
 }
 
 
@@ -2959,6 +3115,11 @@ fullscreenCoverNext =
             ".fullscreen-player-artist"
         );
 
+    fullscreenArtistIdentity =
+        document.querySelector(
+            ".fullscreen-player-artist-identity"
+        );
+
     fullscreenDesktopCollapse =
         document.querySelector(
             ".fullscreen-player-desktop-collapse"
@@ -3034,6 +3195,23 @@ fullscreenCoverNext =
 
     initializeFullscreenCoverInteraction();
     applyAudioReactionMode();
+    mediaSessionController = createMediaSessionController({
+        actions: {
+            getAudio: () => audio,
+            play: () => {
+                if (currentTrack) void resumePlayback();
+            },
+            pause: () => {
+                if (currentTrack || isTrackSwitchPending) pausePlayback();
+            },
+            next: () => {
+                if (currentTrack || isTrackSwitchPending) playNextTrack();
+            },
+            previous: () => {
+                if (currentTrack || isTrackSwitchPending) playPreviousTrack();
+            }
+        }
+    });
 
     window.addEventListener(
         "playbackcontextchange",
@@ -3358,6 +3536,43 @@ fullscreenCoverNext =
         }
     );
 
+    playerCover.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+
+            event.preventDefault();
+            openFullscreenPlayer();
+        }
+    );
+
+    miniPlayer.addEventListener(
+        "click",
+        (event) => {
+            const mobileLayout =
+                document.documentElement.classList.contains(
+                    "mobile-device"
+                ) ||
+                window.matchMedia("(max-width: 560px)").matches;
+            const interactiveTarget = event.target.closest?.(
+                "button, input, select, textarea"
+            );
+
+            if (!mobileLayout || interactiveTarget) return;
+
+            event.preventDefault();
+            openFullscreenPlayer();
+        }
+    );
+
+    fullscreenArtist?.addEventListener(
+        "click",
+        (event) => {
+            if (!event.target.closest("[data-artist-slug]")) return;
+            closeFullscreenPlayer();
+        }
+    );
+
 
     fullscreenDesktopCollapse?.addEventListener(
         "click",
@@ -3374,8 +3589,29 @@ fullscreenCoverNext =
     document.addEventListener(
         "keydown",
         (event) => {
+            if (!fullscreenPlayer?.classList.contains("open")) return;
+
             if (event.key === "Escape") {
+                event.preventDefault();
                 closeFullscreenPlayer();
+                return;
+            }
+
+            if (event.key !== " ") return;
+
+            const interactiveTarget = event.target.closest?.(
+                "button, input, a, select, textarea, " +
+                "[role='button'], [role='slider'], [contenteditable='true']"
+            );
+
+            if (interactiveTarget || !currentTrack) return;
+
+            event.preventDefault();
+
+            if (audio.paused) {
+                void resumePlayback();
+            } else {
+                pausePlayback();
             }
         }
     );
@@ -3732,17 +3968,41 @@ fullscreenCoverNext =
         }
     );
 
+    fullscreenProgress?.addEventListener(
+        "keydown",
+        (event) => {
+            if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+
+            let nextTime = audio.currentTime;
+
+            if (event.key === "Home") nextTime = 0;
+            else if (event.key === "End") nextTime = audio.duration;
+            else if (event.key === "ArrowLeft") nextTime -= 5;
+            else if (event.key === "ArrowRight") nextTime += 5;
+            else return;
+
+            event.preventDefault();
+            audio.currentTime = Math.min(
+                Math.max(nextTime, 0),
+                audio.duration
+            );
+            updateFullscreenProgressAccessibility();
+        }
+    );
+
 
     /* =====================================================
        СОБЫТИЯ AUDIO
        ===================================================== */
 
     audio.addEventListener("play", () => {
+        mediaSessionController.syncPlaybackState("playing");
         startAudioReactionLoop();
     });
 
     audio.addEventListener("playing", () => {
         autoplayErrorAttempts = 0;
+        setFullscreenLoadingState(false);
         clearPlaybackError();
         setPlayingState(true);
         startFullscreenCoverFloat();
@@ -3757,6 +4017,7 @@ fullscreenCoverNext =
     });
 
     audio.addEventListener("pause", () => {
+        setFullscreenLoadingState(false);
         setPlayingState(false);
         savePlayerState();
         settleFullscreenCoverFloat();
@@ -3764,22 +4025,13 @@ fullscreenCoverNext =
     });
 
     audio.addEventListener("error", () => {
-        cancelVolumeTransition({
-            restoreGain: true
-        });
-        showPlaybackError();
-        console.error(
-            "Ошибка аудиопотока:",
-            {
-                catalogId:
-                    currentTrack?.catalogId ?? null,
-                source:
-                    currentTrack?.source ?? null,
-                mediaErrorCode:
-                    audio.error?.code ?? null
-            }
-        );
-        handleAutoplayFailure();
+        setFullscreenLoadingState(false);
+        if (canRetrySignedAudioError()) {
+            void recoverSignedAudioAfterError();
+            return;
+        }
+
+        reportAudioStreamError();
     });
 
 
@@ -3797,6 +4049,9 @@ fullscreenCoverNext =
     Показываем длительность после загрузки файла.
     */
     audio.addEventListener("loadedmetadata", () => {
+        knownDuration = Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : 0;
         const duration = formatTime(audio.duration);
 
         durationTimeElement.textContent = duration;
@@ -3804,6 +4059,26 @@ fullscreenCoverNext =
         if (fullscreenDurationTime) {
             fullscreenDurationTime.textContent = duration;
         }
+        updateFullscreenProgressAccessibility();
+        mediaSessionController.syncPosition(audio, { force: true });
+        savePlayerState();
+    });
+
+    audio.addEventListener("waiting", () => {
+        setFullscreenLoadingState(true);
+    });
+
+    audio.addEventListener("stalled", () => {
+        setFullscreenLoadingState(true);
+    });
+
+    audio.addEventListener("canplay", () => {
+        setFullscreenLoadingState(false);
+    });
+
+    audio.addEventListener("seeked", () => {
+        mediaSessionController.syncPosition(audio, { force: true });
+        savePlayerState();
     });
 
 
@@ -3849,22 +4124,19 @@ fullscreenCoverNext =
             fullscreenCurrentTime.textContent =
                 formatTime(audio.currentTime);
         }
+        updateFullscreenProgressAccessibility();
+        mediaSessionController.syncPosition(audio);
 
-        const currentSecond =
-            Math.floor(audio.currentTime);
-
-            /*
-            Сохраняем позицию каждые пять секунд.
-            */
-        if (
-            currentSecond % 5 === 0 &&
-            currentSecond !== lastSavedSecond
-        ) {
-            lastSavedSecond =
-                currentSecond;
-
+        const timestamp = Date.now();
+        if (timestamp - lastPositionSaveTime >= 5000) {
+            lastPositionSaveTime = timestamp;
             savePlayerState();
         }
+    });
+
+    window.addEventListener("pagehide", savePlayerState);
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") savePlayerState();
     });
 
 
@@ -3900,8 +4172,10 @@ function preloadImage(source) {
 недоступна, заранее загружает локальную заглушку.
 */
 async function getPreloadedCover(track) {
-    const requestedCover =
-        track.cover || FALLBACK_COVER;
+    const originalCover = track.cover || FALLBACK_COVER;
+    const requestedCover = fullscreenPlayer?.classList.contains("open")
+        ? originalCover
+        : getTrackCardArtwork(originalCover).small;
 
     try {
         return await preloadImage(requestedCover);

@@ -1,5 +1,8 @@
 const EXPLICIT_FEATURE_PATTERN = /\s+(?:feat\.?|ft\.?)\s+/i;
 const AMBIGUOUS_CREDIT_PATTERN = /(?:&|\/|,|\s+x\s+|\s+with\s+)/i;
+export const EXCLUSIVE_POPUP_OPEN_EVENT = "pojidmusic:popup-open";
+let artistActionMenuId = 0;
+let artistActionMenuHandlersReady = false;
 
 
 export function normalizeArtistName(value) {
@@ -157,6 +160,198 @@ export function renderArtistLinks(container, track) {
 
         container.append(createArtistLink(artist));
     });
+}
+
+
+export function announceExclusivePopupOpen(owner) {
+    window.dispatchEvent(
+        new CustomEvent(EXCLUSIVE_POPUP_OPEN_EVENT, {
+            detail: { owner }
+        })
+    );
+}
+
+
+export function renderFullscreenArtistIdentity(
+    container,
+    track,
+    { onSelect = null } = {}
+) {
+    if (!container) return;
+
+    const artist = getTrackArtists(track)[0];
+    container.replaceChildren();
+
+    if (!artist?.slug) {
+        container.hidden = true;
+        return;
+    }
+
+    const link = createArtistLink(artist);
+    const avatar = document.createElement("span");
+    const identity = document.createElement("span");
+    const label = document.createElement("span");
+    const name = document.createElement("span");
+    const arrow = document.createElement("span");
+
+    container.hidden = false;
+    link.classList.add("fullscreen-player-artist-identity-link");
+    link.replaceChildren();
+
+    avatar.className = "fullscreen-player-artist-avatar";
+    if (artist.avatarUrl) {
+        const image = document.createElement("img");
+        image.src = artist.avatarUrl;
+        image.alt = "";
+        image.loading = "lazy";
+        avatar.append(image);
+    } else {
+        avatar.textContent = artist.displayName?.trim()?.charAt(0) || "?";
+    }
+
+    identity.className = "fullscreen-player-artist-identity-copy";
+    label.className = "fullscreen-player-artist-identity-label";
+    label.textContent = "Артист";
+    name.className = "fullscreen-player-artist-identity-name";
+    name.textContent = artist.displayName;
+    identity.append(label, name);
+
+    arrow.className = "fullscreen-player-artist-identity-arrow";
+    arrow.textContent = "›";
+    arrow.setAttribute("aria-hidden", "true");
+
+    link.append(avatar, identity, arrow);
+    link.addEventListener("click", () => onSelect?.());
+    container.append(link);
+}
+
+
+function closeArtistActionMenu(wrapper, restoreFocus = false) {
+    if (!wrapper?.classList.contains("is-open")) return;
+
+    const toggle = wrapper.querySelector(".artist-action-menu-toggle");
+    const menu = wrapper.querySelector(".artist-action-menu-popover");
+
+    wrapper.classList.remove("is-open");
+    toggle?.setAttribute("aria-expanded", "false");
+    if (menu) menu.hidden = true;
+    if (restoreFocus) toggle?.focus();
+}
+
+
+function closeOtherArtistActionMenus(exception = null) {
+    document
+        .querySelectorAll(".artist-action-menu.is-open")
+        .forEach((wrapper) => {
+            if (wrapper !== exception) {
+                closeArtistActionMenu(wrapper);
+            }
+        });
+}
+
+
+function ensureArtistActionMenuHandlers() {
+    if (artistActionMenuHandlersReady) return;
+    artistActionMenuHandlersReady = true;
+
+    document.addEventListener("pointerdown", (event) => {
+        const menu = event.target.closest?.(".artist-action-menu");
+        closeOtherArtistActionMenus(menu);
+    });
+
+    window.addEventListener(EXCLUSIVE_POPUP_OPEN_EVENT, (event) => {
+        const owner = event.detail?.owner;
+        const exception = owner?.closest?.(".artist-action-menu") || null;
+        closeOtherArtistActionMenus(exception);
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+
+        const openMenu = document.querySelector(
+            ".artist-action-menu.is-open"
+        );
+        if (!openMenu) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        closeArtistActionMenu(openMenu, true);
+    });
+}
+
+
+export function renderArtistActionMenu(
+    container,
+    track,
+    {
+        context = "card",
+        onSelect = null
+    } = {}
+) {
+    if (!container) return;
+
+    ensureArtistActionMenuHandlers();
+    container.replaceChildren();
+
+    const artist = getTrackArtists(track)[0];
+    if (!artist?.slug) {
+        container.hidden = true;
+        return;
+    }
+
+    const menuId = `artist-action-menu-${++artistActionMenuId}`;
+    const toggle = document.createElement("button");
+    const menu = document.createElement("div");
+    const artistLink = createArtistLink(artist);
+
+    container.hidden = false;
+    container.className =
+        `artist-action-menu artist-action-menu-${context}`;
+
+    toggle.type = "button";
+    toggle.className = "artist-action-menu-toggle";
+    toggle.textContent = "•••";
+    toggle.setAttribute(
+        "aria-label",
+        `Открыть меню трека ${track?.title || ""}`.trim()
+    );
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-haspopup", "menu");
+    toggle.setAttribute("aria-controls", menuId);
+
+    menu.id = menuId;
+    menu.className = "artist-action-menu-popover";
+    menu.setAttribute("role", "menu");
+    menu.hidden = true;
+
+    artistLink.classList.add("artist-action-menu-item");
+    artistLink.textContent = "Перейти к артисту";
+    artistLink.setAttribute("role", "menuitem");
+    artistLink.setAttribute(
+        "aria-label",
+        `Перейти к артисту ${artist.displayName}`
+    );
+
+    toggle.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const shouldOpen = !container.classList.contains("is-open");
+        if (shouldOpen) announceExclusivePopupOpen(container);
+        closeOtherArtistActionMenus(container);
+        container.classList.toggle("is-open", shouldOpen);
+        toggle.setAttribute("aria-expanded", String(shouldOpen));
+        menu.hidden = !shouldOpen;
+        if (shouldOpen) artistLink.focus();
+    });
+
+    artistLink.addEventListener("click", () => {
+        closeArtistActionMenu(container);
+        onSelect?.();
+    });
+
+    menu.append(artistLink);
+    container.append(toggle, menu);
 }
 
 

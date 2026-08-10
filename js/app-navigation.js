@@ -8,6 +8,7 @@ import {
     unobserveRevealElement
 } from "./render.js";
 import {
+    announceExclusivePopupOpen,
     getTrackArtists,
     trackIncludesArtist
 } from "./artist-utils.js";
@@ -26,6 +27,14 @@ import {
 } from "./track-management.js";
 import { supabase } from "./supabase/client.js";
 import { syncRenderedTrackCardsWithPlayerState } from "./player.js";
+import {
+    getArtistRow,
+    invalidateArtistData
+} from "./data-repository.js";
+import {
+    applyArtworkBackground,
+    ARTWORK_WIDTHS
+} from "./artwork.js";
 
 const DEFAULT_TITLE = "POJIDMUSIC";
 const ARTIST_MEDIA_BUCKET = "artist-media";
@@ -133,7 +142,16 @@ function setAvatar(element, name, url, crop) {
     } else {
         element.textContent = safeUrl ? "" : initials;
     }
-    applyFocalBackground(element, safeUrl, crop);
+    applyArtworkBackground(
+        element,
+        safeUrl,
+        {
+            width: ARTWORK_WIDTHS.avatar,
+            height: ARTWORK_WIDTHS.avatar,
+            resize: "contain"
+        },
+        (backgroundUrl) => applyFocalBackground(element, backgroundUrl, crop)
+    );
     element.classList.toggle("has-image", Boolean(safeUrl));
 }
 
@@ -182,39 +200,40 @@ function findCatalogArtist(slug) {
     return null;
 }
 
-async function queryArtist(column, value) {
+async function queryArtist(column, value, { onUpdate } = {}) {
     try {
-        const { supabase } = await import("./supabase/client.js");
-        let result = await supabase
-            .from("artists")
-            .select("id,display_name,normalized_name,slug,avatar_url,banner_url,avatar_path,banner_path,bio,linked_profile_id,updated_at,avatar_focal_x,avatar_focal_y,avatar_zoom,banner_focal_x,banner_focal_y,banner_zoom")
-            .eq(column, value)
-            .maybeSingle();
-        if (result.error) {
-            result = await supabase
-                .from("artists")
-                .select("id,display_name,normalized_name,slug,avatar_url,banner_url,avatar_path,banner_path,bio,linked_profile_id,updated_at")
-                .eq(column, value)
-                .maybeSingle();
-        }
-        if (result.error) {
-            result = await supabase
-                .from("artists")
-                .select("id,display_name,normalized_name,slug,avatar_url,banner_url,bio,linked_profile_id,updated_at")
-                .eq(column, value)
-                .maybeSingle();
-        }
-        return result.error || !result.data
-            ? null
-            : mapArtistRow(result.data, supabase);
+        const row = await getArtistRow(column, value, {
+            onUpdate: (nextRow) => {
+                onUpdate?.(
+                    nextRow
+                        ? mapArtistRow(nextRow, supabase)
+                        : null
+                );
+            }
+        });
+        return row ? mapArtistRow(row, supabase) : null;
     } catch {
         return null;
     }
 }
 
-const fetchArtistBySlug = (slug) => queryArtist("slug", slug);
+const fetchArtistBySlug = (slug) => queryArtist("slug", slug, {
+    onUpdate: () => {
+        if (getRoute().artistSlug === slug) {
+            void renderArtistView(slug);
+        }
+    }
+});
 const fetchLinkedArtist = (profileId) => profileId
-    ? queryArtist("linked_profile_id", profileId)
+    ? queryArtist("linked_profile_id", profileId, {
+        onUpdate: (artist) => {
+            linkedArtist = artist;
+            updateProfileMenu(artist);
+            if (["account", "myTracks"].includes(getRoute().name)) {
+                void renderRoute();
+            }
+        }
+    })
     : Promise.resolve(null);
 
 function clearTrackCards(container) {
@@ -224,8 +243,10 @@ function clearTrackCards(container) {
 
 function renderTrackCards(container, tracks, { canManage = false, profileId = null } = {}) {
     clearTrackCards(container);
-    tracks.forEach((track) => {
-        const card = createTrackCard(track);
+    tracks.forEach((track, index) => {
+        const card = createTrackCard(track, {
+            loading: index < 4 ? "eager" : "lazy"
+        });
         if (canManage && (
             track.ownerId === profileId ||
             getCurrentProfileRole() === "admin"
@@ -399,7 +420,21 @@ async function renderArtistView(slug) {
 
     const banner = view.querySelector("[data-artist-banner]");
     const bannerUrl = getHttpUrl(artist?.bannerUrl);
-    applyFocalBackground(banner, bannerUrl, artist?.bannerCrop);
+    const deliveredBannerUrl = applyArtworkBackground(
+        banner,
+        bannerUrl,
+        {
+            width: ARTWORK_WIDTHS.banner,
+            height: ARTWORK_WIDTHS.banner,
+            quality: 82,
+            resize: "contain"
+        },
+        (backgroundUrl) => applyFocalBackground(
+            banner,
+            backgroundUrl,
+            artist?.bannerCrop
+        )
+    );
     banner.classList.toggle("has-image", Boolean(bannerUrl));
 
     const auth = await getAuthModule();
@@ -430,7 +465,7 @@ async function renderArtistView(slug) {
         .forEach((control) => { control.hidden = !owner; });
     setArtistMediaStatus("");
     document.title = `${artistName} — ${DEFAULT_TITLE}`;
-    void applyArtistAmbient(bannerUrl, artist?.bannerCrop, renderId);
+    void applyArtistAmbient(deliveredBannerUrl, artist?.bannerCrop, renderId);
 }
 
 function renderArtistTracks(view, tracks, owner, profileId) {
@@ -651,7 +686,9 @@ async function openProfileEditor() {
     form.elements.email.value = state.user?.email || "";
     form.elements.role.value = ROLE_LABELS[state.profile?.role] || state.profile?.role || "";
     form.querySelector("[data-profile-editor-status]").textContent = "";
-    document.querySelector("[data-profile-editor-modal]").hidden = false;
+    const modal = document.querySelector("[data-profile-editor-modal]");
+    announceExclusivePopupOpen(modal);
+    modal.hidden = false;
     form.elements.display_name.focus();
 }
 
@@ -669,6 +706,7 @@ async function saveProfileEditor(event) {
             new_display_name: form.elements.display_name.value
         });
         if (error) throw error;
+        invalidateArtistData();
         const slug = renderedArtist.slug;
         closeProfileEditor();
         const { refreshCatalog } = await import("./script.js");

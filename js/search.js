@@ -107,12 +107,14 @@ function renderSearchResults(
     foundTracks,
     container
 ) {
-    foundTracks.forEach((track) => {
+    foundTracks.forEach((track, index) => {
         /*
         Создаём обычную карточку трека
         через функцию из render.js.
         */
-        const card = createTrackCard(track);
+        const card = createTrackCard(track, {
+            loading: index < 4 ? "eager" : "lazy"
+        });
 
         container.append(card);
         observeRevealElement(card);

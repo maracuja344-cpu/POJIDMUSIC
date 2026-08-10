@@ -329,11 +329,85 @@ function initializeCatalogRefreshFeatures() {
 function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
 
+    const reloadGuardKey = "pojidmusic-sw-controller-release";
+    let controllerReloadStarted = false;
+    let controllerWasPresent = Boolean(
+        navigator.serviceWorker.controller
+    );
+
+    function getControllerRelease(worker) {
+        return new Promise((resolve) => {
+            if (!worker) {
+                resolve("");
+                return;
+            }
+
+            const channel = new MessageChannel();
+            const timeoutId = window.setTimeout(
+                () => resolve(""),
+                2000
+            );
+
+            channel.port1.onmessage = (event) => {
+                window.clearTimeout(timeoutId);
+                resolve(event.data?.releaseVersion || "");
+            };
+
+            worker.postMessage(
+                { type: "GET_RELEASE_VERSION" },
+                [channel.port2]
+            );
+        });
+    }
+
+    navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        async () => {
+            if (controllerReloadStarted) return;
+
+            const releaseVersion = await getControllerRelease(
+                navigator.serviceWorker.controller
+            );
+            const lastReloadedRelease = sessionStorage.getItem(
+                reloadGuardKey
+            );
+
+            if (!controllerWasPresent) {
+                controllerWasPresent = true;
+                if (releaseVersion) {
+                    sessionStorage.setItem(
+                        reloadGuardKey,
+                        releaseVersion
+                    );
+                }
+                return;
+            }
+
+            if (
+                releaseVersion &&
+                releaseVersion === lastReloadedRelease
+            ) {
+                return;
+            }
+
+            controllerReloadStarted = true;
+            sessionStorage.setItem(
+                reloadGuardKey,
+                releaseVersion || "unknown"
+            );
+            window.location.reload();
+        }
+    );
+
     window.addEventListener(
         "load",
         () => {
             void navigator.serviceWorker
-                .register("./service-worker.js")
+                .register(
+                    "./service-worker.js",
+                    { updateViaCache: "none" }
+                )
+                .then((registration) => registration.update())
                 .catch((error) => {
                     console.warn(
                         "Service worker не зарегистрирован.",
