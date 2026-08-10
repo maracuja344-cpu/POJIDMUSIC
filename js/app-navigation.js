@@ -826,6 +826,7 @@ export function initializeAppNavigation() {
             return;
         }
         if (event.target.closest("[data-change-artist-banner]")) {
+            setArtistOwnerMenuOpen(false);
             if (renderedArtistOwner) void recropArtistMedia("banner");
             return;
         }

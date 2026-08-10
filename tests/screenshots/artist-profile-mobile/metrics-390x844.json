@@ -23,45 +23,51 @@
         "bottom": 476
       },
       "identity": {
-        "x": 133,
-        "y": 391.53125,
-        "width": 132.015625,
-        "height": 65.46875,
-        "right": 265.015625,
+        "x": 55,
+        "y": 384.53125,
+        "width": 280,
+        "height": 72.46875,
+        "right": 335,
         "bottom": 457
       },
       "avatar": {
-        "x": 31,
-        "y": 369,
-        "width": 88,
-        "height": 88,
-        "right": 119,
-        "bottom": 457
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
       },
       "owner": {
-        "x": 297,
-        "y": 395,
+        "x": 315,
+        "y": 105,
         "width": 44,
         "height": 44,
-        "right": 341,
-        "bottom": 439
+        "right": 359,
+        "bottom": 149
       },
       "bannerEdit": {
-        "x": 321,
-        "y": 101,
-        "width": 42,
-        "height": 42,
-        "right": 363,
-        "bottom": 143
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
       },
       "avatarEdit": {
-        "x": 75,
-        "y": 413,
-        "width": 42,
-        "height": 42,
-        "right": 117,
-        "bottom": 455
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
       },
+      "avatarVisible": false,
+      "bannerEditVisible": false,
+      "avatarEditVisible": false,
+      "identityCentered": true,
+      "ownerTopOffset": 19,
+      "ownerRightOffset": 19,
       "releaseActionCount": 1,
       "artistActionCount": 0,
       "manageBelowCover": true,
@@ -82,9 +88,11 @@
   "menu": {
     "expanded": "true",
     "items": [
+      "Изменить баннер",
       "Загрузить трек",
       "Настройки профиля"
-    ]
+    ],
+    "overlapsIdentity": false
   },
   "exclusiveRelease": {
     "ownerOpen": false,
@@ -97,6 +105,9 @@
   "escape": {
     "open": false,
     "focus": true
+  },
+  "banner": {
+    "ownerOpen": false
   },
   "upload": {
     "ownerOpen": false,

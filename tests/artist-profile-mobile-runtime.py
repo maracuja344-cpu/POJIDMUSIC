@@ -184,6 +184,9 @@ def main():
                         const avatar = rect('.artist-avatar');
                         const owner = rect('.artist-owner-menu-toggle');
                         const hero = rect('.artist-hero');
+                        const visible = (selector) => Boolean(
+                            document.querySelector(selector)?.getClientRects().length
+                        );
                         const firstCard = document.querySelector(
                             '#artist-profile [data-artist-tracks] .release-card'
                         );
@@ -212,6 +215,15 @@ def main():
                             owner,
                             bannerEdit: rect('.artist-banner-edit'),
                             avatarEdit: rect('.artist-avatar-edit'),
+                            avatarVisible: visible('.artist-avatar'),
+                            bannerEditVisible: visible('.artist-banner-edit'),
+                            avatarEditVisible: visible('.artist-avatar-edit'),
+                            identityCentered: Math.abs(
+                                (identity.x + identity.width / 2)
+                                - (hero.x + hero.width / 2)
+                            ) <= 1,
+                            ownerTopOffset: owner.y - hero.y,
+                            ownerRightOffset: hero.right - owner.right,
                             releaseActionCount: firstCard?.querySelectorAll(
                                 '.track-manage-button, .artist-action-menu-toggle'
                             ).length || 0,
@@ -239,13 +251,24 @@ def main():
             )
             capture(client, output_dir / f"owner-menu-{args.width}x{args.height}.png")
             menu_state = client.evaluate("""
-                (() => ({
-                    expanded: document.querySelector('[data-toggle-artist-owner-menu]')
-                        .getAttribute('aria-expanded'),
-                    items: [...document.querySelectorAll(
-                        '.artist-owner-menu-popover [role=menuitem]'
-                    )].map((item) => item.textContent.trim())
-                }))()
+                (() => {
+                    const menu = document.querySelector('.artist-owner-menu-popover')
+                        .getBoundingClientRect();
+                    const identity = document.querySelector('.artist-identity')
+                        .getBoundingClientRect();
+                    const overlaps = menu.left < identity.right
+                        && menu.right > identity.left
+                        && menu.top < identity.bottom
+                        && menu.bottom > identity.top;
+                    return {
+                        expanded: document.querySelector('[data-toggle-artist-owner-menu]')
+                            .getAttribute('aria-expanded'),
+                        items: [...document.querySelectorAll(
+                            '.artist-owner-menu-popover [role=menuitem]'
+                        )].map((item) => item.textContent.trim()),
+                        overlapsIdentity: overlaps
+                    };
+                })()
             """)
 
             client.evaluate("""
@@ -281,6 +304,19 @@ def main():
             """)
 
             client.evaluate("""
+                document.querySelector('[data-toggle-artist-owner-menu]').click();
+                document.querySelector(
+                    '.artist-owner-menu-popover [data-change-artist-banner]'
+                ).click();
+            """)
+            banner_state = client.evaluate("""
+                (() => ({
+                    ownerOpen: document.querySelector('.artist-owner-menu')
+                        .classList.contains('is-open')
+                }))()
+            """)
+
+            client.evaluate("""
                 window.__artistProfileUploadDelegated = false;
                 document.querySelector('.profile-menu .track-upload-open-button')
                     .addEventListener('click', () => {
@@ -302,16 +338,27 @@ def main():
             """)
 
             assert menu_state["expanded"] == "true", menu_state
-            assert menu_state["items"] == ["Загрузить трек", "Настройки профиля"], menu_state
+            assert menu_state["items"] == [
+                "Изменить баннер",
+                "Загрузить трек",
+                "Настройки профиля",
+            ], menu_state
+            assert not menu_state["overlapsIdentity"], menu_state
             assert exclusive_release == {"ownerOpen": False, "releaseOpen": True}, exclusive_release
             assert exclusive_owner == {"ownerOpen": True, "releaseOpen": False}, exclusive_owner
             assert escape_state == {"open": False, "focus": True}, escape_state
+            assert banner_state == {"ownerOpen": False}, banner_state
             assert upload_state == {"ownerOpen": False, "delegated": True}, upload_state
             for state in results.values():
                 assert not state["identityOwnerOverlap"], state
                 assert not state["directActionsVisible"], state
                 assert state["owner"]["width"] >= 44 and state["owner"]["height"] >= 44, state
-                assert state["bannerEdit"]["width"] >= 42, state
+                assert not state["avatarVisible"], state
+                assert not state["bannerEditVisible"], state
+                assert not state["avatarEditVisible"], state
+                assert state["identityCentered"], state
+                assert 12 <= state["ownerTopOffset"] <= 24, state
+                assert 12 <= state["ownerRightOffset"] <= 24, state
                 assert state["releaseActionCount"] == 1, state
                 assert state["artistActionCount"] == 0, state
                 assert state["manageBelowCover"], state
@@ -351,6 +398,7 @@ def main():
                 "exclusiveRelease": exclusive_release,
                 "exclusiveOwner": exclusive_owner,
                 "escape": escape_state,
+                "banner": banner_state,
                 "upload": upload_state,
             }
             (output_dir / f"metrics-{args.width}x{args.height}.json").write_text(
