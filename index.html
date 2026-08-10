@@ -647,6 +647,30 @@
                 <div class="artist-owner-actions" data-artist-owner-actions hidden>
                     <button class="artist-quick-upload" type="button" data-profile-quick-upload>Загрузить трек</button>
                     <button class="artist-settings-button" type="button" data-open-artist-settings aria-label="Настройки профиля">⚙</button>
+                    <div class="artist-owner-menu">
+                        <button
+                            class="artist-owner-menu-toggle"
+                            type="button"
+                            data-toggle-artist-owner-menu
+                            aria-label="Открыть меню управления профилем"
+                            aria-haspopup="menu"
+                            aria-expanded="false"
+                            aria-controls="artist-owner-menu-popover"
+                        >⚙</button>
+                        <div
+                            id="artist-owner-menu-popover"
+                            class="artist-owner-menu-popover"
+                            role="menu"
+                            hidden
+                        >
+                            <button type="button" role="menuitem" data-profile-quick-upload>
+                                Загрузить трек
+                            </button>
+                            <button type="button" role="menuitem" data-open-artist-settings>
+                                Настройки профиля
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="artist-media-controls" data-artist-media-controls hidden>

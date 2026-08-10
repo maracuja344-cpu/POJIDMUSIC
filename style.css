@@ -5087,6 +5087,8 @@ body[data-app-view="artist"]::before {
 }
 .artist-quick-upload { padding: 9px 16px; }
 .artist-settings-button { width: 44px; font-size: 18px; }
+.artist-owner-menu { display: none; position: relative; }
+.artist-owner-menu-popover[hidden] { display: none; }
 .artist-avatar { position: relative; overflow: hidden; }
 .artist-media-edit { position: absolute; z-index: 3; width: 38px; height: 38px; padding: 0; border-radius: 50%; backdrop-filter: blur(10px); }
 .artist-avatar-edit {
@@ -5241,6 +5243,185 @@ body.track-editor-open { overflow: hidden; }
 
 @media (hover: none), (pointer: coarse) {
     .artist-hero.is-owner .artist-banner-edit {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 620px) {
+    html.mobile-device .app-profile-view {
+        width: auto;
+        max-width: none;
+        min-width: 0;
+        margin-right: 12px;
+        margin-left: 12px;
+    }
+
+    html.mobile-device .artist-hero {
+        min-height: 390px;
+        padding: 18px;
+        border-radius: 18px;
+        isolation: isolate;
+    }
+
+    html.mobile-device .artist-banner::after {
+        background: linear-gradient(
+            180deg,
+            rgba(6, 6, 8, 0.08) 0%,
+            rgba(6, 6, 8, 0.18) 42%,
+            rgba(6, 6, 8, 0.93) 100%
+        );
+    }
+
+    html.mobile-device .artist-hero-content {
+        display: block;
+    }
+
+    html.mobile-device .artist-profile-summary {
+        width: 100%;
+        align-items: flex-end;
+        gap: 14px;
+    }
+
+    html.mobile-device .artist-hero.is-owner .artist-profile-summary {
+        padding-right: 56px;
+    }
+
+    html.mobile-device .profile-avatar.artist-avatar {
+        width: 88px;
+        height: 88px;
+        flex-basis: 88px;
+        border: 2px solid rgba(255, 255, 255, 0.32);
+        box-shadow:
+            0 10px 30px rgba(0, 0, 0, 0.46),
+            0 0 24px rgba(226, 173, 255, 0.12);
+    }
+
+    html.mobile-device .artist-identity {
+        padding-bottom: 5px;
+    }
+
+    html.mobile-device .artist-identity h1 {
+        font-size: 36px;
+        line-height: 1.02;
+    }
+
+    html.mobile-device .artist-release-count {
+        margin-top: 5px;
+        font-size: 15px;
+        line-height: 1.25;
+    }
+
+    html.mobile-device .artist-owner-actions {
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        z-index: 5;
+        width: 44px;
+        margin: 0;
+        display: block;
+    }
+
+    html.mobile-device .artist-owner-actions[hidden] {
+        display: none;
+    }
+
+    html.mobile-device .artist-owner-actions > .artist-quick-upload,
+    html.mobile-device .artist-owner-actions > .artist-settings-button {
+        display: none;
+    }
+
+    html.mobile-device .artist-owner-menu {
+        display: block;
+    }
+
+    html.mobile-device .artist-owner-menu-toggle {
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(10, 10, 12, 0.48);
+        color: rgba(255, 255, 255, 0.66);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+        opacity: 0.62;
+    }
+
+    html.mobile-device .artist-owner-menu.is-open .artist-owner-menu-toggle,
+    html.mobile-device .artist-owner-menu-toggle:focus-visible,
+    html.mobile-device .artist-owner-menu-toggle:active {
+        border-color: rgba(226, 173, 255, 0.4);
+        color: #fff;
+        opacity: 1;
+    }
+
+    html.mobile-device .artist-owner-menu-popover {
+        position: absolute;
+        right: 0;
+        bottom: 52px;
+        width: min(220px, calc(100vw - 48px));
+        padding: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        border-radius: 8px;
+        background: rgba(18, 17, 21, 0.9);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.44);
+        -webkit-backdrop-filter: blur(18px) saturate(120%);
+        backdrop-filter: blur(18px) saturate(120%);
+    }
+
+    html.mobile-device .artist-owner-menu-popover button {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        box-shadow: none;
+        color: rgba(255, 255, 255, 0.82);
+        text-align: left;
+    }
+
+    html.mobile-device .artist-owner-menu-popover button:focus-visible,
+    html.mobile-device .artist-owner-menu-popover button:active {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+    }
+
+    html.mobile-device .artist-banner-edit {
+        top: 14px;
+        right: 14px;
+        width: 42px;
+        height: 42px;
+        border-color: rgba(255, 255, 255, 0.14);
+        background: rgba(9, 9, 11, 0.42);
+        color: rgba(255, 255, 255, 0.66);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    html.mobile-device .artist-hero.is-owner .artist-banner-edit {
+        opacity: 0.58;
+    }
+
+    html.mobile-device .artist-banner-edit:focus-visible,
+    html.mobile-device .artist-banner-edit:active {
+        color: #fff;
+        opacity: 1;
+    }
+
+    html.mobile-device .artist-avatar-edit {
+        inset: auto 0 0 auto;
+        width: 42px;
+        height: 42px;
+        min-height: 42px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(9, 9, 11, 0.58);
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 16px;
+        opacity: 0.54;
+    }
+
+    html.mobile-device .artist-avatar-edit:focus-visible,
+    html.mobile-device .artist-avatar-edit:active {
+        color: #fff;
         opacity: 1;
     }
 }

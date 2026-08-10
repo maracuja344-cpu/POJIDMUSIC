@@ -1,0 +1,102 @@
+{
+  "viewports": {
+    "360x740": {
+      "viewport": [
+        360,
+        740
+      ],
+      "documentWidth": 360,
+      "bodyWidth": 360,
+      "widest": [
+        {
+          "selector": ".fullscreen-player-background",
+          "width": 466.39996337890625,
+          "right": 413.1999816894531
+        }
+      ],
+      "hero": {
+        "x": 12,
+        "y": 86,
+        "width": 336,
+        "height": 390,
+        "right": 348,
+        "bottom": 476
+      },
+      "identity": {
+        "x": 133,
+        "y": 391.53125,
+        "width": 132.015625,
+        "height": 65.46875,
+        "right": 265.015625,
+        "bottom": 457
+      },
+      "avatar": {
+        "x": 31,
+        "y": 369,
+        "width": 88,
+        "height": 88,
+        "right": 119,
+        "bottom": 457
+      },
+      "owner": {
+        "x": 267,
+        "y": 395,
+        "width": 44,
+        "height": 44,
+        "right": 311,
+        "bottom": 439
+      },
+      "bannerEdit": {
+        "x": 291,
+        "y": 101,
+        "width": 42,
+        "height": 42,
+        "right": 333,
+        "bottom": 143
+      },
+      "avatarEdit": {
+        "x": 75,
+        "y": 413,
+        "width": 42,
+        "height": 42,
+        "right": 117,
+        "bottom": 455
+      },
+      "identityOwnerOverlap": false,
+      "directActionsVisible": false
+    }
+  },
+  "desktop": {
+    "viewport": [
+      1280,
+      900
+    ],
+    "documentWidth": 1265,
+    "directActionsVisible": true,
+    "mobileMenuVisible": false,
+    "heroRight": 1182.5
+  },
+  "menu": {
+    "expanded": "true",
+    "items": [
+      "Загрузить трек",
+      "Настройки профиля"
+    ]
+  },
+  "exclusiveRelease": {
+    "ownerOpen": false,
+    "releaseOpen": true
+  },
+  "exclusiveOwner": {
+    "ownerOpen": true,
+    "releaseOpen": false
+  },
+  "escape": {
+    "open": false,
+    "focus": true
+  },
+  "upload": {
+    "ownerOpen": false,
+    "delegated": true
+  }
+}

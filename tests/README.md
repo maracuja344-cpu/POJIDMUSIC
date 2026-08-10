@@ -47,6 +47,15 @@ mobile player UX at 390 x 844 with:
 python tests/mobile-player-visual-runtime.py
 ```
 
+Capture and verify the mobile Artist Profile header at the target and narrow
+viewports, including owner controls and exclusive popup behavior, with:
+
+```powershell
+python tests/artist-profile-mobile-runtime.py --width 390 --height 844
+python tests/artist-profile-mobile-runtime.py --width 393 --height 852
+python tests/artist-profile-mobile-runtime.py --width 360 --height 740
+```
+
 Verify the production PWA dependency manifest and release marker with:
 
 ```powershell

@@ -9,6 +9,7 @@ import {
 } from "./render.js";
 import {
     announceExclusivePopupOpen,
+    EXCLUSIVE_POPUP_OPEN_EVENT,
     getTrackArtists,
     trackIncludesArtist
 } from "./artist-utils.js";
@@ -190,6 +191,30 @@ function closeProfileMenu() {
     const button = document.querySelector(".auth-profile-button");
     if (menu) menu.hidden = true;
     button?.setAttribute("aria-expanded", "false");
+}
+
+function setArtistOwnerMenuOpen(
+    open,
+    {
+        restoreFocus = false,
+        focusFirstItem = false
+    } = {}
+) {
+    const wrapper = document.querySelector(".artist-owner-menu");
+    const toggle = wrapper?.querySelector("[data-toggle-artist-owner-menu]");
+    const popover = wrapper?.querySelector(".artist-owner-menu-popover");
+    if (!wrapper || !toggle || !popover) return;
+
+    if (open) announceExclusivePopupOpen(wrapper);
+    wrapper.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    popover.hidden = !open;
+
+    if (focusFirstItem) {
+        popover.querySelector("[role='menuitem']")?.focus();
+    } else if (restoreFocus) {
+        toggle.focus();
+    }
 }
 
 function findCatalogArtist(slug) {
@@ -569,6 +594,7 @@ async function renderMyTracksView() {
 }
 
 async function renderRoute({ scroll = false } = {}) {
+    setArtistOwnerMenuOpen(false);
     const route = getRoute();
     if (["account", "myTracks"].includes(route.name)) {
         const auth = await getAuthModule();
@@ -737,6 +763,23 @@ export function initializeAppNavigation() {
     navigationInitialized = true;
 
     document.addEventListener("click", (event) => {
+        const ownerMenuToggle = event.target.closest(
+            "[data-toggle-artist-owner-menu]"
+        );
+        if (ownerMenuToggle) {
+            event.preventDefault();
+            event.stopPropagation();
+            const willOpen = ownerMenuToggle.getAttribute("aria-expanded") !== "true";
+            setArtistOwnerMenuOpen(willOpen, {
+                focusFirstItem: willOpen && event.detail === 0
+            });
+            return;
+        }
+
+        if (!event.target.closest(".artist-owner-menu")) {
+            setArtistOwnerMenuOpen(false);
+        }
+
         const artistLink = event.target.closest("[data-artist-slug]");
         if (artistLink) {
             event.preventDefault();
@@ -774,10 +817,15 @@ export function initializeAppNavigation() {
             return;
         }
         if (event.target.closest("[data-open-artist-settings]")) {
+            setArtistOwnerMenuOpen(false);
             void openProfileEditor();
             return;
         }
         if (event.target.closest("[data-profile-quick-upload]")) {
+            setArtistOwnerMenuOpen(false);
+            announceExclusivePopupOpen(
+                document.querySelector("#track-upload-modal")
+            );
             document.querySelector(".profile-menu .track-upload-open-button")?.click();
             return;
         }
@@ -791,6 +839,23 @@ export function initializeAppNavigation() {
         closeProfileMenu();
         clearActiveSearch();
         navigate({ name: "catalog" });
+    });
+
+    window.addEventListener(EXCLUSIVE_POPUP_OPEN_EVENT, (event) => {
+        const wrapper = document.querySelector(".artist-owner-menu");
+        if (wrapper && !wrapper.contains(event.detail?.owner)) {
+            setArtistOwnerMenuOpen(false);
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (
+            event.key === "Escape" &&
+            document.querySelector(".artist-owner-menu.is-open")
+        ) {
+            event.preventDefault();
+            setArtistOwnerMenuOpen(false, { restoreFocus: true });
+        }
     });
 
     document.querySelector("[data-account-avatar-input]")?.addEventListener("change", (event) => {
