@@ -62,6 +62,9 @@
         "right": 117,
         "bottom": 455
       },
+      "releaseActionCount": 1,
+      "artistActionCount": 0,
+      "manageBelowCover": true,
       "identityOwnerOverlap": false,
       "directActionsVisible": false
     }

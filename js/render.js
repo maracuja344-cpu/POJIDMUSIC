@@ -103,7 +103,13 @@ function shuffleTracks(trackList) {
 - Все треки
 - Результаты поиска
 */
-export function createTrackCard(track, { loading = "lazy" } = {}) {
+export function createTrackCard(
+    track,
+    {
+        loading = "lazy",
+        showArtistAction = true
+    } = {}
+) {
     const card = document.createElement("div");
 
     /*
@@ -137,12 +143,15 @@ export function createTrackCard(track, { loading = "lazy" } = {}) {
     artist.className = "artist-name";
     renderArtistLinks(artist, track);
 
-    const artistActions = document.createElement("div");
-    renderArtistActionMenu(artistActions, track);
-
     coverWrap.append(cover, playState);
     info.append(title, artist);
-    card.append(coverWrap, info, artistActions);
+    card.append(coverWrap, info);
+
+    if (showArtistAction) {
+        const artistActions = document.createElement("div");
+        renderArtistActionMenu(artistActions, track);
+        card.append(artistActions);
+    }
 
     return card;
 }

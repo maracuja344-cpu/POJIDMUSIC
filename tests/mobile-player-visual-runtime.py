@@ -105,6 +105,30 @@ def main():
                 "document.querySelector('.mini-player.active') !== null",
                 "Mini-player did not activate",
             )
+            mini_geometry = client.evaluate("""
+                (() => {
+                    const rect = (selector) => {
+                        const value = document.querySelector(selector)
+                            .getBoundingClientRect();
+                        return {
+                            top: value.top,
+                            bottom: value.bottom,
+                            height: value.height,
+                            center: value.top + value.height / 2
+                        };
+                    };
+                    return {
+                        cover: rect('.mini-player .player-cover'),
+                        info: rect('.mini-player .player-info'),
+                        title: rect('.mini-player .player-title'),
+                        artist: rect('.mini-player .player-artist')
+                    };
+                })()
+            """)
+            assert abs(
+                mini_geometry["cover"]["center"] - mini_geometry["info"]["center"]
+            ) <= 1, mini_geometry
+            assert mini_geometry["artist"]["top"] >= mini_geometry["title"]["bottom"], mini_geometry
             capture(client, output_dir / "mini-player-390x844.png")
 
             client.evaluate("document.querySelector('.mini-player').click()")
@@ -118,6 +142,38 @@ def main():
                 "document.querySelector('.fullscreen-duration-time')?.textContent.trim() !== '0:00'",
                 "Fullscreen duration did not load",
             )
+            wait_for(
+                client,
+                "!document.querySelector('.fullscreen-player-artist-identity').hidden",
+                "Fullscreen artist panel did not render",
+            )
+            fullscreen_geometry = client.evaluate("""
+                (() => {
+                    const rect = (selector) => {
+                        const value = document.querySelector(selector)
+                            .getBoundingClientRect();
+                        return {
+                            top: value.top,
+                            right: value.right,
+                            bottom: value.bottom,
+                            left: value.left,
+                            width: value.width,
+                            height: value.height
+                        };
+                    };
+                    const controls = rect('.fullscreen-player-controls');
+                    const panel = rect('.fullscreen-player-artist-identity');
+                    return {
+                        controls,
+                        panel,
+                        gap: panel.top - controls.bottom,
+                        viewport: [innerWidth, innerHeight]
+                    };
+                })()
+            """)
+            assert fullscreen_geometry["gap"] >= 12, fullscreen_geometry
+            assert fullscreen_geometry["panel"]["height"] >= 56, fullscreen_geometry
+            assert fullscreen_geometry["panel"]["bottom"] <= 844 - 8, fullscreen_geometry
             capture(client, output_dir / "fullscreen-390x844.png")
 
             client.evaluate(
@@ -158,6 +214,18 @@ def main():
                 "document.querySelector('#artist-profile:not([hidden])') !== null",
                 "Artist Profile did not open",
             )
+            artist_profile_state = client.evaluate("""
+                (() => ({
+                    cards: document.querySelectorAll(
+                        '#artist-profile [data-artist-tracks] .release-card'
+                    ).length,
+                    artistActions: document.querySelectorAll(
+                        '#artist-profile .artist-action-menu'
+                    ).length
+                }))()
+            """)
+            assert artist_profile_state["cards"] > 0, artist_profile_state
+            assert artist_profile_state["artistActions"] == 0, artist_profile_state
             capture(client, output_dir / "artist-profile-390x844.png")
 
             client.evaluate("document.querySelector('.logo').click()")
@@ -199,6 +267,9 @@ def main():
             """)
             metrics["durationBeforeReload"] = duration_before_reload
             metrics["restoredDuration"] = restored_duration
+            metrics["miniGeometry"] = mini_geometry
+            metrics["fullscreenGeometry"] = fullscreen_geometry
+            metrics["artistProfile"] = artist_profile_state
             (output_dir / "metrics.json").write_text(
                 json.dumps(metrics, ensure_ascii=False, indent=2),
                 encoding="utf-8",

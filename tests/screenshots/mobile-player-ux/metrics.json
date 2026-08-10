@@ -16,5 +16,58 @@
     "Воспроизвести"
   ],
   "durationBeforeReload": "1:15",
-  "restoredDuration": "1:15"
+  "restoredDuration": "1:15",
+  "miniGeometry": {
+    "cover": {
+      "top": 773.165283203125,
+      "bottom": 817.165283203125,
+      "height": 44,
+      "center": 795.165283203125
+    },
+    "info": {
+      "top": 773.165283203125,
+      "bottom": 817.165283203125,
+      "height": 44,
+      "center": 795.165283203125
+    },
+    "title": {
+      "top": 777.368408203125,
+      "bottom": 795.368408203125,
+      "height": 18,
+      "center": 786.368408203125
+    },
+    "artist": {
+      "top": 797.368408203125,
+      "bottom": 812.962158203125,
+      "height": 15.59375,
+      "center": 805.165283203125
+    }
+  },
+  "fullscreenGeometry": {
+    "controls": {
+      "top": 595.03125,
+      "right": 374,
+      "bottom": 663.03125,
+      "left": 16,
+      "width": 358,
+      "height": 68
+    },
+    "panel": {
+      "top": 774,
+      "right": 374,
+      "bottom": 832,
+      "left": 16,
+      "width": 358,
+      "height": 58
+    },
+    "gap": 110.96875,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  "artistProfile": {
+    "cards": 7,
+    "artistActions": 0
+  }
 }

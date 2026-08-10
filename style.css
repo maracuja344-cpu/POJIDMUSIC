@@ -5121,8 +5121,8 @@ body[data-app-view="artist"]::before {
 .artist-profile-filter { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.05); color: #fff; }
 .artist-profile-filter.is-active { background: rgba(226,173,255,.18); border-color: rgba(226,173,255,.42); }
 .owner-track-card { position: relative; }
-.track-manage-button { position: absolute; z-index: 4; top: 8px; right: 8px; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; background: rgba(10,10,12,.78); color: #fff; font-size: 22px; cursor: pointer; }
-.track-manage-menu { position: absolute; z-index: 8; top: 52px; right: 8px; min-width: 150px; padding: 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #18171c; box-shadow: 0 16px 38px rgba(0,0,0,.42); }
+.track-manage-button { position: absolute; z-index: 4; right: 8px; bottom: 8px; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; background: rgba(10,10,12,.78); color: #fff; font-size: 22px; cursor: pointer; }
+.track-manage-menu { position: absolute; z-index: 8; right: 8px; bottom: 52px; min-width: 150px; padding: 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #18171c; box-shadow: 0 16px 38px rgba(0,0,0,.42); }
 .track-manage-menu button { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: transparent; color: #fff; text-align: left; }
 .track-manage-menu button:hover { background: rgba(255,255,255,.08); }
 .track-status-badge { position: absolute; z-index: 3; left: 8px; top: 8px; padding: 5px 8px; border-radius: 999px; background: rgba(10,10,12,.8); color: rgba(255,255,255,.8); font-size: 11px; }
@@ -5476,6 +5476,8 @@ html.mobile-device .fullscreen-player-content {
 
     margin-top: 0;
     padding-top: 0;
+    padding-bottom: calc(82px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
 }
 
 html.mobile-device .fullscreen-player-cover-float {
@@ -5902,8 +5904,14 @@ html.mobile-device .artist-action-menu-card {
 }
 
 html.mobile-device .fullscreen-player-artist-identity {
-    width: min(100%, 520px);
-    margin-top: 14px;
+    position: absolute;
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: calc(16px + env(safe-area-inset-left));
+    z-index: 3;
+    width: auto;
+    max-width: 520px;
+    margin: 0 auto;
     display: block;
 }
 
@@ -5913,6 +5921,7 @@ html.mobile-device .fullscreen-player-artist-identity[hidden] {
 
 .fullscreen-player-artist-identity-link {
     min-height: 56px;
+    margin: 0;
     padding: 8px 12px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
@@ -6043,6 +6052,26 @@ html.mobile-device .fullscreen-player-artist-identity[hidden] {
         grid-row: 1;
         position: relative;
         z-index: 1;
+        align-items: center;
+    }
+
+    .mini-player .player-info {
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .mini-player .player-title,
+    .mini-player .player-artist {
+        flex: 0 0 auto;
+    }
+
+    .mini-player .player-artist {
+        min-height: 0;
+        display: block;
+        margin-top: 2px;
+        line-height: 1.2;
     }
 
     .mini-player .player-controls {

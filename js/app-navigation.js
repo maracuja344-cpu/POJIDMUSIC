@@ -266,11 +266,20 @@ function clearTrackCards(container) {
     container?.replaceChildren();
 }
 
-function renderTrackCards(container, tracks, { canManage = false, profileId = null } = {}) {
+function renderTrackCards(
+    container,
+    tracks,
+    {
+        canManage = false,
+        profileId = null,
+        showArtistAction = true
+    } = {}
+) {
     clearTrackCards(container);
     tracks.forEach((track, index) => {
         const card = createTrackCard(track, {
-            loading: index < 4 ? "eager" : "lazy"
+            loading: index < 4 ? "eager" : "lazy",
+            showArtistAction
         });
         if (canManage && (
             track.ownerId === profileId ||
@@ -514,7 +523,11 @@ function renderArtistTracks(view, tracks, owner, profileId) {
     filters?.querySelectorAll("button").forEach((button) => button.classList.toggle("is-active", button.dataset.artistTrackFilter === activeArtistTrackFilter));
     const effectiveStatus = (track) => track.status || "published";
     const visible = tracks.filter((track) => owner ? effectiveStatus(track) === activeArtistTrackFilter : effectiveStatus(track) === "published");
-    renderTrackCards(view.querySelector("[data-artist-tracks]"), visible, { canManage: owner, profileId });
+    renderTrackCards(view.querySelector("[data-artist-tracks]"), visible, {
+        canManage: owner,
+        profileId,
+        showArtistAction: false
+    });
     view.querySelector("[data-artist-empty]").hidden = visible.length > 0;
     view.querySelector("[data-artist-release-count]").textContent = `${tracks.filter((track) => effectiveStatus(track) === "published").length} релизов`;
 }

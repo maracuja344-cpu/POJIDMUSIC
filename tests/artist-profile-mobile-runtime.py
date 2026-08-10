@@ -92,6 +92,31 @@ def apply_owner_fixture(client):
             document.querySelector('[data-artist-release-count]').textContent = '7 релизов';
         })()
     """)
+    client.evaluate("""
+        window.__managedTrackFixtureReady = false;
+        Promise.all([
+            import('./js/track-management.js'),
+            import('./js/catalog-state.js')
+        ]).then(([management, catalog]) => {
+            const card = document.querySelector(
+                '#artist-profile [data-artist-tracks] .release-card'
+            );
+            const track = catalog.getCatalogTracks().find(
+                (candidate) => candidate.catalogId === card?.dataset.trackId
+            );
+            if (card && track && !card.querySelector('.track-manage-button')) {
+                management.decorateManagedTrackCard(card, track);
+            }
+            window.__managedTrackFixtureReady = Boolean(
+                card?.querySelector('.track-manage-button')
+            );
+        });
+    """)
+    wait_for(
+        client,
+        "window.__managedTrackFixtureReady === true",
+        "Managed release-card fixture did not render",
+    )
     time.sleep(0.25)
 
 
@@ -159,6 +184,13 @@ def main():
                         const avatar = rect('.artist-avatar');
                         const owner = rect('.artist-owner-menu-toggle');
                         const hero = rect('.artist-hero');
+                        const firstCard = document.querySelector(
+                            '#artist-profile [data-artist-tracks] .release-card'
+                        );
+                        const cover = firstCard?.querySelector('.cover')
+                            ?.getBoundingClientRect();
+                        const manage = firstCard?.querySelector('.track-manage-button')
+                            ?.getBoundingClientRect();
                         return {
                             viewport: [innerWidth, innerHeight],
                             documentWidth: document.documentElement.scrollWidth,
@@ -180,6 +212,15 @@ def main():
                             owner,
                             bannerEdit: rect('.artist-banner-edit'),
                             avatarEdit: rect('.artist-avatar-edit'),
+                            releaseActionCount: firstCard?.querySelectorAll(
+                                '.track-manage-button, .artist-action-menu-toggle'
+                            ).length || 0,
+                            artistActionCount: firstCard?.querySelectorAll(
+                                '.artist-action-menu-toggle'
+                            ).length || 0,
+                            manageBelowCover: Boolean(
+                                cover && manage && manage.top >= cover.bottom
+                            ),
                             identityOwnerOverlap:
                                 overlaps(identity, owner) || overlaps(avatar, owner),
                             directActionsVisible: [...document.querySelectorAll(
@@ -271,6 +312,9 @@ def main():
                 assert not state["directActionsVisible"], state
                 assert state["owner"]["width"] >= 44 and state["owner"]["height"] >= 44, state
                 assert state["bannerEdit"]["width"] >= 42, state
+                assert state["releaseActionCount"] == 1, state
+                assert state["artistActionCount"] == 0, state
+                assert state["manageBelowCover"], state
                 assert state["hero"]["right"] <= state["viewport"][0], state
                 assert state["hero"]["bottom"] <= state["viewport"][1], state
 

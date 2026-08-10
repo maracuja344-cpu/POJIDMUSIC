@@ -144,7 +144,8 @@ def run_viewport(server_port, output_dir, spec):
         title: ".fullscreen-player-title",
         artist: ".fullscreen-player-artist",
         progress: ".fullscreen-player-progress-area",
-        controls: ".fullscreen-player-controls"
+        controls: ".fullscreen-player-controls",
+        artistPanel: ".fullscreen-player-artist-identity"
     };
     const rectangle = (selector) => {
         const element = document.querySelector(selector);
@@ -245,6 +246,16 @@ def run_viewport(server_port, output_dir, spec):
             if mobile:
                 artwork = metrics["rects"]["artwork"]
                 progress = metrics["rects"]["progress"]
+                controls = metrics["rects"]["controls"]
+                artist_panel = metrics["rects"]["artistPanel"]
+                panel_gap = artist_panel["y"] - controls["bottom"]
+                metrics["artistPanelLayout"] = {
+                    "gapFromControls": panel_gap,
+                    "belowControls": panel_gap >= 12,
+                    "insideViewport": not artist_panel["clipped"],
+                }
+                assert metrics["artistPanelLayout"]["belowControls"], metrics
+                assert metrics["artistPanelLayout"]["insideViewport"], metrics
                 touch_drag(
                     client,
                     artwork["x"] + artwork["width"] / 2,
