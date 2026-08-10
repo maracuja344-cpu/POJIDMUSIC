@@ -200,11 +200,13 @@ is placed after the controls, outside the artwork. Release action menus, the hea
 profile dropdown, profile editor and managed-track menus announce the same exclusive
 popup event, so opening one closes any previously open popup/dropdown.
 
-Mobile release cards keep direct artist links and add a single honest action menu item,
-`Перейти к артисту`. Mobile mini-player hides shuffle, Previous, Next, repeat and volume;
-the same production controls remain visible in fullscreen and on the desktop mini-player.
-The action menus own no player or route state: their link delegates to the existing
-`data-artist-slug` navigation boundary.
+Mobile release cards keep direct artist links and add one universal action,
+`Исполнители`. A solo track delegates directly to its only `data-artist-slug` route. A
+collaboration opens an in-menu selector containing every structured artist credit and
+navigates only after an explicit choice. The menu closes and resets after selection.
+Mobile mini-player hides shuffle, Previous, Next, repeat and volume; the same production
+controls remain visible in fullscreen and on the desktop mini-player. Artist menus own no
+player or route state and reuse the existing navigation boundary.
 
 ## Persistence Audit (legacy state)
 

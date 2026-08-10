@@ -115,8 +115,9 @@ No Service Worker edit is authorized by this task.
   and production command boundary but are hidden on mobile.
 - Mini progress now fills a non-interactive layer behind the mini-player contents.
   Mobile pointer events cannot seek through it; fullscreen keeps the existing slider.
-- Card and fullscreen menus expose only `Перейти к артисту`, use a 36/44 px toggle,
-  move focus into the menu, close on outside pointer or Escape, and restore focus.
+- Card menus expose `Исполнители`, use a 36 px toggle, move focus into the menu, close
+  on outside pointer or Escape, and restore focus. Solo tracks navigate directly;
+  collaborations first expose every credited artist in the same popover.
 - Selecting an artist from fullscreen closes the modal, renders Artist Profile and
   preserves playback/current queue. The direct artist credit remains tappable.
 - Fullscreen artwork measured 354.5 px at 390 x 844, 357.8 px at the 393 x 852

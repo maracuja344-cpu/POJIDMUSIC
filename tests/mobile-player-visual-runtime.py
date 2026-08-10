@@ -91,6 +91,61 @@ def main():
             client.evaluate("document.documentElement.classList.add('mobile-device')")
             capture(client, output_dir / "home-390x844.png")
 
+            collaboration_menu = client.evaluate("""
+                (() => {
+                    const card = [...document.querySelectorAll(
+                        '#catalog-view .release-card'
+                    )]
+                        .find((candidate) => candidate.querySelectorAll(
+                            '.artist-name [data-artist-slug]'
+                        ).length > 1);
+                    if (!card) throw new Error('Collaboration card not found');
+
+                    document.documentElement.style.scrollBehavior = 'auto';
+                    window.scrollTo(0, Math.max(
+                        0,
+                        card.getBoundingClientRect().top + scrollY - 260
+                    ));
+                    card.querySelector('.artist-action-menu-toggle').click();
+                    card.querySelector('.artist-action-menu-primary').click();
+
+                    const menu = card.querySelector('.artist-action-menu-popover');
+                    const bounds = menu.getBoundingClientRect();
+                    return {
+                        title: card.querySelector('.track-title').textContent.trim(),
+                        label: menu.querySelector(
+                            '.artist-action-menu-selector-label'
+                        ).textContent.trim(),
+                        artists: [...menu.querySelectorAll(
+                            '.artist-action-menu-selector-item'
+                        )].map((item) => item.textContent.trim()),
+                        open: card.querySelector('.artist-action-menu')
+                            .classList.contains('is-open'),
+                        bounds: {
+                            top: bounds.top,
+                            right: bounds.right,
+                            bottom: bounds.bottom,
+                            left: bounds.left
+                        },
+                        withinViewport: bounds.left >= 0
+                            && bounds.right <= innerWidth
+                            && bounds.top >= 0
+                            && bounds.bottom <= innerHeight
+                    };
+                })()
+            """)
+            assert collaboration_menu["label"] == "Выберите артиста:", collaboration_menu
+            assert len(collaboration_menu["artists"]) > 1, collaboration_menu
+            assert collaboration_menu["open"], collaboration_menu
+            assert collaboration_menu["withinViewport"], collaboration_menu
+            capture(client, output_dir / "collaboration-selector-390x844.png")
+            client.evaluate(
+                "document.dispatchEvent(new KeyboardEvent('keydown', "
+                "{key:'Escape', bubbles:true, cancelable:true}));"
+                "document.querySelector('#new').scrollIntoView({block:'start'});"
+                "document.querySelector('#new .tracks-row').scrollLeft = 0;"
+            )
+
             client.evaluate(
                 "document.querySelector('#new .artist-action-menu-toggle').click()"
             )
@@ -270,6 +325,7 @@ def main():
             metrics["miniGeometry"] = mini_geometry
             metrics["fullscreenGeometry"] = fullscreen_geometry
             metrics["artistProfile"] = artist_profile_state
+            metrics["collaborationMenu"] = collaboration_menu
             (output_dir / "metrics.json").write_text(
                 json.dumps(metrics, ensure_ascii=False, indent=2),
                 encoding="utf-8",

@@ -19,28 +19,28 @@
   "restoredDuration": "1:15",
   "miniGeometry": {
     "cover": {
-      "top": 773.165283203125,
-      "bottom": 817.165283203125,
+      "top": 773.0701293945312,
+      "bottom": 817.0701293945312,
       "height": 44,
-      "center": 795.165283203125
+      "center": 795.0701293945312
     },
     "info": {
-      "top": 773.165283203125,
-      "bottom": 817.165283203125,
+      "top": 773.0701293945312,
+      "bottom": 817.0701293945312,
       "height": 44,
-      "center": 795.165283203125
+      "center": 795.0701293945312
     },
     "title": {
-      "top": 777.368408203125,
-      "bottom": 795.368408203125,
+      "top": 777.2732543945312,
+      "bottom": 795.2732543945312,
       "height": 18,
-      "center": 786.368408203125
+      "center": 786.2732543945312
     },
     "artist": {
-      "top": 797.368408203125,
-      "bottom": 812.962158203125,
+      "top": 797.2732543945312,
+      "bottom": 812.8670043945312,
       "height": 15.59375,
-      "center": 805.165283203125
+      "center": 805.0701293945312
     }
   },
   "fullscreenGeometry": {
@@ -69,5 +69,21 @@
   "artistProfile": {
     "cards": 7,
     "artistActions": 0
+  },
+  "collaborationMenu": {
+    "title": "Labuba",
+    "label": "Выберите артиста:",
+    "artists": [
+      "Frenbat9",
+      "triplepeepy"
+    ],
+    "open": true,
+    "bounds": {
+      "top": 348.75,
+      "right": 370,
+      "bottom": 435.75,
+      "left": 146
+    },
+    "withinViewport": true
   }
 }

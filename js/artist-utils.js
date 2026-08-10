@@ -234,8 +234,47 @@ function closeArtistActionMenu(wrapper, restoreFocus = false) {
 
     wrapper.classList.remove("is-open");
     toggle?.setAttribute("aria-expanded", "false");
-    if (menu) menu.hidden = true;
+    if (menu) {
+        menu.hidden = true;
+        resetArtistActionMenu(menu);
+    }
     if (restoreFocus) toggle?.focus();
+}
+
+
+function resetArtistActionMenu(menu) {
+    const primaryAction = menu?.querySelector(
+        ".artist-action-menu-primary"
+    );
+    const selector = menu?.querySelector(
+        ".artist-action-menu-selector"
+    );
+
+    if (primaryAction) primaryAction.hidden = false;
+    if (selector) selector.hidden = true;
+    menu?.classList.remove(
+        "artist-action-menu-popover-align-left",
+        "artist-action-menu-popover-open-down"
+    );
+}
+
+
+function positionArtistActionMenu(menu) {
+    if (!menu || menu.hidden) return;
+
+    menu.classList.remove(
+        "artist-action-menu-popover-align-left",
+        "artist-action-menu-popover-open-down"
+    );
+
+    let bounds = menu.getBoundingClientRect();
+    if (bounds.left < 12) {
+        menu.classList.add("artist-action-menu-popover-align-left");
+        bounds = menu.getBoundingClientRect();
+    }
+    if (bounds.top < 12) {
+        menu.classList.add("artist-action-menu-popover-open-down");
+    }
 }
 
 
@@ -293,8 +332,8 @@ export function renderArtistActionMenu(
     ensureArtistActionMenuHandlers();
     container.replaceChildren();
 
-    const artist = getTrackArtists(track)[0];
-    if (!artist?.slug) {
+    const artists = getTrackArtists(track).filter((artist) => artist?.slug);
+    if (!artists.length) {
         container.hidden = true;
         return;
     }
@@ -302,7 +341,10 @@ export function renderArtistActionMenu(
     const menuId = `artist-action-menu-${++artistActionMenuId}`;
     const toggle = document.createElement("button");
     const menu = document.createElement("div");
-    const artistLink = createArtistLink(artist);
+    const multipleArtists = artists.length > 1;
+    const primaryAction = multipleArtists
+        ? document.createElement("button")
+        : createArtistLink(artists[0]);
 
     container.hidden = false;
     container.className =
@@ -324,13 +366,29 @@ export function renderArtistActionMenu(
     menu.setAttribute("role", "menu");
     menu.hidden = true;
 
-    artistLink.classList.add("artist-action-menu-item");
-    artistLink.textContent = "Перейти к артисту";
-    artistLink.setAttribute("role", "menuitem");
-    artistLink.setAttribute(
-        "aria-label",
-        `Перейти к артисту ${artist.displayName}`
+    primaryAction.classList.add(
+        "artist-action-menu-item",
+        "artist-action-menu-primary"
     );
+    primaryAction.textContent = "Исполнители";
+    primaryAction.setAttribute("role", "menuitem");
+
+    if (multipleArtists) {
+        primaryAction.type = "button";
+        primaryAction.setAttribute(
+            "aria-label",
+            `Выбрать исполнителя трека ${track?.title || ""}`.trim()
+        );
+    } else {
+        primaryAction.setAttribute(
+            "aria-label",
+            `Открыть страницу исполнителя ${artists[0].displayName}`
+        );
+        primaryAction.addEventListener("click", () => {
+            closeArtistActionMenu(container);
+            onSelect?.(artists[0]);
+        });
+    }
 
     toggle.addEventListener("click", (event) => {
         event.preventDefault();
@@ -342,15 +400,54 @@ export function renderArtistActionMenu(
         container.classList.toggle("is-open", shouldOpen);
         toggle.setAttribute("aria-expanded", String(shouldOpen));
         menu.hidden = !shouldOpen;
-        if (shouldOpen) artistLink.focus();
+        if (shouldOpen) {
+            resetArtistActionMenu(menu);
+            positionArtistActionMenu(menu);
+            primaryAction.focus();
+        } else {
+            resetArtistActionMenu(menu);
+        }
     });
 
-    artistLink.addEventListener("click", () => {
-        closeArtistActionMenu(container);
-        onSelect?.();
-    });
+    menu.append(primaryAction);
 
-    menu.append(artistLink);
+    if (multipleArtists) {
+        const selector = document.createElement("div");
+        const label = document.createElement("p");
+
+        selector.className = "artist-action-menu-selector";
+        selector.hidden = true;
+        label.className = "artist-action-menu-selector-label";
+        label.textContent = "Выберите артиста:";
+        selector.append(label);
+
+        artists.forEach((artist) => {
+            const artistLink = createArtistLink(artist);
+
+            artistLink.classList.add(
+                "artist-action-menu-item",
+                "artist-action-menu-selector-item"
+            );
+            artistLink.setAttribute("role", "menuitem");
+            artistLink.addEventListener("click", () => {
+                closeArtistActionMenu(container);
+                onSelect?.(artist);
+            });
+            selector.append(artistLink);
+        });
+
+        primaryAction.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            primaryAction.hidden = true;
+            selector.hidden = false;
+            positionArtistActionMenu(menu);
+            selector.querySelector("[role='menuitem']")?.focus();
+        });
+
+        menu.append(selector);
+    }
+
     container.append(toggle, menu);
 }
 

@@ -24,11 +24,36 @@ try {
             position: 0
         }]
     };
+    const collaborationTrack = {
+        title: "vb cb",
+        artist: "cwa & Lufy",
+        artists: [
+            {
+                displayName: "vb cb",
+                slug: "vb-cb",
+                role: "primary",
+                position: 0
+            },
+            {
+                displayName: "cwa",
+                slug: "cwa",
+                role: "primary",
+                position: 1
+            },
+            {
+                displayName: "Lufy",
+                slug: "lufy",
+                role: "featured",
+                position: 0
+            }
+        ]
+    };
     const directCredit = document.createElement("p");
     const cardMenu = document.createElement("div");
     const secondMenu = document.createElement("div");
+    const collaborationMenu = document.createElement("div");
     const identity = document.createElement("div");
-    let selected = 0;
+    const selected = [];
 
     renderArtistLinks(directCredit, track);
     assert(
@@ -37,22 +62,32 @@ try {
     );
 
     renderArtistActionMenu(cardMenu, track, {
-        onSelect: () => { selected += 1; }
+        onSelect: (artist) => { selected.push(artist.slug); }
     });
     renderArtistActionMenu(secondMenu, track);
+    renderArtistActionMenu(collaborationMenu, collaborationTrack, {
+        onSelect: (artist) => { selected.push(artist.slug); }
+    });
     renderFullscreenArtistIdentity(identity, track);
-    document.body.append(directCredit, cardMenu, secondMenu, identity);
+    document.body.append(
+        directCredit,
+        cardMenu,
+        secondMenu,
+        collaborationMenu,
+        identity
+    );
 
     assert("fullscreen uses a clean artist identity link",
         identity.querySelector("[data-artist-slug='test-artist']") &&
         !identity.querySelector("button") &&
         !identity.querySelector(".artist-action-menu"));
 
-    const toggle = cardMenu.querySelector("button");
-    const item = cardMenu.querySelector("[role='menuitem']");
-    assert("menu exposes exactly one real action",
+    const toggle = cardMenu.querySelector(".artist-action-menu-toggle");
+    const item = cardMenu.querySelector(".artist-action-menu-primary");
+    assert("solo menu exposes one universal action",
         cardMenu.querySelectorAll("[role='menuitem']").length === 1 &&
-        item.textContent.trim() === "Перейти к артисту");
+        item.textContent.trim() === "Исполнители" &&
+        item.dataset.artistSlug === "test-artist");
     assert("toggle declares menu semantics",
         toggle.getAttribute("aria-haspopup") === "menu" &&
         toggle.getAttribute("aria-expanded") === "false");
@@ -93,8 +128,53 @@ try {
     item.addEventListener("click", (event) => event.preventDefault());
     toggle.click();
     item.click();
-    assert("select callback runs without inventing another action",
-        selected === 1 && !cardMenu.classList.contains("is-open"));
+    assert("solo action selects its only artist directly",
+        selected.join(",") === "test-artist" &&
+        !cardMenu.classList.contains("is-open"));
+
+    const collaborationToggle = collaborationMenu.querySelector(
+        ".artist-action-menu-toggle"
+    );
+    const collaborationAction = collaborationMenu.querySelector(
+        ".artist-action-menu-primary"
+    );
+    const selector = collaborationMenu.querySelector(
+        ".artist-action-menu-selector"
+    );
+    const selectorItems = [...selector.querySelectorAll("[role='menuitem']")];
+
+    assert("collaboration starts with one universal action",
+        collaborationAction.textContent.trim() === "Исполнители" &&
+        selector.hidden &&
+        !collaborationAction.hidden);
+
+    collaborationToggle.click();
+    collaborationAction.click();
+    assert("collaboration opens an artist selector without auto-selecting",
+        collaborationMenu.classList.contains("is-open") &&
+        collaborationAction.hidden &&
+        !selector.hidden &&
+        selected.join(",") === "test-artist");
+    assert("selector exposes every credited artist in order",
+        selector.querySelector(".artist-action-menu-selector-label")
+            .textContent.trim() === "Выберите артиста:" &&
+        selectorItems.map((artist) => artist.textContent.trim()).join(",") ===
+            "vb cb,cwa,Lufy" &&
+        selectorItems.map((artist) => artist.dataset.artistSlug).join(",") ===
+            "vb-cb,cwa,lufy" &&
+        document.activeElement === selectorItems[0]);
+
+    selectorItems[2].addEventListener("click", (event) => event.preventDefault());
+    selectorItems[2].click();
+    assert("choosing a collaborator closes and resets the menu",
+        selected.join(",") === "test-artist,lufy" &&
+        !collaborationMenu.classList.contains("is-open") &&
+        selector.hidden &&
+        !collaborationAction.hidden);
+
+    collaborationToggle.click();
+    assert("reopening returns focus to the universal action",
+        document.activeElement === collaborationAction && selector.hidden);
 
     document.body.dataset.testStatus = "passed";
     output.textContent = `${results.join("\n")}\n\n${results.length} passed`;
