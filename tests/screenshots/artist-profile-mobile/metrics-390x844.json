@@ -76,14 +76,44 @@
     }
   },
   "desktop": {
-    "viewport": [
-      1280,
-      900
-    ],
-    "documentWidth": 1265,
-    "directActionsVisible": true,
-    "mobileMenuVisible": false,
-    "heroRight": 1182.5
+    "desktop": {
+      "viewport": [
+        1280,
+        900
+      ],
+      "documentWidth": 1265,
+      "directActionsVisible": true,
+      "mobileMenuVisible": false,
+      "avatarVisible": false,
+      "heroRight": 1182.5,
+      "identityLeftOffset": 49,
+      "identityTextLeftDelta": 0,
+      "identityReleaseGap": 7,
+      "identityOwnerOverlap": false,
+      "ownerRightOffset": 49,
+      "uploadBackground": "rgba(9, 9, 12, 0.54)",
+      "uploadBackdrop": "blur(16px) saturate(1.2)",
+      "settingsBackground": "rgba(9, 9, 12, 0.54)"
+    },
+    "tablet": {
+      "viewport": [
+        900,
+        720
+      ],
+      "documentWidth": 885,
+      "directActionsVisible": true,
+      "mobileMenuVisible": false,
+      "avatarVisible": false,
+      "heroRight": 865,
+      "identityLeftOffset": 46,
+      "identityTextLeftDelta": 0,
+      "identityReleaseGap": 7,
+      "identityOwnerOverlap": false,
+      "ownerRightOffset": 46,
+      "uploadBackground": "rgba(9, 9, 12, 0.54)",
+      "uploadBackdrop": "blur(16px) saturate(1.2)",
+      "settingsBackground": "rgba(9, 9, 12, 0.54)"
+    }
   },
   "menu": {
     "expanded": "true",

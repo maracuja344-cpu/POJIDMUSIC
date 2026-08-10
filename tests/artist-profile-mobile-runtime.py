@@ -365,35 +365,78 @@ def main():
                 assert state["hero"]["right"] <= state["viewport"][0], state
                 assert state["hero"]["bottom"] <= state["viewport"][1], state
 
-            set_viewport(client, 1280, 900, mobile=False)
-            open_artist_profile(client, f"{app_url}&viewport=1280x900")
-            apply_owner_fixture(client)
-            desktop_state = client.evaluate("""
-                (() => {
-                    const visible = (selector) => Boolean(
-                        document.querySelector(selector)?.getClientRects().length
-                    );
-                    const hero = document.querySelector('.artist-hero')
-                        .getBoundingClientRect();
-                    return {
-                        viewport: [innerWidth, innerHeight],
-                        documentWidth: document.documentElement.scrollWidth,
-                        directActionsVisible: visible('.artist-quick-upload')
-                            && visible('.artist-settings-button'),
-                        mobileMenuVisible: visible('.artist-owner-menu-toggle'),
-                        heroRight: hero.right
-                    };
-                })()
-            """)
-            assert desktop_state["directActionsVisible"], desktop_state
-            assert not desktop_state["mobileMenuVisible"], desktop_state
-            assert desktop_state["documentWidth"] <= desktop_state["viewport"][0], desktop_state
-            assert desktop_state["heroRight"] <= desktop_state["viewport"][0], desktop_state
-            capture(client, output_dir / "owner-desktop-1280x900.png")
+            desktop_results = {}
+            for width, height, label in (
+                (1280, 900, "desktop"),
+                (900, 720, "tablet"),
+            ):
+                set_viewport(client, width, height, mobile=False)
+                open_artist_profile(client, f"{app_url}&viewport={width}x{height}")
+                apply_owner_fixture(client)
+                desktop_state = client.evaluate("""
+                    (() => {
+                        const visible = (selector) => Boolean(
+                            document.querySelector(selector)?.getClientRects().length
+                        );
+                        const rect = (selector) => document.querySelector(selector)
+                            .getBoundingClientRect();
+                        const overlaps = (left, right) => (
+                            left.left < right.right
+                            && left.right > right.left
+                            && left.top < right.bottom
+                            && left.bottom > right.top
+                        );
+                        const hero = rect('.artist-hero');
+                        const identity = rect('.artist-identity');
+                        const title = rect('.artist-identity h1');
+                        const releaseCount = rect('.artist-release-count');
+                        const ownerActions = rect('.artist-owner-actions');
+                        const uploadStyle = getComputedStyle(
+                            document.querySelector('.artist-quick-upload')
+                        );
+                        const settingsStyle = getComputedStyle(
+                            document.querySelector('.artist-settings-button')
+                        );
+                        return {
+                            viewport: [innerWidth, innerHeight],
+                            documentWidth: document.documentElement.scrollWidth,
+                            directActionsVisible: visible('.artist-quick-upload')
+                                && visible('.artist-settings-button'),
+                            mobileMenuVisible: visible('.artist-owner-menu-toggle'),
+                            avatarVisible: visible('.artist-avatar'),
+                            heroRight: hero.right,
+                            identityLeftOffset: identity.left - hero.left,
+                            identityTextLeftDelta: Math.abs(
+                                title.left - releaseCount.left
+                            ),
+                            identityReleaseGap: releaseCount.top - title.bottom,
+                            identityOwnerOverlap: overlaps(identity, ownerActions),
+                            ownerRightOffset: hero.right - ownerActions.right,
+                            uploadBackground: uploadStyle.backgroundColor,
+                            uploadBackdrop: uploadStyle.backdropFilter,
+                            settingsBackground: settingsStyle.backgroundColor
+                        };
+                    })()
+                """)
+                assert desktop_state["directActionsVisible"], desktop_state
+                assert not desktop_state["mobileMenuVisible"], desktop_state
+                assert not desktop_state["avatarVisible"], desktop_state
+                assert 20 <= desktop_state["identityLeftOffset"] <= 64, desktop_state
+                assert desktop_state["identityTextLeftDelta"] <= 1, desktop_state
+                assert 0 <= desktop_state["identityReleaseGap"] <= 12, desktop_state
+                assert not desktop_state["identityOwnerOverlap"], desktop_state
+                assert 20 <= desktop_state["ownerRightOffset"] <= 64, desktop_state
+                assert desktop_state["uploadBackground"] != "rgb(255, 255, 255)", desktop_state
+                assert desktop_state["settingsBackground"] != "rgb(255, 255, 255)", desktop_state
+                assert desktop_state["uploadBackdrop"] != "none", desktop_state
+                assert desktop_state["documentWidth"] <= desktop_state["viewport"][0], desktop_state
+                assert desktop_state["heroRight"] <= desktop_state["viewport"][0], desktop_state
+                desktop_results[label] = desktop_state
+                capture(client, output_dir / f"owner-{label}-{width}x{height}.png")
 
             report = {
                 "viewports": results,
-                "desktop": desktop_state,
+                "desktop": desktop_results,
                 "menu": menu_state,
                 "exclusiveRelease": exclusive_release,
                 "exclusiveOwner": exclusive_owner,

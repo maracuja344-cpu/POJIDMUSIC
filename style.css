@@ -5117,6 +5117,75 @@ body[data-app-view="artist"]::before {
 .artist-banner::after { background: linear-gradient(180deg, rgba(10,10,12,.12), rgba(10,10,12,var(--hero-overlay)) 100%); transition: background .3s ease; }
 .artist-identity { min-width: 0; text-shadow: var(--hero-text-shadow, 0 2px 20px rgba(0,0,0,.55)); }
 .artist-release-count { color: var(--hero-muted); font-weight: 600; }
+
+@media (min-width: 621px) {
+    .artist-profile-summary .artist-avatar {
+        display: none;
+    }
+
+    .artist-profile-summary {
+        max-width: min(62%, 640px);
+        align-items: flex-end;
+        gap: 0;
+    }
+
+    .artist-identity {
+        display: grid;
+        gap: 7px;
+        padding-bottom: 3px;
+        text-align: left;
+    }
+
+    .artist-identity h1 {
+        line-height: 0.96;
+    }
+
+    .artist-release-count {
+        margin: 0;
+        font-size: clamp(16px, 1.6vw, 20px);
+        line-height: 1.25;
+    }
+
+    .artist-owner-actions {
+        gap: 8px;
+    }
+
+    .artist-owner-actions > .artist-quick-upload,
+    .artist-owner-actions > .artist-settings-button,
+    .artist-banner-edit {
+        border-color: rgba(255, 255, 255, 0.14);
+        background: rgba(9, 9, 12, 0.54);
+        color: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+        -webkit-backdrop-filter: blur(16px) saturate(120%);
+        backdrop-filter: blur(16px) saturate(120%);
+        transition:
+            border-color 180ms ease,
+            background-color 180ms ease,
+            color 180ms ease,
+            box-shadow 180ms ease;
+    }
+
+    .artist-owner-actions > .artist-quick-upload:hover,
+    .artist-owner-actions > .artist-settings-button:hover,
+    .artist-banner-edit:hover {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(14, 14, 18, 0.68);
+        color: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .artist-owner-actions > .artist-quick-upload:focus-visible,
+    .artist-owner-actions > .artist-settings-button:focus-visible,
+    .artist-banner-edit:focus-visible {
+        border-color: rgba(226, 173, 255, 0.42);
+        background: rgba(14, 14, 18, 0.72);
+        color: #fff;
+        outline: 2px solid rgba(226, 173, 255, 0.5);
+        outline-offset: 3px;
+    }
+}
+
 .artist-profile-filters { display: flex; gap: 8px; margin: 18px 0; }
 .artist-profile-filter { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.05); color: #fff; }
 .artist-profile-filter.is-active { background: rgba(226,173,255,.18); border-color: rgba(226,173,255,.42); }
