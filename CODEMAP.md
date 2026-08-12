@@ -76,17 +76,19 @@ Largest and most overloaded files: `player.js` (4125 lines), `track-upload.js`
 
 `index.html:1261` first loads classic `tracks.js`, creating the global local catalog.
 `index.html:1265` then loads `js/script.js` as the only module entry point.
-`script.js:486-488` starts core initialization, auth initialization, and service-worker
-registration independently.
+`script.js` starts the local catalog shell immediately, then schedules navigation,
+remote refresh, and auth after the first paint while service-worker registration stays
+independent.
 
 Core initialization order (`script.js:367-400`):
 
-1. Load local and remote catalogs, then merge them.
+1. Load the bundled local catalog synchronously.
 2. Detect the mobile/standalone environment.
 3. Render New, All tracks, and Recommendations.
-4. Initialize reveal animation, search, the player, query-string navigation,
-   recommendation carousel, and refresh lifecycle listeners.
-5. Auth and upload are dynamically imported in a parallel initialization branch.
+4. Initialize reveal animation, search, the player, recommendation carousel, and
+   refresh lifecycle listeners.
+5. After first paint, dynamically initialize route navigation and auth, and refresh
+   the remote catalog. Track upload is imported only on pointer/focus/click intent.
 
 Direct dependency map:
 
@@ -97,24 +99,25 @@ index.html -> tracks.js (global `tracks`)
 script.js -> render -> player -> catalog-state, playback-context, queue-decisions,
                               artist-utils, audio-url-resolver
           -> search -> render + player + catalog-state
-          -> app-navigation -> render + search + player + tracks-api
+          -> dynamic app-navigation -> render + search + player + tracks-api
                             -> track-management + artist-media + data-repository
           -> carousel, mobile, pull-to-refresh, catalog-state
           -> dynamic auth -> data-repository + Supabase
-          -> dynamic track-upload -> auth + data-repository + Supabase
+          -> on-demand track-upload -> auth + data-repository + Supabase
 
 data-repository, tracks-api, auth, track-upload, track-management, artist-media,
 app-navigation -> supabase/client -> remote esm.sh Supabase SDK
 
 data-repository -> data-cache
 audio-url-resolver -> audio-url-resolver-core -> data-cache
+                   -> dynamic supabase/client only for signed remote audio
 ```
 
-There is no strict import cycle through `player.js`, but the graph is strongly coupled:
-`render.js` and `search.js` directly call player UI synchronization, while navigation
-imports rendering, search, player, data access, media mutation, and management. The
-result is a wide startup graph: `script.js` statically imports `app-navigation.js`, so
-the remote Supabase SDK is required even before the dynamic Auth branch runs.
+There is no strict import cycle through `player.js`, but the graph remains strongly
+coupled: `render.js` and `search.js` directly call player UI synchronization, while
+navigation imports rendering, search, player, data access, media mutation, and
+management. The critical static closure no longer includes `app-navigation.js` or the
+Supabase SDK; the measured closure fell from 26 to 18 local modules.
 
 `navigation.js` exports section/hash navigation but is not imported or initialized by
 the current entry point. Its behavior is effectively dead code.
@@ -126,7 +129,8 @@ the current entry point. Its behavior is effectively dead code.
 ```text
 tracks.js local rows ------------------------------+
                                                    v
-script.prepareCatalog -> tracks-api.getPublishedTracks -> tracks table
+script.prepareLocalCatalog -> catalog-state -> immediate Home render
+script.refreshCatalog (after first paint) -> tracks-api.getPublishedTracks -> tracks table
                                                    -> track_artists/artists relation
                                                    -> public cover/artist-media URLs
                                                    v
@@ -197,7 +201,10 @@ Core state is split across:
 - `localStorage`: restoration data listed above.
 
 `playTrack` resolves the latest track audio URL on demand, prepares the cover, fades the
-old track, assigns `audio.src`, updates both player UIs, saves state, and calls `play()`.
+old track, assigns `audio.src`, and commits both player UIs at the visual transition
+midpoint. Next uses a leftward near-edge flip; Previous uses the inverse. Only the
+fullscreen artwork card and mobile mini-player thumbnail transform; controls stay fixed.
+The same switch ID cancels stale signing, preload, midpoint, and cleanup work.
 Play/pause buttons and clicking the current card toggle the singleton audio.
 
 ### Queue engine as implemented

@@ -1,4 +1,3 @@
-import { supabase } from "./supabase/client.js";
 import {
     AUDIO_SIGNED_URL_TTL_SECONDS,
     createTrackAudioResolver,
@@ -8,10 +7,18 @@ import {
 export { shouldRetrySignedAudioError };
 
 const AUDIO_BUCKET = "track-audio";
+let supabasePromise = null;
+
+async function getSupabase() {
+    supabasePromise ||= import("./supabase/client.js")
+        .then(({ supabase }) => supabase);
+    return supabasePromise;
+}
 
 const resolver = createTrackAudioResolver({
     ttlSeconds: AUDIO_SIGNED_URL_TTL_SECONDS,
     async signAudioPath(path, ttlSeconds) {
+        const supabase = await getSupabase();
         const { data, error } = await supabase.storage
             .from(AUDIO_BUCKET)
             .createSignedUrl(path, ttlSeconds);

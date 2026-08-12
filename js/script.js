@@ -79,19 +79,123 @@ import {
     normalizeArtistName,
     parseLegacyArtistCredit
 } from "./artist-utils.js";
-import {
-    initializeAppNavigation,
-    refreshActiveRoute
-} from "./app-navigation.js";
-
 const CATALOG_REQUEST_TIMEOUT_MS = 10000;
 export const CATALOG_STALE_MS = 60 * 1000;
+const APP_MODULE_STARTED_AT = performance.now();
 let websiteInitializationPromise = null;
 let activeRefreshPromise = null;
 let isRefreshing = false;
 let refreshGeneration = 0;
 let lastSuccessfulCatalogRefreshAt = 0;
 let refreshFeaturesInitialized = false;
+let appNavigationModule = null;
+let appNavigationModulePromise = null;
+let trackUploadModulePromise = null;
+let trackUploadInitialized = false;
+let catalogSkeletonTimer = null;
+
+function createTrackSkeletonCard() {
+    const card = document.createElement("div");
+    card.className = "release-card track-skeleton";
+    card.setAttribute("aria-hidden", "true");
+    card.innerHTML = [
+        '<span class="track-skeleton-cover"></span>',
+        '<span class="track-skeleton-copy">',
+        '<span class="track-skeleton-line track-skeleton-title"></span>',
+        '<span class="track-skeleton-line track-skeleton-artist"></span>',
+        "</span>"
+    ].join("");
+    return card;
+}
+
+function scheduleCatalogSkeletons() {
+    catalogSkeletonTimer = window.setTimeout(() => {
+        if (getCatalogTracks().length) return;
+        ["#new .tracks-row", "#all-tracks .tracks-row"].forEach((selector) => {
+            const container = document.querySelector(selector);
+            if (!container || container.children.length) return;
+            container.replaceChildren(...Array.from(
+                { length: 4 },
+                createTrackSkeletonCard
+            ));
+        });
+    }, 130);
+}
+
+function clearCatalogSkeletons() {
+    window.clearTimeout(catalogSkeletonTimer);
+    catalogSkeletonTimer = null;
+    document.querySelectorAll(".track-skeleton").forEach((card) => card.remove());
+}
+
+function loadAppNavigation() {
+    appNavigationModulePromise ||= import("./app-navigation.js")
+        .then((module) => {
+            appNavigationModule = module;
+            return module;
+        });
+    return appNavigationModulePromise;
+}
+
+function refreshActiveRoute() {
+    appNavigationModule?.refreshActiveRoute();
+}
+
+function scheduleAfterFirstPaint(callback, timeout = 1200) {
+    requestAnimationFrame(() => {
+        if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(callback, { timeout });
+        } else {
+            window.setTimeout(callback, 0);
+        }
+    });
+}
+
+function initializeAppNavigationAfterFirstPaint() {
+    const url = new URL(window.location.href);
+    const routeNeedsNavigation = Boolean(
+        url.searchParams.get("artist") ||
+        url.searchParams.get("view")
+    );
+    const initialize = () => {
+        void loadAppNavigation().then(({ initializeAppNavigation }) => {
+            initializeAppNavigation();
+        });
+    };
+
+    if (routeNeedsNavigation) initialize();
+    else scheduleAfterFirstPaint(initialize, 800);
+}
+
+function initializeTrackUploadOnDemand() {
+    const selector = ".track-upload-open-button, [data-profile-quick-upload]";
+    const load = () => {
+        trackUploadModulePromise ||= import("./track-upload.js")
+            .then((module) => {
+                if (!trackUploadInitialized) {
+                    module.initializeTrackUpload();
+                    trackUploadInitialized = true;
+                }
+                return module;
+            });
+        return trackUploadModulePromise;
+    };
+
+    document.addEventListener("pointerover", (event) => {
+        if (event.target.closest?.(selector)) void load();
+    }, { passive: true });
+    document.addEventListener("focusin", (event) => {
+        if (event.target.closest?.(selector)) void load();
+    });
+    document.addEventListener("click", async (event) => {
+        const trigger = event.target.closest?.(selector);
+        if (!trigger || trackUploadInitialized) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        await load();
+        trigger.click();
+    }, true);
+}
 
 function withTimeout(promise, timeoutMs) {
     let timeoutId;
@@ -220,6 +324,10 @@ async function prepareCatalog() {
     setCatalogTracks(
         mergeCatalogTracks(localTracks, remoteTracks)
     );
+}
+
+function prepareLocalCatalog() {
+    setCatalogTracks(getLocalCatalogTracks());
 }
 
 function renderUpdatedCatalog() {
@@ -439,7 +547,8 @@ function registerServiceWorker() {
 как карточки уже появились в HTML.
 */
 async function initializeWebsiteOnce() {
-    await prepareCatalog();
+    scheduleCatalogSkeletons();
+    prepareLocalCatalog();
 
     /*
     Мобильный режим определяется до создания карточек:
@@ -455,6 +564,10 @@ async function initializeWebsiteOnce() {
 
     /* Создаём карточки рекомендаций */
     renderRecommendations();
+    clearCatalogSkeletons();
+    document.documentElement.dataset.catalogReadyMs = (
+        performance.now() - APP_MODULE_STARTED_AT
+    ).toFixed(1);
 
     /* Запускаем анимации появления карточек */
     initializeCardAnimations();
@@ -466,12 +579,19 @@ async function initializeWebsiteOnce() {
     initializePlayer();
 
     /* Лёгкая SPA-навигация не пересоздаёт Audio и плеер. */
-    initializeAppNavigation();
+    initializeAppNavigationAfterFirstPaint();
 
     /* Запускаем карусель рекомендаций */
     initializeRecommendationsCarousel();
 
     initializeCatalogRefreshFeatures();
+
+    scheduleAfterFirstPaint(() => {
+        void refreshCatalog({
+            force: true,
+            source: "startup"
+        });
+    }, 500);
 
 }
 
@@ -522,28 +642,6 @@ async function initializeAuthFeature() {
     }
 
     if (!authReady) return;
-
-    try {
-        const {
-            initializeTrackUpload
-        } = await import("./track-upload.js");
-
-        initializeTrackUpload();
-    } catch (error) {
-        const uploadButton =
-            document.querySelector(
-                ".track-upload-open-button"
-            );
-
-        if (uploadButton) {
-            uploadButton.hidden = true;
-        }
-
-        console.error(
-            "Интерфейс загрузки трека временно недоступен.",
-            error
-        );
-    }
 }
 
 
@@ -558,5 +656,8 @@ async function initializeAuthFeature() {
 Поэтому отдельный DOMContentLoaded здесь не нужен.
 */
 void initializeWebsite();
-void initializeAuthFeature();
+initializeTrackUploadOnDemand();
+scheduleAfterFirstPaint(() => {
+    void initializeAuthFeature();
+}, 1400);
 registerServiceWorker();

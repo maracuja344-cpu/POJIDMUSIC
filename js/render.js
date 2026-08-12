@@ -107,7 +107,7 @@ export function createTrackCard(
     track,
     {
         loading = "lazy",
-        showArtistAction = true
+        showArtistAction = false
     } = {}
 ) {
     const card = document.createElement("div");

@@ -266,13 +266,40 @@ function clearTrackCards(container) {
     container?.replaceChildren();
 }
 
+function createArtistTrackSkeleton() {
+    const card = document.createElement("div");
+    card.className = "release-card track-skeleton";
+    card.setAttribute("aria-hidden", "true");
+    card.innerHTML = [
+        '<span class="track-skeleton-cover"></span>',
+        '<span class="track-skeleton-copy">',
+        '<span class="track-skeleton-line track-skeleton-title"></span>',
+        '<span class="track-skeleton-line track-skeleton-artist"></span>',
+        "</span>"
+    ].join("");
+    return card;
+}
+
+function showArtistLoadingShell(view, artistName) {
+    view.classList.add("is-loading");
+    view.setAttribute("aria-busy", "true");
+    view.querySelector("[data-artist-name]").textContent = artistName || "Артист";
+    view.querySelector("[data-artist-release-count]").textContent = "";
+    const tracks = view.querySelector("[data-artist-tracks]");
+    clearTrackCards(tracks);
+    tracks?.replaceChildren(...Array.from(
+        { length: 4 },
+        createArtistTrackSkeleton
+    ));
+}
+
 function renderTrackCards(
     container,
     tracks,
     {
         canManage = false,
         profileId = null,
-        showArtistAction = true
+        showArtistAction = false
     } = {}
 ) {
     clearTrackCards(container);
@@ -432,9 +459,16 @@ async function renderArtistView(slug) {
     if (!view) return;
     const renderId = ++routeRenderId;
     let artist = findCatalogArtist(slug);
+    const loadingTimer = window.setTimeout(() => {
+        if (renderId !== routeRenderId || getRoute().artistSlug !== slug) return;
+        showArtistLoadingShell(view, artist?.displayName);
+    }, 130);
     const storedArtist = await fetchArtistBySlug(slug);
+    window.clearTimeout(loadingTimer);
     artist = storedArtist || artist;
     if (renderId !== routeRenderId || getRoute().artistSlug !== slug) return;
+    view.classList.remove("is-loading");
+    view.removeAttribute("aria-busy");
 
     renderedArtist = artist;
     const artistName = artist?.displayName || "Артист не найден";

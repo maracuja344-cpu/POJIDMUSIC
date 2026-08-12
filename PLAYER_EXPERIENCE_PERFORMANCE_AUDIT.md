@@ -2,6 +2,43 @@
 
 Audit date: 2026-08-12.
 
+## Smooth app/startup stage (pwa-v14)
+
+- Next and Previous now carry an explicit direction through the existing production
+  commands. Fullscreen rotates only the artwork card to a near-edge midpoint; the
+  mobile mini-player rotates only its thumbnail. Metadata fades at the same midpoint,
+  controls remain stationary, and reduced-motion uses opacity without rotation.
+- The existing `trackSwitchId` remains the cancellation boundary for signing,
+  preload, audio fade, visual midpoint, and cleanup. No Audio instance, queue command,
+  repeat rule, or persistence key was added.
+- Home now renders the bundled local catalog before remote catalog I/O. Navigation,
+  auth, and refresh begin after first paint; track upload is imported on user intent;
+  the Supabase client is imported by audio resolution only when a signed remote path
+  is actually requested.
+- Delayed (130 ms) Home and Artist Profile skeletons match release-card geometry.
+  Fast local and memory-cache paths cancel the delay, preventing skeleton flash.
+  Below-fold All Tracks and Recommendations use `content-visibility: auto` with an
+  intrinsic fallback size.
+- Listener track cards no longer create an artist-only overflow menu. Artist links in
+  metadata remain direct; owner management continues to decorate only manageable
+  cards.
+
+## Before/after evidence
+
+| Measurement | Before | After | Result |
+| --- | ---: | ---: | --- |
+| Static `script.js` import closure | 26 local modules | 18 local modules | -31% |
+| Home usable-data gate | remote request, up to 10 s timeout | synchronous bundled catalog | network removed from first render |
+| Supabase SDK in static closure | yes | no | deferred until remote/auth/signed-audio work |
+| Skeleton delay | none | 130 ms | no flash on fast local/cache path |
+| Directional visual duration | generic 110 ms + 430 ms cover cleanup | 155 ms + 185 ms (340 ms total) | bounded 280–360 ms transition |
+
+The repository shell check passes with 28 production modules, 33 critical resources,
+and the pinned seven-resource Supabase SDK graph. The bundled headless Chrome process
+still disconnects before page execution on this machine; interactive checks therefore
+use the in-app browser, while installed-phone cold/warm and foreground-return timings
+remain live-device checks after deployment.
+
 ## UX implementation
 
 - Fullscreen artist identity has three layouts: one direct centered artist link,
