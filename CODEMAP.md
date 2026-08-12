@@ -7,8 +7,8 @@ repository. It is not a description of an intended or older architecture.
 
 POJIDMUSIC is a buildless browser SPA/PWA. `index.html` contains the persistent
 application shell and all views. Native ES modules render and replace track cards,
-manage History API navigation, authentication, uploads, and one module-scoped
-`HTMLAudioElement`. The runtime catalog merges a global local array from `tracks.js`
+manage History API navigation, authentication, uploads, and one active module-scoped
+`HTMLAudioElement` plus one bounded next-track transition/preload channel. The runtime catalog merges a global local array from `tracks.js`
 with published rows from Supabase. There is no package manifest, bundler,
 server-side application, or framework router. Lightweight browser/CDP tests live in
 `tests/` and run without a package manager.
@@ -180,16 +180,18 @@ other cross-origin application data bypass shell caches.
 
 ### State and responsibilities
 
-`player.js:26` creates exactly one module-scoped `Audio`. Mini-player and fullscreen
-player are two views/controllers over it; they do not create audio instances.
+`player.js` owns one active `Audio` as production playback truth and one standby `Audio`
+reserved for at most one predicted next track. During a 2.6-second equal-power crossfade
+the roles swap; after cleanup only the new active element plays. Mini-player and fullscreen
+remain projections over the active owner and do not create their own audio instances.
 
 Fullscreen remains an ephemeral view over that same state. Its modal semantics, focus
 entry/return, root scroll lock, keyboard progress, pending/buffering accessibility state,
 safe-area layout, mobile artist identity and gestures are implemented in `index.html`,
 `style.css`, `artist-utils.js` and `player.js`. Baseline/final measurements and screenshots are documented in
 `FULLSCREEN_PLAYER_AUDIT.md` and `PLAYER_EXPERIENCE_PERFORMANCE_AUDIT.md`; no
-fullscreen-owned queue or Audio state exists. The fullscreen artist identity renders
-one direct zone, two equal direct zones, or a 3+ selector summary.
+fullscreen-owned queue or Audio state exists. The fullscreen artist identity is rendered
+only on mobile: one direct zone, two equal direct zones, or a 3+ selector summary.
 
 Core state is split across:
 
@@ -266,8 +268,9 @@ shuffle is enabled), is capped at 100 IDs, and is persisted independently.
 - **Low:** current-card references may remain detached until the next lookup, although
   visible state synchronization is ID-based and remains functional.
 
-No Media Session API integration exists despite a comment mentioning it. There are no
-OS lock-screen metadata or play/pause/next/previous action handlers.
+Media Session registers only play, pause, previous, next, and absolute seek-to. These
+handlers delegate to production player commands; relative seek handlers are deliberately
+absent, although an OS may still choose its own lock-screen button layout.
 
 ## 6. Supabase and data inventory
 
@@ -300,7 +303,7 @@ RPCs called by the frontend: `search_artists_for_credit`, `set_track_artist_cred
   then best-effort removal of superseded object.
 
 Signed track-audio URLs have a one-hour TTL. `audio-url-resolver.js` creates them only
-for playback or a single deterministic next-track prefetch. Its DOM-free core shares
+for playback or a single predicted next-track preload. Its DOM-free core shares
 URLs and in-flight requests by Storage object path until one minute before expiry.
 Catalog rows remain playable metadata with a stable `storageAudioPath` and an optional
 runtime `audio`/`audioExpiresAt`; signed capabilities are never persisted.
@@ -354,8 +357,8 @@ Supabase project has every migration applied.
 | Low | artist ambient/player accent | Canvas color sampling costs CPU, but both paths have in-memory caches and small sample canvases. | Retain caching; move work off critical render only if profiling justifies it. |
 | Low | lifecycle refresh | focus, pageshow, and visibility listeners can all fire, but a shared in-flight promise and 60-second freshness window suppress most duplication. | Preserve coalescing; document invalidation events. |
 
-There is no data prefetch beyond browser module fetching and cover preloading for the
-selected track. There is no durable catalog cache. Audio intentionally bypasses the
+There is no durable catalog cache. One predicted next audio URL/source and cover may be
+prepared during playback; the rest of the queue is never preloaded. Audio bypasses the
 service worker. Recommendation rendering is random and rebuilt on changed refreshes.
 
 ## 8. PWA release contract
@@ -426,7 +429,8 @@ No step below is implemented by this audit.
 2. **Split low-risk UI concerns out of `player.js`.** Extract pure formatting, artwork
    color analysis, fullscreen gestures/animation, and DOM adapters without changing the
    audio/queue state machine.
-3. **Create one observable player state boundary.** Keep the singleton `Audio`; expose
+3. **Create one observable player state boundary.** Keep one active Audio owner and the
+   bounded transition channel; expose
    commands/events and move mini/fullscreen/card synchronization behind adapters.
 4. **Consolidate the queue engine.** Make `currentTrack`, ordered queue, current index,
    history, source, repeat, and shuffle one tested state machine independent of DOM.
@@ -439,9 +443,8 @@ No step below is implemented by this audit.
    graph and explicit update strategy; verify desktop, mobile, and standalone installs.
 8. **Optimize artwork.** Add derivatives, responsive loading, lazy decoding, and cache
    policy without visual redesign.
-9. **Extend source-aware prefetch.** Audio now prefetches at most one deterministic
-   sequential candidate. Consider metadata/artwork only after measuring their benefit
-   and network cost.
+9. **Addressed: source-aware preload.** Audio prepares at most one production-queue
+   prediction with resolver cache/in-flight dedup and invalidates it on intent changes.
 10. **Addressed: Media Session.** Metadata, position/playback state and OS actions bind to
     the existing singleton-Audio commands without owning parallel player logic.
 11. **Only then evolve UX.** Preserve the existing POJIDMUSIC design unless separately
@@ -466,7 +469,7 @@ boundary so behavior is observable and testable during migration.
 ## 13. Things not to change yet
 
 - Do not redesign the interface or imitate external music clients.
-- Do not create another `Audio` instance or replace the singleton before engine tests.
+- Do not add further `Audio` instances or broaden the one-track transition channel.
 - Do not change repeat/shuffle/autoplay/previous behavior until product semantics are
   explicitly accepted and captured in tests.
 - Do not remove the local `tracks.js` fallback until offline/degraded requirements are

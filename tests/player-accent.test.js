@@ -27,12 +27,15 @@ try {
         equals(normalizePlayerAccent({ red: 128, green: 128, blue: 128 }), fallback));
 
     const red = normalizePlayerAccent({ red: 255, green: 0, blue: 0 });
+    const green = normalizePlayerAccent({ red: 0, green: 255, blue: 0 });
     const cyan = normalizePlayerAccent({ red: 0, green: 255, blue: 255 });
     assert("saturated red remains colored but is brightness-limited",
         red.red > red.green && red.red > red.blue && red.red < 255);
     assert("saturated cyan remains colored but is brightness-limited",
         cyan.green > cyan.red && cyan.blue > cyan.red &&
         cyan.green < 255 && cyan.blue < 255);
+    assert("saturated green remains colored but is brightness-limited",
+        green.green > green.red && green.green > green.blue && green.green < 255);
     assert("missing artwork uses the same documented fallback",
         equals(FALLBACK_PLAYER_ACCENT, fallback));
 

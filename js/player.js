@@ -23,7 +23,6 @@ import {
     shouldRepeatCurrentTrack
 } from "./queue-decisions.js";
 import {
-    prefetchTrackAudio,
     refreshTrackAudio,
     resolveTrackAudio,
     shouldRetrySignedAudioError
@@ -46,9 +45,15 @@ import { createMediaSessionController } from "./media-session.js";
 fullscreen, очереди и Media Session. CORS-режим задаётся до src,
 чтобы одинаково обрабатывать локальные и подписанные URL.
 */
-const audio = new Audio();
-audio.crossOrigin = "anonymous";
-audio.preload = "auto";
+const primaryAudio = new Audio();
+const transitionAudio = new Audio();
+const audioElements = [primaryAudio, transitionAudio];
+audioElements.forEach((mediaElement) => {
+    mediaElement.crossOrigin = "anonymous";
+    mediaElement.preload = "auto";
+});
+let audio = primaryAudio;
+let standbyAudio = transitionAudio;
 
 const FALLBACK_COVER = "img/cover.jpg";
 export const FALLBACK_PLAYER_ACCENT = {
@@ -61,6 +66,7 @@ const TRACK_FADE_OUT_DURATION_MS = 220;
 const TRACK_FADE_IN_DURATION_MS = 360;
 const TRACK_FLIP_MIDPOINT_MS = 155;
 const TRACK_FLIP_CLEANUP_MS = 340;
+const TRACK_CROSSFADE_DURATION_MS = 2600;
 const REPEAT_MODES = [
     "off",
     "all",
@@ -70,6 +76,7 @@ const REPEAT_MODES = [
 let userVolume = 0.1;
 
 audio.volume = userVolume;
+standbyAudio.volume = 0;
 
 
 
@@ -109,6 +116,11 @@ let pendingSnapshotSaveTimer = null;
 let pendingRestoredPosition = 0;
 let knownDuration = 0;
 let playbackIntentId = 0;
+let predictedNext = null;
+let predictionRequestId = 0;
+let suppressPredictionInvalidation = false;
+let crossfadeFrame = null;
+let crossfadeState = null;
 
 /*
 Таймер плавной смены трека.
@@ -488,6 +500,8 @@ function toggleShuffleMode() {
     shuffleEnabled = !shuffleEnabled;
     pendingShuffleHistoryIndex = null;
     shuffleCycleIds = new Set(currentTrack ? [currentTrack.catalogId] : []);
+    invalidatePredictedNext();
+    schedulePredictedNextRefresh();
 
     savePlaybackModes();
     updatePlaybackModeButtons();
@@ -502,6 +516,8 @@ function cycleRepeatMode() {
         (currentModeIndex + 1) %
         REPEAT_MODES.length
     ];
+    invalidatePredictedNext();
+    schedulePredictedNextRefresh();
 
     savePlaybackModes();
     updatePlaybackModeButtons();
@@ -1404,13 +1420,18 @@ function updatePlayerInformation(
     через CSS-переменную.
     */
     if (fullscreenArtistIdentity) {
-        renderFullscreenArtistIdentity(
-            fullscreenArtistIdentity,
-            track,
-            {
-                onSelect: closeFullscreenPlayer
-            }
-        );
+        if (isMobilePlayerLayout()) {
+            renderFullscreenArtistIdentity(
+                fullscreenArtistIdentity,
+                track,
+                {
+                    onSelect: closeFullscreenPlayer
+                }
+            );
+        } else {
+            fullscreenArtistIdentity.replaceChildren();
+            fullscreenArtistIdentity.hidden = true;
+        }
     }
 
     if (fullscreenBackground) {
@@ -1483,6 +1504,7 @@ function setPlayingState(isPlaying) {
         "playing",
         isPlaying
     );
+    fullscreenPlayer?.classList.toggle("is-playing", isPlaying);
 
     const toggleLabel = isPlaying
         ? "Поставить на паузу"
@@ -1618,25 +1640,95 @@ async function ensurePlayableTrackAudio(track) {
     return playableTrack;
 }
 
-function getLikelyNextTrackForPrefetch() {
-    if (
-        !currentTrack ||
-        shuffleEnabled ||
-        shuffleHistoryIndex < shuffleHistory.length - 1
-    ) {
-        return null;
-    }
-
-    return getSequentialTrack(1, getPlaybackQueue());
+function resetStandbyAudio() {
+    standbyAudio.pause();
+    standbyAudio.removeAttribute("src");
+    standbyAudio.load();
+    standbyAudio.volume = 0;
 }
 
-function prefetchLikelyNextAudio(expectedCatalogId) {
+function invalidatePredictedNext() {
+    predictionRequestId += 1;
+    predictedNext = null;
+    if (!crossfadeState) resetStandbyAudio();
+}
+
+function schedulePredictedNextRefresh() {
     window.setTimeout(() => {
-        if (currentTrack?.catalogId !== expectedCatalogId) return;
-        const nextTrack = getLikelyNextTrackForPrefetch();
-        if (nextTrack?.source !== "supabase") return;
-        void prefetchTrackAudio(nextTrack).catch(() => {});
+        if (currentTrack && !audio.paused && !isTrackSwitchPending) {
+            void preparePredictedNextAudio(currentTrack.catalogId);
+        }
     }, 0);
+}
+
+function predictNextTrack() {
+    if (!currentTrack || repeatMode === "one") return null;
+    const savedPendingIndex = pendingShuffleHistoryIndex;
+    const savedCycleIds = new Set(shuffleCycleIds);
+    const savedContext = getPlaybackContext();
+    let nextTrack;
+    let predictedPendingIndex;
+    let predictedCycleIds;
+    suppressPredictionInvalidation = true;
+    try {
+        nextTrack = getTrackForNavigation(1, { reason: "ended" });
+        predictedPendingIndex = pendingShuffleHistoryIndex;
+        predictedCycleIds = new Set(shuffleCycleIds);
+        const changedContext = getPlaybackContext().id !== savedContext.id;
+        if (changedContext) setPlaybackContext(savedContext);
+        pendingShuffleHistoryIndex = savedPendingIndex;
+        shuffleCycleIds = savedCycleIds;
+    } finally {
+        suppressPredictionInvalidation = false;
+    }
+    if (!nextTrack || nextTrack.catalogId === currentTrack.catalogId) return null;
+    return { track: nextTrack, predictedPendingIndex, predictedCycleIds };
+}
+
+function waitForPreparedAudio(mediaElement, requestId) {
+    return new Promise((resolve, reject) => {
+        let timeoutId;
+        const cleanup = () => {
+            clearTimeout(timeoutId);
+            mediaElement.removeEventListener("canplay", onReady);
+            mediaElement.removeEventListener("error", onError);
+        };
+        const onReady = () => {
+            cleanup();
+            if (requestId !== predictionRequestId) reject(new DOMException("Cancelled", "AbortError"));
+            else resolve();
+        };
+        const onError = () => {
+            cleanup();
+            reject(mediaElement.error || new Error("Audio preload failed"));
+        };
+        mediaElement.addEventListener("canplay", onReady);
+        mediaElement.addEventListener("error", onError);
+        timeoutId = window.setTimeout(onError, 12000);
+        if (mediaElement.readyState >= 3) onReady();
+    });
+}
+
+async function preparePredictedNextAudio(expectedCatalogId) {
+    const requestId = ++predictionRequestId;
+    predictedNext = null;
+    resetStandbyAudio();
+    const decision = predictNextTrack();
+    if (!decision) return;
+    try {
+        const track = await ensurePlayableTrackAudio(decision.track);
+        const cover = await getPreloadedCover(track);
+        if (requestId !== predictionRequestId || currentTrack?.catalogId !== expectedCatalogId) return;
+        standbyAudio.src = track.audio;
+        standbyAudio.currentTime = 0;
+        standbyAudio.load();
+        await waitForPreparedAudio(standbyAudio, requestId);
+        if (requestId !== predictionRequestId || currentTrack?.catalogId !== expectedCatalogId) return;
+        predictedNext = { ...decision, track, cover, fromCatalogId: expectedCatalogId };
+    } catch (error) {
+        if (requestId === predictionRequestId) resetStandbyAudio();
+        if (error?.name !== "AbortError") console.warn("Next track preload skipped", error);
+    }
 }
 
 function assignAudioSource(
@@ -1773,7 +1865,7 @@ async function startAudio(
             return;
         }
 
-        prefetchLikelyNextAudio(expectedCatalogId);
+        void preparePredictedNextAudio(expectedCatalogId);
     } catch {
         if (
             currentTrack?.catalogId !==
@@ -1857,10 +1949,17 @@ function schedulePlayerStateSave(delay = 250) {
 Оба интерфейса управляют громкостью единственного Audio.
 */
 function applyPlaybackVolume() {
+    if (crossfadeState) {
+        const angle = crossfadeState.progress * Math.PI / 2;
+        crossfadeState.incoming.volume = userVolume * Math.sin(angle);
+        crossfadeState.outgoing.volume = userVolume * Math.cos(angle);
+        return;
+    }
     audio.volume = Math.min(
         Math.max(userVolume * transitionGain, 0),
         1
     );
+    standbyAudio.volume = 0;
 }
 
 
@@ -2027,12 +2126,132 @@ function updateVolumeFromSlider(event) {
 }
 
 
+function finishCrossfadeImmediately() {
+    if (!crossfadeState) return;
+    if (crossfadeFrame !== null) cancelAnimationFrame(crossfadeFrame);
+    crossfadeFrame = null;
+    const outgoing = crossfadeState.outgoing;
+    crossfadeState = null;
+    audio.volume = userVolume;
+    outgoing.pause();
+    outgoing.removeAttribute("src");
+    outgoing.load();
+    outgoing.volume = 0;
+    standbyAudio = outgoing;
+    const catalogId = currentTrack?.catalogId;
+    if (catalogId) void preparePredictedNextAudio(catalogId);
+}
+
+function updateCrossfade(timestamp) {
+    if (!crossfadeState) return;
+    const elapsed = timestamp - crossfadeState.startedAt;
+    crossfadeState.progress = Math.min(elapsed / TRACK_CROSSFADE_DURATION_MS, 1);
+    applyPlaybackVolume();
+    if (crossfadeState.progress >= 1) {
+        finishCrossfadeImmediately();
+        savePlayerState();
+        return;
+    }
+    crossfadeFrame = requestAnimationFrame(updateCrossfade);
+}
+
+async function startPredictedCrossfade() {
+    const prediction = predictedNext;
+    if (
+        !prediction || crossfadeState || isTrackSwitchPending ||
+        document.hidden ||
+        prediction.fromCatalogId !== currentTrack?.catalogId
+    ) return false;
+
+    const outgoing = audio;
+    const incoming = standbyAudio;
+    try {
+        incoming.volume = 0;
+        incoming.currentTime = 0;
+        await incoming.play();
+    } catch {
+        return false;
+    }
+    if (prediction !== predictedNext || outgoing !== audio) {
+        incoming.pause();
+        return false;
+    }
+
+    predictedNext = null;
+    pendingShuffleHistoryIndex = prediction.predictedPendingIndex;
+    shuffleCycleIds = prediction.predictedCycleIds;
+    audio = incoming;
+    standbyAudio = outgoing;
+    crossfadeState = {
+        incoming,
+        outgoing,
+        progress: 0,
+        startedAt: performance.now()
+    };
+    transitionGain = 1;
+    applyPlaybackVolume();
+    void playTrack(prediction.track, null, {
+        direction: 1,
+        preparedCover: prediction.cover,
+        reuseAudio: true,
+        startPlayback: false
+    });
+    setPlayingState(true);
+    crossfadeFrame = requestAnimationFrame(updateCrossfade);
+    return true;
+}
+
+async function startPreparedNextImmediately() {
+    const prediction = predictedNext;
+    if (
+        !prediction ||
+        prediction.fromCatalogId !== currentTrack?.catalogId ||
+        isTrackSwitchPending
+    ) return false;
+    const outgoing = audio;
+    const incoming = standbyAudio;
+    incoming.volume = userVolume;
+    try {
+        await incoming.play();
+    } catch {
+        return false;
+    }
+    if (prediction !== predictedNext || outgoing !== audio) {
+        incoming.pause();
+        return false;
+    }
+    predictedNext = null;
+    pendingShuffleHistoryIndex = prediction.predictedPendingIndex;
+    shuffleCycleIds = prediction.predictedCycleIds;
+    audio = incoming;
+    standbyAudio = outgoing;
+    outgoing.pause();
+    outgoing.removeAttribute("src");
+    outgoing.load();
+    outgoing.volume = 0;
+    void playTrack(prediction.track, null, {
+        direction: 1,
+        preparedCover: prediction.cover,
+        reuseAudio: true,
+        startPlayback: false
+    });
+    setPlayingState(true);
+    window.setTimeout(() => {
+        if (currentTrack?.catalogId === prediction.track.catalogId) {
+            void preparePredictedNextAudio(prediction.track.catalogId);
+        }
+    }, TRACK_FLIP_MIDPOINT_MS + 20);
+    return true;
+}
+
+
 function pausePlayback() {
     ++playbackIntentId;
     setFullscreenLoadingState(false);
     cancelVolumeTransition({
         restoreGain: true
     });
+    if (crossfadeState) finishCrossfadeImmediately();
     audio.pause();
 }
 
@@ -2397,16 +2616,25 @@ function resetTrackVisualTransition() {
             "track-transition-next",
             "track-transition-previous",
             "track-transition-fade",
+            "track-transition-slide",
             "track-transition-midpoint"
         );
         host.style.removeProperty("--track-flip-out-angle");
         host.style.removeProperty("--track-flip-in-angle");
+        host.style.removeProperty("--track-slide-out");
+        host.style.removeProperty("--track-slide-in");
+        host.classList.remove("gesture-tracking");
+        host.style.removeProperty("--player-gesture-x");
     });
 
     fullscreenCoverNext?.classList.remove(
         "is-ready",
         "is-visible"
     );
+}
+
+function isMobilePlayerLayout() {
+    return document.documentElement.classList.contains("mobile-device");
 }
 
 function updateFullscreenCover(
@@ -2418,7 +2646,8 @@ function updateFullscreenCover(
     animate = true
 ) {
     const fullscreenIsOpen = fullscreenPlayer?.classList.contains("open");
-    const transitionHosts = [miniPlayer];
+    const mobileLayout = isMobilePlayerLayout();
+    const transitionHosts = mobileLayout ? [miniPlayer] : [];
     const normalizedDirection = Math.sign(direction);
 
     if (!animate) {
@@ -2436,6 +2665,7 @@ function updateFullscreenCover(
             "track-transition-next",
             "track-transition-previous",
             "track-transition-fade",
+            "track-transition-slide",
             "track-transition-midpoint"
         );
         host.style.setProperty(
@@ -2446,6 +2676,14 @@ function updateFullscreenCover(
             "--track-flip-in-angle",
             `${normalizedDirection >= 0 ? 88 : -88}deg`
         );
+        host.style.setProperty(
+            "--track-slide-out",
+            normalizedDirection >= 0 ? "-42px" : "42px"
+        );
+        host.style.setProperty(
+            "--track-slide-in",
+            normalizedDirection >= 0 ? "42px" : "-42px"
+        );
         host.dataset.trackTransitionDirection =
             normalizedDirection > 0
                 ? "next"
@@ -2453,7 +2691,9 @@ function updateFullscreenCover(
                     ? "previous"
                     : "fade";
         host.classList.add(
-            normalizedDirection === 0
+            mobileLayout
+                ? "track-transition-slide"
+                : normalizedDirection === 0
                 ? "track-transition-fade"
                 : normalizedDirection > 0
                     ? "track-transition-next"
@@ -2534,10 +2774,13 @@ function updateFullscreenCover(
                                 "track-transition-next",
                                 "track-transition-previous",
                                 "track-transition-fade",
+                                "track-transition-slide",
                                 "track-transition-midpoint"
                             );
                             host.style.removeProperty("--track-flip-out-angle");
                             host.style.removeProperty("--track-flip-in-angle");
+                            host.style.removeProperty("--track-slide-out");
+                            host.style.removeProperty("--track-slide-in");
                         });
 
                         trackSwitchTimer = null;
@@ -2556,7 +2799,12 @@ function updateFullscreenCover(
 async function playTrack(
     track,
     sourceCard = null,
-    { direction = 0 } = {}
+    {
+        direction = 0,
+        preparedCover = null,
+        reuseAudio = false,
+        startPlayback = true
+    } = {}
 ) {
     if (!track) return;
 
@@ -2591,6 +2839,8 @@ async function playTrack(
         return;
     }
 
+    if (!reuseAudio && crossfadeState) finishCrossfadeImmediately();
+    if (!reuseAudio) invalidatePredictedNext();
     const requestedPlaybackIntentId = ++playbackIntentId;
 
 
@@ -2605,8 +2855,12 @@ async function playTrack(
     let cover;
 
     try {
-        track = await ensurePlayableTrackAudio(track);
-        cover = await getPreloadedCover(track);
+        if (reuseAudio) {
+            cover = preparedCover || await getPreloadedCover(track);
+        } else {
+            track = await ensurePlayableTrackAudio(track);
+            cover = await getPreloadedCover(track);
+        }
     } catch {
         if (currentSwitchId === trackSwitchId) {
             isTrackSwitchPending = false;
@@ -2629,7 +2883,7 @@ async function playTrack(
         return;
     }
 
-    const shouldFadeOut =
+    const shouldFadeOut = !reuseAudio &&
         Boolean(currentTrack) &&
         !audio.paused &&
         !audio.ended;
@@ -2668,7 +2922,7 @@ async function playTrack(
     Аудиофайл начинает загружаться сразу, но play()
     вызывается только после актуальной визуальной смены.
     */
-    assignAudioSource(track);
+    if (!reuseAudio) assignAudioSource(track);
     savePlayerState();
     syncRenderedTrackCardsWithPlayerState();
 
@@ -2711,7 +2965,9 @@ async function playTrack(
 
         savePlayerState();
 
-        startAudio(track.catalogId, requestedPlaybackIntentId);
+        if (startPlayback) {
+            startAudio(track.catalogId, requestedPlaybackIntentId);
+        }
     }
 
     updateFullscreenCover(
@@ -2808,6 +3064,10 @@ function playCard(selectedCard) {
     ) {
         cancelPendingTrackSwitch();
         return;
+    }
+
+    if (isTrackSwitchPending) {
+        cancelPendingTrackSwitch();
     }
 
     const track = findTrackByCatalogId(catalogId);
@@ -3303,10 +3563,13 @@ fullscreenCoverNext =
     window.addEventListener(
         "playbackcontextchange",
         () => {
+            if (suppressPredictionInvalidation) return;
+            invalidatePredictedNext();
             pendingShuffleHistoryIndex = null;
             shuffleCycleIds = new Set(
                 currentTrack ? [currentTrack.catalogId] : []
             );
+            schedulePredictedNextRefresh();
         }
     );
 
@@ -3382,6 +3645,9 @@ fullscreenCoverNext =
             fullscreenParticles?.style.removeProperty(
                 "transition"
             );
+
+            fullscreenPlayer.classList.remove("gesture-tracking");
+            fullscreenPlayer.style.removeProperty("--player-gesture-x");
         }
 
         function returnFullscreenToStart() {
@@ -3485,6 +3751,9 @@ fullscreenCoverNext =
 
             if (dragDistance > 0) {
                 returnFullscreenToStart();
+            } else if (Math.abs(horizontalDistance) > 0) {
+                fullscreenPlayer.classList.remove("gesture-tracking");
+                fullscreenPlayer.style.removeProperty("--player-gesture-x");
             } else {
                 clearDragStyles();
             }
@@ -3611,6 +3880,15 @@ fullscreenCoverNext =
 
                 if (dragAxis === "horizontal") {
                     horizontalDistance = deltaX;
+                    const limitedDistance = Math.max(
+                        -window.innerWidth * 0.32,
+                        Math.min(window.innerWidth * 0.32, deltaX)
+                    );
+                    fullscreenPlayer.classList.add("gesture-tracking");
+                    fullscreenPlayer.style.setProperty(
+                        "--player-gesture-x",
+                        `${limitedDistance}px`
+                    );
                     event.preventDefault();
                     return;
                 }
@@ -3708,6 +3986,15 @@ fullscreenCoverNext =
                 Math.abs(miniSwipeDeltaX) > Math.abs(miniSwipeDeltaY) * 1.2
             ) {
                 suppressMiniPlayerClick = true;
+                const limitedDistance = Math.max(
+                    -miniPlayer.clientWidth * 0.3,
+                    Math.min(miniPlayer.clientWidth * 0.3, miniSwipeDeltaX)
+                );
+                miniPlayer.classList.add("gesture-tracking");
+                miniPlayer.style.setProperty(
+                    "--player-gesture-x",
+                    `${limitedDistance}px`
+                );
                 event.preventDefault();
             }
         });
@@ -3736,7 +4023,11 @@ fullscreenCoverNext =
                 suppressMiniPlayerClick = true;
                 if (miniSwipeDeltaX < 0) playNextTrack();
                 else playPreviousTrack();
+                return;
             }
+
+            miniPlayer.classList.remove("gesture-tracking");
+            miniPlayer.style.removeProperty("--player-gesture-x");
         }
 
         miniPlayer.addEventListener("pointerup", (event) => {
@@ -4231,12 +4522,21 @@ fullscreenCoverNext =
        СОБЫТИЯ AUDIO
        ===================================================== */
 
-    audio.addEventListener("play", () => {
+    const onActiveAudio = (eventName, handler) => {
+        audioElements.forEach((mediaElement) => {
+            mediaElement.addEventListener(eventName, (event) => {
+                if (event.currentTarget !== audio) return;
+                handler(event);
+            });
+        });
+    };
+
+    onActiveAudio("play", () => {
         mediaSessionController.syncPlaybackState("playing");
         startAudioReactionLoop();
     });
 
-    audio.addEventListener("playing", () => {
+    onActiveAudio("playing", () => {
         autoplayErrorAttempts = 0;
         setFullscreenLoadingState(false);
         clearPlaybackError();
@@ -4252,7 +4552,7 @@ fullscreenCoverNext =
         }
     });
 
-    audio.addEventListener("pause", () => {
+    onActiveAudio("pause", () => {
         setFullscreenLoadingState(false);
         setPlayingState(false);
         savePlayerState();
@@ -4260,7 +4560,7 @@ fullscreenCoverNext =
         startAudioReactionLoop();
     });
 
-    audio.addEventListener("error", () => {
+    onActiveAudio("error", () => {
         setFullscreenLoadingState(false);
         if (canRetrySignedAudioError()) {
             void recoverSignedAudioAfterError();
@@ -4274,8 +4574,9 @@ fullscreenCoverNext =
     /*
     После завершения включается следующий трек.
     */
-    audio.addEventListener("ended", () => {
-        playNextTrack({ reason: "ended" });
+    onActiveAudio("ended", async () => {
+        const consumedPreparedTrack = await startPreparedNextImmediately();
+        if (!consumedPreparedTrack) playNextTrack({ reason: "ended" });
         settleFullscreenCoverFloat();
         startAudioReactionLoop();
     });
@@ -4284,7 +4585,7 @@ fullscreenCoverNext =
     /*
     Показываем длительность после загрузки файла.
     */
-    audio.addEventListener("loadedmetadata", () => {
+    onActiveAudio("loadedmetadata", () => {
         knownDuration = Number.isFinite(audio.duration) && audio.duration > 0
             ? audio.duration
             : 0;
@@ -4300,19 +4601,19 @@ fullscreenCoverNext =
         savePlayerState();
     });
 
-    audio.addEventListener("waiting", () => {
+    onActiveAudio("waiting", () => {
         setFullscreenLoadingState(true);
     });
 
-    audio.addEventListener("stalled", () => {
+    onActiveAudio("stalled", () => {
         setFullscreenLoadingState(true);
     });
 
-    audio.addEventListener("canplay", () => {
+    onActiveAudio("canplay", () => {
         setFullscreenLoadingState(false);
     });
 
-    audio.addEventListener("seeked", () => {
+    onActiveAudio("seeked", () => {
         mediaSessionController.syncPosition(audio, { force: true });
         savePlayerState();
     });
@@ -4321,7 +4622,7 @@ fullscreenCoverNext =
     /*
     Обновляем прогресс и текущее время.
     */
-    audio.addEventListener("timeupdate", () => {
+    onActiveAudio("timeupdate", () => {
         if (!Number.isFinite(audio.duration)) {
             return;
         }
@@ -4362,6 +4663,18 @@ fullscreenCoverNext =
         }
         updateFullscreenProgressAccessibility();
         mediaSessionController.syncPosition(audio);
+
+        const remainingTime = audio.duration - audio.currentTime;
+        if (
+            remainingTime > 0 &&
+            remainingTime <= TRACK_CROSSFADE_DURATION_MS / 1000 &&
+            !audio.paused &&
+            !isSeeking &&
+            predictedNext &&
+            !crossfadeState
+        ) {
+            void startPredictedCrossfade();
+        }
 
         const timestamp = Date.now();
         if (timestamp - lastPositionSaveTime >= 5000) {

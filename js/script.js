@@ -565,6 +565,16 @@ async function initializeWebsiteOnce() {
     /* Создаём карточки рекомендаций */
     renderRecommendations();
     clearCatalogSkeletons();
+    const bootCurtain = document.querySelector(".app-boot-curtain");
+    if (bootCurtain) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => bootCurtain.classList.add("is-ready"));
+        });
+        window.setTimeout(() => {
+            bootCurtain.setAttribute("hidden", "");
+            document.documentElement.classList.remove("cold-home-boot");
+        }, 520);
+    }
     document.documentElement.dataset.catalogReadyMs = (
         performance.now() - APP_MODULE_STARTED_AT
     ).toFixed(1);

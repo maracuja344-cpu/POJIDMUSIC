@@ -137,9 +137,18 @@ class DevToolsSocket:
 CAPTURE_AUDIO = r"""
 (() => {
     const NativeAudio = window.Audio;
+    window.__testAudios = [];
+    Object.defineProperty(window, "__testAudio", {
+        configurable: true,
+        get() {
+            return window.__testAudios.find((audio) => !audio.paused && audio.currentSrc) ||
+                window.__testAudios.find((audio) => audio.currentSrc) ||
+                window.__testAudios[0];
+        }
+    });
     function ObservableAudio(...args) {
         const audio = new NativeAudio(...args);
-        window.__testAudio = audio;
+        window.__testAudios.push(audio);
         window.__testEndedCount = 0;
         audio.addEventListener("ended", () => { window.__testEndedCount += 1; });
         return audio;

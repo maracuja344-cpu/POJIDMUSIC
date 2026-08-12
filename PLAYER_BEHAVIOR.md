@@ -12,11 +12,11 @@ Verification labels:
 
 ## Audio ownership
 
-`js/player.js:26` creates one module-scoped `Audio` instance. The instance receives
-all production audio sources and all media event listeners. Mini-player, fullscreen
-player, and card playing state are UI projections over this instance. Navigation
-switches persistent views and does not re-evaluate the player module, so it does not
-create a second `Audio`.
+`js/player.js` owns one active production `Audio` and one standby transition/preload
+`Audio`. Only the active owner drives player state and media events. The standby slot
+holds at most one predicted next track; during a 2.6-second equal-power crossfade roles
+swap, then the outgoing source is stopped and cleared. Mini-player, fullscreen player,
+and cards remain UI projections over the active owner.
 
 ## Playback
 
@@ -168,7 +168,7 @@ changing current navigation behavior. This audit does not change it.
 
 ## Fullscreen UX
 
-Fullscreen is an ephemeral modal view over the singleton Audio and current playback
+Fullscreen is an ephemeral modal view over the active Audio owner and current playback
 context. Opening it never selects a track, replaces Audio, rebuilds a queue, or resets
 position. Desktop uses the existing down-arrow collapse control; touch layouts keep the
 swipe flow. Closing does not pause playback, removes root/body scroll locks and returns
@@ -291,9 +291,9 @@ existing artwork system. Album is omitted unless the track really supplies it. M
 updated on track selection, restore and runtime current-track metadata refresh; it is cleared
 with the current track.
 
-Actions `play`, `pause`, `nexttrack`, `previoustrack`, `seekto`, `seekbackward`, and
-`seekforward` delegate to the existing singleton-Audio/player commands. Unsupported action
-registrations are ignored. Seek defaults to ten seconds and clamps to duration.
+Actions `play`, `pause`, `nexttrack`, `previoustrack`, and `seekto` delegate to the
+existing player commands. Relative `seekbackward` and `seekforward` handlers are not
+registered. Absolute seek clamps to duration.
 `setPositionState()` receives only finite positive duration/rate and a clamped position, is
 throttled to one update per second, and is forced after metadata/seek. `playbackState` mirrors
 the Audio/player truth as `playing`, `paused`, or `none`; Media Session owns no queue, repeat,

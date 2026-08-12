@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="pojidmusic-release" content="pwa-v14">
+    <meta name="pojidmusic-release" content="pwa-v15">
 
     <meta
         name="viewport"
@@ -54,10 +54,21 @@
     >
     <link rel="manifest" href="manifest.webmanifest">
 
+    <script>
+        if (!new URLSearchParams(location.search).has("artist") &&
+            !new URLSearchParams(location.search).has("view")) {
+            document.documentElement.classList.add("cold-home-boot");
+        }
+    </script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+
+    <div class="app-boot-curtain" aria-hidden="true">
+        <span class="app-boot-curtain-wordmark">POJIDMUSIC</span>
+    </div>
 
     <div
         class="pull-to-refresh"

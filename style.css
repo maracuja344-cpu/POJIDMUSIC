@@ -42,6 +42,50 @@ body {
     text-align: center;
 }
 
+.app-boot-curtain { display: none; }
+
+@media (display-mode: standalone) and (max-width: 932px) and (pointer: coarse) {
+    html.cold-home-boot .app-boot-curtain {
+        position: fixed;
+        inset: 0;
+        z-index: 4000;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #07070a;
+        color: rgba(255, 255, 255, 0.9);
+        pointer-events: none;
+    }
+
+    .app-boot-curtain::before,
+    .app-boot-curtain::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        left: 0;
+        height: 50.5%;
+        background: #07070a;
+        transition: transform 420ms cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    .app-boot-curtain::before { top: 0; }
+    .app-boot-curtain::after { bottom: 0; }
+    .app-boot-curtain.is-ready::before { transform: translateY(-101%); }
+    .app-boot-curtain.is-ready::after { transform: translateY(101%); }
+
+    .app-boot-curtain-wordmark {
+        position: relative;
+        z-index: 1;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        transition: opacity 180ms ease;
+    }
+
+    .app-boot-curtain.is-ready .app-boot-curtain-wordmark { opacity: 0; }
+    .app-boot-curtain[hidden] { display: none; }
+}
+
 
 /*
 При переходе по ссылке раздел останавливается
@@ -3479,6 +3523,13 @@ Shuffle и Repeat используют одинаковые классы сос�
         opacity 140ms ease-out;
 }
 
+.fullscreen-player.track-changing
+.fullscreen-player-cover-interaction::before,
+.fullscreen-player.track-transition-midpoint
+.fullscreen-player-cover-interaction::before {
+    opacity: 0.03;
+}
+
 .fullscreen-player.audio-reactive-static {
     --audio-reactive-level: 0.12;
 }
@@ -4152,7 +4203,7 @@ pointer-events: none не даёт частицам
 
     border-radius: inherit;
 
-    background: white;
+    background: var(--player-accent);
 
     pointer-events: none;
 
@@ -4168,7 +4219,7 @@ pointer-events: none не даёт частицам
     height: 14px;
 
     border-radius: 50%;
-    background: white;
+    background: var(--player-accent);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     opacity: 0;
 
@@ -4206,14 +4257,17 @@ pointer-events: none не даёт частицам
 .fullscreen-player-controls {
     position: relative;
 
-    display: flex;
+    width: min(100%, 58vh, 520px);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(56px, 1fr));
     align-items: center;
     justify-content: center;
-
-    gap: 28px;
+    gap: 0;
 
     margin-top: 26px;
 }
+
+.fullscreen-player-controls > button { justify-self: center; }
 
 /*
 Desktop-ползунок вынесен из потока и привязан
@@ -4360,7 +4414,7 @@ Desktop-ползунок вынесен из потока и привязан
     width: 72px;
     height: 72px;
 
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--player-accent) 13%, transparent);
 
     color: white !important;
 }
@@ -4553,6 +4607,49 @@ html.mobile-device .mini-player.track-changing .player-info {
 
 html.mobile-device .mini-player.track-transition-midpoint .player-info {
     transition: none;
+}
+
+/* Mobile uses a direct horizontal gesture response, never a 3D card flip. */
+html.mobile-device .fullscreen-player-cover-wrap,
+html.mobile-device .mini-player .player-cover,
+html.mobile-device .mini-player .player-info {
+    transform: translate3d(0, 0, 0);
+    transition:
+        transform 220ms var(--ease-out-smooth),
+        opacity 180ms ease;
+}
+
+html.mobile-device .fullscreen-player.gesture-tracking
+.fullscreen-player-cover-wrap,
+html.mobile-device .mini-player.gesture-tracking .player-cover,
+html.mobile-device .mini-player.gesture-tracking .player-info {
+    transition: none;
+    transform:
+        translate3d(var(--player-gesture-x), 0, 0)
+        scale(0.985);
+}
+
+html.mobile-device .fullscreen-player.gesture-tracking
+.fullscreen-player-cover-wrap,
+html.mobile-device .mini-player.gesture-tracking .player-cover {
+    opacity: 0.86;
+}
+
+html.mobile-device .fullscreen-player.track-transition-slide.track-changing
+.fullscreen-player-cover-wrap,
+html.mobile-device .mini-player.track-transition-slide.track-changing .player-cover,
+html.mobile-device .mini-player.track-transition-slide.track-changing .player-info {
+    transform: translate3d(var(--track-slide-out), 0, 0);
+    opacity: 0;
+}
+
+html.mobile-device .fullscreen-player.track-transition-slide.track-transition-midpoint
+.fullscreen-player-cover-wrap,
+html.mobile-device .mini-player.track-transition-slide.track-transition-midpoint .player-cover,
+html.mobile-device .mini-player.track-transition-slide.track-transition-midpoint .player-info {
+    transition: none;
+    transform: translate3d(var(--track-slide-in), 0, 0);
+    opacity: 0;
 }
 
 
@@ -5695,13 +5792,38 @@ html.mobile-device .fullscreen-player {
             env(safe-area-inset-left)
         );
 
-    background-color: rgba(8, 8, 8, 0.08);
+    background-color: #08090b;
     overscroll-behavior: none;
     touch-action: pan-y;
 
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+html.mobile-device.ios-device.standalone-mode
+.fullscreen-player::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    height: calc(env(safe-area-inset-top) + 74px);
+    background:
+        radial-gradient(
+            ellipse at 50% 0%,
+            color-mix(in srgb, var(--player-accent) 28%, transparent),
+            transparent 72%
+        );
+    opacity: 0.48;
+    pointer-events: none;
+    transition: opacity 360ms ease;
+}
+
+html.mobile-device.ios-device.standalone-mode
+.fullscreen-player.is-playing::before {
+    opacity: 0.82;
 }
 
 html.mobile-device .fullscreen-player-content {
@@ -5812,7 +5934,14 @@ html.mobile-device .fullscreen-particles {
 html.mobile-device
 .fullscreen-player-cover-wrap {
     box-shadow:
-        0 16px 38px rgba(0, 0, 0, 0.4);
+        0 16px 38px rgba(0, 0, 0, 0.46),
+        0 34px 70px
+            color-mix(in srgb, var(--player-accent) 24%, transparent);
+}
+
+@media (orientation: landscape) {
+    html.mobile-device.ios-device.standalone-mode
+    .fullscreen-player::before { display: none; }
 }
 
 html.mobile-device
