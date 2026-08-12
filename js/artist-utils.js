@@ -179,7 +179,9 @@ export function renderFullscreenArtistIdentity(
 ) {
     if (!container) return;
 
-    const artist = getTrackArtists(track)[0];
+    ensureArtistActionMenuHandlers();
+    const artists = getTrackArtists(track).filter((artist) => artist?.slug);
+    const artist = artists[0];
     container.replaceChildren();
 
     if (!artist?.slug) {
@@ -187,27 +189,19 @@ export function renderFullscreenArtistIdentity(
         return;
     }
 
-    const link = createArtistLink(artist);
-    const avatar = document.createElement("span");
+    const multipleArtists = artists.length > 1;
+    const link = multipleArtists
+        ? document.createElement("button")
+        : createArtistLink(artist);
     const identity = document.createElement("span");
     const label = document.createElement("span");
     const name = document.createElement("span");
     const arrow = document.createElement("span");
 
     container.hidden = false;
+    container.className = "fullscreen-player-artist-identity";
     link.classList.add("fullscreen-player-artist-identity-link");
     link.replaceChildren();
-
-    avatar.className = "fullscreen-player-artist-avatar";
-    if (artist.avatarUrl) {
-        const image = document.createElement("img");
-        image.src = artist.avatarUrl;
-        image.alt = "";
-        image.loading = "lazy";
-        avatar.append(image);
-    } else {
-        avatar.textContent = artist.displayName?.trim()?.charAt(0) || "?";
-    }
 
     identity.className = "fullscreen-player-artist-identity-copy";
     label.className = "fullscreen-player-artist-identity-label";
@@ -220,9 +214,70 @@ export function renderFullscreenArtistIdentity(
     arrow.textContent = "›";
     arrow.setAttribute("aria-hidden", "true");
 
-    link.append(avatar, identity, arrow);
-    link.addEventListener("click", () => onSelect?.());
-    container.append(link);
+    link.append(identity, arrow);
+
+    if (!multipleArtists) {
+        link.addEventListener("click", () => onSelect?.(artist));
+        container.append(link);
+        return;
+    }
+
+    const menuId = `artist-action-menu-${++artistActionMenuId}`;
+    const menu = document.createElement("div");
+    const selector = document.createElement("div");
+    const selectorLabel = document.createElement("p");
+
+    container.classList.add("artist-action-menu", "artist-action-menu-fullscreen");
+    link.type = "button";
+    link.classList.add("artist-action-menu-toggle");
+    link.setAttribute("aria-expanded", "false");
+    link.setAttribute("aria-haspopup", "menu");
+    link.setAttribute("aria-controls", menuId);
+    link.setAttribute(
+        "aria-label",
+        `Выбрать исполнителя трека ${track?.title || ""}`.trim()
+    );
+
+    menu.id = menuId;
+    menu.className = "artist-action-menu-popover";
+    menu.setAttribute("role", "menu");
+    menu.hidden = true;
+    selector.className = "artist-action-menu-selector";
+    selectorLabel.className = "artist-action-menu-selector-label";
+    selectorLabel.textContent = "Выберите артиста:";
+    selector.append(selectorLabel);
+
+    artists.forEach((candidate) => {
+        const artistLink = createArtistLink(candidate);
+        artistLink.classList.add(
+            "artist-action-menu-item",
+            "artist-action-menu-selector-item"
+        );
+        artistLink.setAttribute("role", "menuitem");
+        artistLink.addEventListener("click", () => {
+            closeArtistActionMenu(container);
+            onSelect?.(candidate);
+        });
+        selector.append(artistLink);
+    });
+
+    link.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const shouldOpen = !container.classList.contains("is-open");
+        if (shouldOpen) announceExclusivePopupOpen(container);
+        closeOtherArtistActionMenus(container);
+        container.classList.toggle("is-open", shouldOpen);
+        link.setAttribute("aria-expanded", String(shouldOpen));
+        menu.hidden = !shouldOpen;
+        if (shouldOpen) {
+            positionArtistActionMenu(menu);
+            selector.querySelector("[role='menuitem']")?.focus();
+        }
+    });
+
+    menu.append(selector);
+    container.append(link, menu);
 }
 
 

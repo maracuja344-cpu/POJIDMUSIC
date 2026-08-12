@@ -3246,7 +3246,9 @@ fullscreenCoverNext =
             "select",
             "textarea",
             "[role='button']",
-            ".fullscreen-player-progress"
+            ".fullscreen-player-progress",
+            ".fullscreen-player-artist-identity",
+            ".artist-action-menu"
         ].join(", ");
 
         let dragPointerId = null;
@@ -3254,6 +3256,8 @@ fullscreenCoverNext =
         let dragStartY = 0;
         let dragStartTime = 0;
         let dragDistance = 0;
+        let horizontalDistance = 0;
+        let dragAxis = null;
         let isDraggingFullscreen = false;
         let returnTimer = null;
 
@@ -3346,6 +3350,7 @@ fullscreenCoverNext =
             );
 
             const velocity = dragDistance / elapsed;
+            const horizontalVelocity = Math.abs(horizontalDistance) / elapsed;
             const distanceThreshold = Math.min(
                 150,
                 window.innerHeight * 0.28
@@ -3361,9 +3366,30 @@ fullscreenCoverNext =
                         velocity > 0.65
                     )
                 );
+            const shouldNavigate =
+                !cancelled &&
+                dragAxis === "horizontal" &&
+                (
+                    Math.abs(horizontalDistance) >= Math.min(
+                        92,
+                        window.innerWidth * 0.22
+                    ) ||
+                    (
+                        Math.abs(horizontalDistance) > 52 &&
+                        horizontalVelocity > 0.55
+                    )
+                );
 
             dragPointerId = null;
             isDraggingFullscreen = false;
+            dragAxis = null;
+
+            if (shouldNavigate) {
+                clearDragStyles();
+                if (horizontalDistance < 0) playNextTrack();
+                else playPreviousTrack();
+                return;
+            }
 
             if (shouldClose) {
                 closeFullscreenPlayer(true);
@@ -3398,6 +3424,8 @@ fullscreenCoverNext =
                 dragStartY = event.clientY;
                 dragStartTime = performance.now();
                 dragDistance = 0;
+                horizontalDistance = 0;
+                dragAxis = null;
                 isDraggingFullscreen = false;
 
                 fullscreenPlayer.setPointerCapture(
@@ -3452,7 +3480,7 @@ fullscreenCoverNext =
                 const deltaY =
                     event.clientY - dragStartY;
 
-                if (!isDraggingFullscreen) {
+                if (!dragAxis) {
                     if (
                         Math.abs(deltaX) < 8 &&
                         Math.abs(deltaY) < 8
@@ -3460,22 +3488,44 @@ fullscreenCoverNext =
                         return;
                     }
 
-                    if (
-                        deltaY <= 0 ||
-                        Math.abs(deltaX) >
-                            Math.abs(deltaY)
-                    ) {
+                    const horizontalGesture =
+                        document.documentElement.classList.contains(
+                            "mobile-device"
+                        ) &&
+                        event.pointerType !== "mouse" &&
+                        Math.abs(deltaX) > Math.abs(deltaY) * 1.2;
+                    const verticalGesture =
+                        deltaY > 0 &&
+                        Math.abs(deltaY) > Math.abs(deltaX) * 1.2;
+
+                    if (horizontalGesture) {
+                        dragAxis = "horizontal";
+                    } else if (verticalGesture) {
+                        dragAxis = "vertical";
+                    } else {
                         return;
                     }
 
-                    isDraggingFullscreen = true;
+                    isDraggingFullscreen = dragAxis === "vertical";
 
-                    fullscreenPlayer.classList.add(
-                        "is-dragging"
-                    );
+                    if (dragAxis === "horizontal") {
+                        horizontalDistance = deltaX;
+                    }
 
-                    fullscreenPlayer.style.transition =
-                        "none";
+                    if (dragAxis === "vertical") {
+                        fullscreenPlayer.classList.add(
+                            "is-dragging"
+                        );
+
+                        fullscreenPlayer.style.transition =
+                            "none";
+                    }
+                }
+
+                if (dragAxis === "horizontal") {
+                    horizontalDistance = deltaX;
+                    event.preventDefault();
+                    return;
                 }
 
                 event.preventDefault();
@@ -3516,6 +3566,105 @@ fullscreenCoverNext =
                 finishFullscreenDrag(event, true);
             }
         );
+    }
+
+    if (
+        !miniPlayer.dataset.swipeInitialized
+    ) {
+        miniPlayer.dataset.swipeInitialized = "true";
+        const blockedMiniSwipeSelector = [
+            "button",
+            "input",
+            "select",
+            "textarea",
+            "a",
+            "[role='button']",
+            "[role='slider']",
+            ".player-progress"
+        ].join(", ");
+        let miniSwipePointerId = null;
+        let miniSwipeStartX = 0;
+        let miniSwipeStartY = 0;
+        let miniSwipeStartTime = 0;
+        let miniSwipeDeltaX = 0;
+        let miniSwipeDeltaY = 0;
+        let suppressMiniPlayerClick = false;
+
+        miniPlayer.addEventListener("pointerdown", (event) => {
+            const mobileLayout =
+                document.documentElement.classList.contains("mobile-device") ||
+                window.matchMedia("(max-width: 560px)").matches;
+            if (
+                !mobileLayout ||
+                event.pointerType === "mouse" ||
+                event.isPrimary === false ||
+                event.target.closest(blockedMiniSwipeSelector)
+            ) {
+                return;
+            }
+
+            miniSwipePointerId = event.pointerId;
+            miniSwipeStartX = event.clientX;
+            miniSwipeStartY = event.clientY;
+            miniSwipeStartTime = performance.now();
+            miniSwipeDeltaX = 0;
+            miniSwipeDeltaY = 0;
+            suppressMiniPlayerClick = false;
+        });
+
+        miniPlayer.addEventListener("pointermove", (event) => {
+            if (event.pointerId !== miniSwipePointerId) return;
+            miniSwipeDeltaX = event.clientX - miniSwipeStartX;
+            miniSwipeDeltaY = event.clientY - miniSwipeStartY;
+            if (
+                Math.abs(miniSwipeDeltaX) > 12 &&
+                Math.abs(miniSwipeDeltaX) > Math.abs(miniSwipeDeltaY) * 1.2
+            ) {
+                suppressMiniPlayerClick = true;
+                event.preventDefault();
+            }
+        });
+
+        function finishMiniPlayerSwipe(event, cancelled) {
+            if (event.pointerId !== miniSwipePointerId) return;
+            const elapsed = Math.max(performance.now() - miniSwipeStartTime, 1);
+            const horizontal =
+                Math.abs(miniSwipeDeltaX) > Math.abs(miniSwipeDeltaY) * 1.2;
+            const navigates =
+                !cancelled &&
+                horizontal &&
+                (
+                    Math.abs(miniSwipeDeltaX) >= Math.min(
+                        84,
+                        miniPlayer.clientWidth * 0.22
+                    ) ||
+                    (
+                        Math.abs(miniSwipeDeltaX) > 48 &&
+                        Math.abs(miniSwipeDeltaX) / elapsed > 0.55
+                    )
+                );
+            miniSwipePointerId = null;
+
+            if (navigates) {
+                suppressMiniPlayerClick = true;
+                if (miniSwipeDeltaX < 0) playNextTrack();
+                else playPreviousTrack();
+            }
+        }
+
+        miniPlayer.addEventListener("pointerup", (event) => {
+            finishMiniPlayerSwipe(event, false);
+        });
+        miniPlayer.addEventListener("pointercancel", (event) => {
+            finishMiniPlayerSwipe(event, true);
+        });
+
+        miniPlayer.addEventListener("click", (event) => {
+            if (!suppressMiniPlayerClick) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            suppressMiniPlayerClick = false;
+        }, true);
     }
 
 

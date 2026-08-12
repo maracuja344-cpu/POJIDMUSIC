@@ -40,6 +40,39 @@ function click(element) {
     }));
 }
 
+function swipe(element, { fromX, fromY, toX, toY }) {
+    const view = element.ownerDocument.defaultView;
+    const pointerId = 17;
+    const options = (type, clientX, clientY) => ({
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        buttons: type === "pointerup" ? 0 : 1,
+        clientX,
+        clientY,
+        view
+    });
+    const originalSetPointerCapture = element.setPointerCapture;
+    const originalHasPointerCapture = element.hasPointerCapture;
+    const originalReleasePointerCapture = element.releasePointerCapture;
+    element.setPointerCapture = () => {};
+    element.hasPointerCapture = () => false;
+    element.releasePointerCapture = () => {};
+    element.dispatchEvent(new view.PointerEvent(
+        "pointerdown", options("pointerdown", fromX, fromY)));
+    element.dispatchEvent(new view.PointerEvent(
+        "pointermove", options("pointermove", toX, toY)));
+    element.dispatchEvent(new view.PointerEvent(
+        "pointerup", options("pointerup", toX, toY)));
+    element.setPointerCapture = originalSetPointerCapture;
+    element.hasPointerCapture = originalHasPointerCapture;
+    element.releasePointerCapture = originalReleasePointerCapture;
+}
+
 function currentId(document) {
     let snapshotId = null;
     try {
@@ -122,6 +155,55 @@ try {
     click(app.querySelector(".player-cover"));
     await waitFor(() => app.querySelector(".fullscreen-player.open"), "fullscreen open");
     assert("fullscreen opens without replacing current track", currentId(app) === activeId);
+
+    app.documentElement.classList.add("mobile-device");
+    const fullscreen = app.querySelector(".fullscreen-player");
+    swipe(fullscreen, { fromX: 310, fromY: 300, toX: 180, toY: 308 });
+    await waitFor(() => currentId(app) !== activeId, "fullscreen swipe Next");
+    const fullscreenNextId = currentId(app);
+    assert("fullscreen swipe left uses production Next", Boolean(fullscreenNextId));
+    assert("horizontal fullscreen swipe keeps fullscreen open",
+        fullscreen.classList.contains("open"));
+
+    swipe(fullscreen, { fromX: 160, fromY: 300, toX: 300, toY: 294 });
+    await waitFor(() => currentId(app) === activeId, "fullscreen swipe Previous");
+    assert("fullscreen swipe right uses production Previous", true);
+
+    const beforeControlSwipe = currentId(app);
+    swipe(app.querySelector(".fullscreen-player-toggle"), {
+        fromX: 150, fromY: 600, toX: 300, toY: 602
+    });
+    await wait(50);
+    assert("fullscreen controls are excluded from swipe navigation",
+        currentId(app) === beforeControlSwipe);
+
+    const progress = app.querySelector(".fullscreen-player-progress");
+    swipe(progress, { fromX: 80, fromY: 500, toX: 280, toY: 500 });
+    await wait(50);
+    assert("fullscreen progress is excluded from swipe navigation",
+        currentId(app) === beforeControlSwipe && fullscreen.classList.contains("open"));
+
+    click(app.querySelector(".fullscreen-player-desktop-collapse"));
+    await waitFor(() => !fullscreen.classList.contains("open"), "fullscreen close");
+    const mini = app.querySelector(".mini-player");
+    const beforeMiniSwipe = currentId(app);
+    swipe(mini, { fromX: 300, fromY: 700, toX: 170, toY: 706 });
+    await waitFor(() => currentId(app) !== beforeMiniSwipe, "mini swipe Next");
+    const miniNextId = currentId(app);
+    assert("mini-player swipe left uses production Next", Boolean(miniNextId));
+    assert("mini-player swipe does not open fullscreen",
+        !fullscreen.classList.contains("open"));
+    swipe(mini, { fromX: 150, fromY: 700, toX: 290, toY: 694 });
+    await waitFor(() => currentId(app) === beforeMiniSwipe, "mini swipe Previous");
+    assert("mini-player swipe right uses production Previous", true);
+
+    swipe(mini, { fromX: 200, fromY: 700, toX: 216, toY: 704 });
+    await wait(50);
+    assert("small mini-player drag does not navigate",
+        currentId(app) === beforeMiniSwipe);
+    click(mini);
+    await waitFor(() => fullscreen.classList.contains("open"), "mini tap fullscreen");
+    assert("mini-player tap still opens fullscreen", true);
 
     const artistLink = app.querySelector(
         `[data-track-id='${CSS.escape(activeId)}'] [data-artist-slug]`
