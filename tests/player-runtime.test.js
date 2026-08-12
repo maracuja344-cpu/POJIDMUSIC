@@ -73,6 +73,11 @@ function swipe(element, { fromX, fromY, toX, toY }) {
     element.releasePointerCapture = originalReleasePointerCapture;
 }
 
+function tap(element, { x, y }) {
+    swipe(element, { fromX: x, fromY: y, toX: x, toY: y });
+    click(element);
+}
+
 function currentId(document) {
     let snapshotId = null;
     try {
@@ -158,6 +163,28 @@ try {
 
     app.documentElement.classList.add("mobile-device");
     const fullscreen = app.querySelector(".fullscreen-player");
+    await waitFor(() => fullscreen.classList.contains("is-revealed"),
+        "fullscreen content reveal phase");
+    await waitFor(() => Number(getComputedStyle(
+        fullscreen.querySelector(".fullscreen-player-content")
+    ).opacity) > 0.98, "fullscreen content reveal completion");
+    assert("fullscreen uses a two-phase shell/content reveal",
+        fullscreen.classList.contains("is-revealed"));
+    const controlButtons = [...fullscreen.querySelectorAll(
+        ".fullscreen-player-controls > button")];
+    const controlsRect = fullscreen.querySelector(".fullscreen-player-controls")
+        .getBoundingClientRect();
+    const playRect = app.querySelector(".fullscreen-player-toggle").getBoundingClientRect();
+    assert("mobile controls keep five wide touch targets",
+        controlButtons.length === 5 && controlButtons.every((button) => {
+            const bounds = button.getBoundingClientRect();
+            return bounds.width >= 44 && bounds.height >= 44;
+        }));
+    assert("mobile Play/Pause remains visually centered",
+        Math.abs((playRect.left + playRect.width / 2) -
+            (controlsRect.left + controlsRect.width / 2)) < 2);
+    assert("fullscreen artist panel never contains an avatar",
+        !fullscreen.querySelector(".fullscreen-player-artist-avatar"));
     swipe(fullscreen, { fromX: 310, fromY: 300, toX: 180, toY: 308 });
     await waitFor(() => currentId(app) !== activeId, "fullscreen swipe Next");
     const fullscreenNextId = currentId(app);
@@ -185,6 +212,8 @@ try {
 
     click(app.querySelector(".fullscreen-player-desktop-collapse"));
     await waitFor(() => !fullscreen.classList.contains("open"), "fullscreen close");
+    assert("fullscreen close clears the content reveal phase",
+        !fullscreen.classList.contains("is-revealed"));
     const mini = app.querySelector(".mini-player");
     const beforeMiniSwipe = currentId(app);
     swipe(mini, { fromX: 300, fromY: 700, toX: 170, toY: 706 });
@@ -201,7 +230,7 @@ try {
     await wait(50);
     assert("small mini-player drag does not navigate",
         currentId(app) === beforeMiniSwipe);
-    click(mini);
+    tap(mini, { x: 200, y: 700 });
     await waitFor(() => fullscreen.classList.contains("open"), "mini tap fullscreen");
     assert("mini-player tap still opens fullscreen", true);
 

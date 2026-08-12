@@ -3074,6 +3074,11 @@ Shuffle и Repeat используют одинаковые классы сос�
         brightness(0.46)
         saturate(1.25);
 
+    opacity: 0.12;
+}
+
+.fullscreen-player.open.is-revealed
+.fullscreen-player-background {
     opacity: 1;
 }
 
@@ -3184,7 +3189,7 @@ Shuffle и Repeat используют одинаковые классы сос�
 Контент начинает появляться немного позже,
 чем сам экран поднимается снизу.
 */
-.fullscreen-player.open
+.fullscreen-player.open.is-revealed
 .fullscreen-player-content {
     opacity: 1;
 
@@ -5515,7 +5520,7 @@ html.mobile-device .fullscreen-player {
             env(safe-area-inset-left)
         );
 
-    background-color: #080808;
+    background-color: rgba(8, 8, 8, 0.08);
     overscroll-behavior: none;
     touch-action: pan-y;
 
@@ -5563,8 +5568,14 @@ html.mobile-device
 
 html.mobile-device .fullscreen-player-controls {
     width: 100%;
-    gap: clamp(2px, 1.5vw, 10px);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(44px, 1fr));
+    gap: 0;
     margin-top: 14px;
+}
+
+html.mobile-device .fullscreen-player-controls > button {
+    justify-self: center;
 }
 
 html.mobile-device .fullscreen-player-prev,
@@ -6035,8 +6046,9 @@ html.mobile-device .fullscreen-player-artist-identity[hidden] {
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(18px) saturate(125%);
     -webkit-backdrop-filter: blur(18px) saturate(125%);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 20px;
+    position: relative;
+    display: flex;
+    justify-content: center;
     align-items: center;
     gap: 11px;
     color: #fff;
@@ -6059,6 +6071,7 @@ html.mobile-device .fullscreen-player-artist-identity[hidden] {
     min-width: 0;
     display: grid;
     gap: 2px;
+    text-align: center;
 }
 
 .fullscreen-player-artist-identity-label {
@@ -6078,10 +6091,51 @@ html.mobile-device .fullscreen-player-artist-identity[hidden] {
 }
 
 .fullscreen-player-artist-identity-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.48);
     font-size: 24px;
     line-height: 1;
     text-align: center;
+}
+
+.fullscreen-player-artist-identity-dual {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
+    min-height: 56px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(12, 12, 14, 0.58);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+.fullscreen-player-artist-zone {
+    min-width: 0;
+    min-height: 56px;
+    display: grid;
+    place-items: center;
+    padding: 8px 12px;
+    color: rgba(255, 255, 255, 0.92);
+    text-align: center;
+    text-decoration: none;
+}
+
+.fullscreen-player-artist-zone + .fullscreen-player-artist-zone {
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.fullscreen-player-artist-zone-name {
+    overflow: hidden;
+    max-width: 100%;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .fullscreen-player-artist-identity-link:focus-visible {
@@ -6292,6 +6346,10 @@ html.mobile-device .mini-player {
     а при недоступной обложке остаётся исходный фиолетовый.
     */
     --player-accent: var(--accent-primary);
+    --player-accent-soft:
+        color-mix(in srgb, var(--player-accent) 22%, transparent);
+    --player-accent-glow:
+        color-mix(in srgb, var(--player-accent) 38%, transparent);
 
     --accent-primary-surface:
         rgb(var(--accent-primary-rgb) / 0.14);

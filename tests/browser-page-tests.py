@@ -19,6 +19,7 @@ SPEC.loader.exec_module(SUPPORT)
 TEST_PAGES = [
     "data-cache.test.html",
     "artwork.test.html",
+    "player-accent.test.html",
     "audio-url-resolver.test.html",
     "queue-decisions.test.html",
     "player-persistence.test.html",

@@ -29,6 +29,7 @@ visual change.
 |-- PWA_BASELINE.md             measured SW/PWA before/after and release contract
 |-- FULLSCREEN_PLAYER_AUDIT.md  fullscreen baseline, fixes and viewport evidence
 |-- MOBILE_PLAYER_UX_AUDIT.md   measured mobile cards/player UX and verification
+|-- PLAYER_EXPERIENCE_PERFORMANCE_AUDIT.md  player UX and live/PWA baseline
 |-- SETUP_SUPABASE.md           setup notes, not runtime code
 |-- icons/                      install and favicon assets
 |-- img/                        local artwork and fallback cover
@@ -182,7 +183,9 @@ Fullscreen remains an ephemeral view over that same state. Its modal semantics, 
 entry/return, root scroll lock, keyboard progress, pending/buffering accessibility state,
 safe-area layout, mobile artist identity and gestures are implemented in `index.html`,
 `style.css`, `artist-utils.js` and `player.js`. Baseline/final measurements and screenshots are documented in
-`FULLSCREEN_PLAYER_AUDIT.md`; no fullscreen-owned queue or Audio state exists.
+`FULLSCREEN_PLAYER_AUDIT.md` and `PLAYER_EXPERIENCE_PERFORMANCE_AUDIT.md`; no
+fullscreen-owned queue or Audio state exists. The fullscreen artist identity renders
+one direct zone, two equal direct zones, or a 3+ selector summary.
 
 Core state is split across:
 

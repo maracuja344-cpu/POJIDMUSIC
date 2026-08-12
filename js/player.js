@@ -51,7 +51,7 @@ audio.crossOrigin = "anonymous";
 audio.preload = "auto";
 
 const FALLBACK_COVER = "img/cover.jpg";
-const FALLBACK_PLAYER_ACCENT = {
+export const FALLBACK_PLAYER_ACCENT = {
     red: 226,
     green: 173,
     blue: 255
@@ -124,6 +124,7 @@ let volumeTransitionFrame = null;
 let volumeTransitionFallbackTimer = null;
 let volumeTransitionResolve = null;
 let fullscreenCloseTimer = null;
+let fullscreenRevealTimer = null;
 let fullscreenReturnFocus = null;
 let fullscreenArtistIdentity = null;
 let fullscreenArtworkRequestId = 0;
@@ -699,6 +700,7 @@ function openFullscreenPlayer() {
     }
 
     window.clearTimeout(fullscreenCloseTimer);
+    window.clearTimeout(fullscreenRevealTimer);
 
     if (
         document.activeElement instanceof HTMLElement &&
@@ -711,7 +713,8 @@ function openFullscreenPlayer() {
 
     fullscreenPlayer.classList.remove(
         "closing",
-        "is-dragging"
+        "is-dragging",
+        "is-revealed"
     );
 
     fullscreenPlayer.style.removeProperty("transition");
@@ -744,6 +747,12 @@ function openFullscreenPlayer() {
     );
 
     void promoteFullscreenArtwork();
+
+    fullscreenRevealTimer = window.setTimeout(() => {
+        if (fullscreenPlayer.classList.contains("open")) {
+            fullscreenPlayer.classList.add("is-revealed");
+        }
+    }, 90);
 
     window.setTimeout(() => {
         if (!fullscreenPlayer.classList.contains("open")) return;
@@ -801,10 +810,11 @@ function closeFullscreenPlayer(fromDrag = false) {
     }
 
     window.clearTimeout(fullscreenCloseTimer);
+    window.clearTimeout(fullscreenRevealTimer);
     resetFullscreenCoverInteraction();
     startAudioReactionLoop();
 
-    fullscreenPlayer.classList.remove("is-dragging");
+    fullscreenPlayer.classList.remove("is-dragging", "is-revealed");
     fullscreenPlayer.classList.add("closing");
 
     fullscreenPlayer.style.removeProperty("opacity");
@@ -1065,7 +1075,7 @@ function hslToRgb(
 }
 
 
-function normalizePlayerAccent(color) {
+export function normalizePlayerAccent(color) {
     const hsl = rgbToHsl(
         color.red,
         color.green,

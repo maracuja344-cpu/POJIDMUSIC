@@ -30,17 +30,6 @@ export function createMediaSessionController({
             // Safari and older Chromium builds expose different action subsets.
         }
     };
-    const seekRelative = (details, direction) => {
-        const audio = actions.getAudio();
-        const offset = Number(details?.seekOffset) || 10;
-        const position = clampPosition(
-            audio.currentTime + direction * offset,
-            audio.duration
-        );
-        if (position === null) return;
-        audio.currentTime = position;
-        controller.syncPosition(audio, { force: true });
-    };
     const seekTo = (details) => {
         const audio = actions.getAudio();
         const position = clampPosition(Number(details?.seekTime), audio.duration);
@@ -58,8 +47,6 @@ export function createMediaSessionController({
     safeAction("nexttrack", () => actions.next());
     safeAction("previoustrack", () => actions.previous());
     safeAction("seekto", seekTo);
-    safeAction("seekbackward", (details) => seekRelative(details, -1));
-    safeAction("seekforward", (details) => seekRelative(details, 1));
 
     let lastPositionUpdate = -Infinity;
     const controller = {

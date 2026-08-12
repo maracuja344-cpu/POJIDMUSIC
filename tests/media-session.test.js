@@ -55,13 +55,12 @@ try {
 
     handlers.get("seekto")({ seekTime: 55 });
     assert("seekto updates the shared audio", audio.currentTime === 55);
-    handlers.get("seekbackward")({ seekOffset: 5 });
-    handlers.get("seekforward")({ seekOffset: 15 });
-    assert("relative seek handlers clamp shared audio", audio.currentTime === 65);
+    assert("relative seek handlers are not registered",
+        !handlers.has("seekbackward") && !handlers.has("seekforward"));
 
     controller.syncPosition(audio, { force: true });
     assert("valid position state is synchronized",
-        positions.at(-1).duration === 120 && positions.at(-1).position === 65);
+        positions.at(-1).duration === 120 && positions.at(-1).position === 55);
     const positionCount = positions.length;
     audio.duration = NaN;
     controller.syncPosition(audio, { force: true });

@@ -89,7 +89,7 @@ try {
     assert("fullscreen artist identity never renders an avatar",
         !identity.querySelector(".fullscreen-player-artist-avatar") &&
         !identity.querySelector("img"));
-    assert("fullscreen collaboration offers a selector instead of first artist",
+    assert("fullscreen 3+ collaboration offers a selector instead of first artist",
         collaborationIdentity.querySelector("button[aria-haspopup='menu']") &&
         collaborationIdentity.querySelectorAll("[role='menuitem']").length === 3 &&
         !collaborationIdentity.querySelector(".fullscreen-player-artist-avatar"));
@@ -104,6 +104,23 @@ try {
     assert("fullscreen collaboration routes the selected artist",
         selected.join(",") === "cwa" &&
         !collaborationIdentity.classList.contains("is-open"));
+
+    const dualIdentity = document.createElement("div");
+    renderFullscreenArtistIdentity(dualIdentity, {
+        title: "Dual",
+        artists: collaborationTrack.artists.slice(1)
+    }, { onSelect: (artist) => selected.push(artist.slug) });
+    document.body.append(dualIdentity);
+    assert("fullscreen two-artist layout has equal direct zones",
+        dualIdentity.classList.contains("fullscreen-player-artist-identity-dual") &&
+        dualIdentity.querySelectorAll(".fullscreen-player-artist-zone").length === 2 &&
+        !dualIdentity.querySelector("button") &&
+        !dualIdentity.querySelector(".artist-action-menu-popover"));
+    dualIdentity.querySelectorAll(".fullscreen-player-artist-zone")[1]
+        .addEventListener("click", (event) => event.preventDefault());
+    dualIdentity.querySelectorAll(".fullscreen-player-artist-zone")[1].click();
+    assert("fullscreen two-artist zone routes directly",
+        selected.join(",") === "cwa,lufy");
 
     const toggle = cardMenu.querySelector(".artist-action-menu-toggle");
     const item = cardMenu.querySelector(".artist-action-menu-primary");
@@ -152,7 +169,7 @@ try {
     toggle.click();
     item.click();
     assert("solo action selects its only artist directly",
-        selected.join(",") === "cwa,test-artist" &&
+        selected.join(",") === "cwa,lufy,test-artist" &&
         !cardMenu.classList.contains("is-open"));
 
     const collaborationToggle = collaborationMenu.querySelector(
@@ -177,7 +194,7 @@ try {
         collaborationMenu.classList.contains("is-open") &&
         collaborationAction.hidden &&
         !selector.hidden &&
-        selected.join(",") === "cwa,test-artist");
+        selected.join(",") === "cwa,lufy,test-artist");
     assert("selector exposes every credited artist in order",
         selector.querySelector(".artist-action-menu-selector-label")
             .textContent.trim() === "Выберите артиста:" &&
@@ -190,7 +207,7 @@ try {
     selectorItems[2].addEventListener("click", (event) => event.preventDefault());
     selectorItems[2].click();
     assert("choosing a collaborator closes and resets the menu",
-        selected.join(",") === "cwa,test-artist,lufy" &&
+        selected.join(",") === "cwa,lufy,test-artist,lufy" &&
         !collaborationMenu.classList.contains("is-open") &&
         selector.hidden &&
         !collaborationAction.hidden);

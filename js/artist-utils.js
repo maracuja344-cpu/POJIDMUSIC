@@ -189,7 +189,8 @@ export function renderFullscreenArtistIdentity(
         return;
     }
 
-    const multipleArtists = artists.length > 1;
+    const dualArtists = artists.length === 2;
+    const multipleArtists = artists.length >= 3;
     const link = multipleArtists
         ? document.createElement("button")
         : createArtistLink(artist);
@@ -205,9 +206,11 @@ export function renderFullscreenArtistIdentity(
 
     identity.className = "fullscreen-player-artist-identity-copy";
     label.className = "fullscreen-player-artist-identity-label";
-    label.textContent = "Артист";
+    label.textContent = multipleArtists ? "Исполнители" : "Артист";
     name.className = "fullscreen-player-artist-identity-name";
-    name.textContent = artist.displayName;
+    name.textContent = multipleArtists
+        ? artists.map((candidate) => candidate.displayName).join(", ")
+        : artist.displayName;
     identity.append(label, name);
 
     arrow.className = "fullscreen-player-artist-identity-arrow";
@@ -215,6 +218,22 @@ export function renderFullscreenArtistIdentity(
     arrow.setAttribute("aria-hidden", "true");
 
     link.append(identity, arrow);
+
+    if (dualArtists) {
+        container.classList.add("fullscreen-player-artist-identity-dual");
+        container.replaceChildren();
+        artists.forEach((candidate) => {
+            const artistLink = createArtistLink(candidate);
+            const artistName = document.createElement("span");
+            artistLink.classList.add("fullscreen-player-artist-zone");
+            artistName.className = "fullscreen-player-artist-zone-name";
+            artistName.textContent = candidate.displayName;
+            artistLink.replaceChildren(artistName);
+            artistLink.addEventListener("click", () => onSelect?.(candidate));
+            container.append(artistLink);
+        });
+        return;
+    }
 
     if (!multipleArtists) {
         link.addEventListener("click", () => onSelect?.(artist));
