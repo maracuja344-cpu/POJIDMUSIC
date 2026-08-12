@@ -32,7 +32,9 @@ try {
         getTransformedArtworkUrl("img/cover.jpg", { width: 320 }) === "img/cover.jpg");
 
     const sources = getTrackCardArtwork(original);
-    assert("track tiers include measured 320, 512 and 768 widths",
+    assert("track tiers include a dedicated 64px accent source and display widths",
+        sources.accent.includes("width=64") && sources.accent.includes("height=64") &&
+        sources.accent.includes("quality=72") &&
         sources.small.includes("width=320") && sources.small.includes("height=320") &&
         sources.card.includes("width=512") && sources.card.includes("height=512") &&
         sources.recommendation.includes("width=768") &&

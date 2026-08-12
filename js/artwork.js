@@ -3,6 +3,7 @@ const PUBLIC_RENDER_PATH = "/storage/v1/render/image/public/";
 const backgroundRequests = new WeakMap();
 
 export const ARTWORK_WIDTHS = Object.freeze({
+    accent: 64,
     trackSmall: 320,
     trackCard: 512,
     recommendation: 768,
@@ -46,6 +47,12 @@ export function getTransformedArtworkUrl(
 export function getTrackCardArtwork(source) {
     return Object.freeze({
         original: source || "",
+        accent: getTransformedArtworkUrl(source, {
+            width: ARTWORK_WIDTHS.accent,
+            height: ARTWORK_WIDTHS.accent,
+            quality: 72,
+            resize: "contain"
+        }),
         small: getTransformedArtworkUrl(source, {
             width: ARTWORK_WIDTHS.trackSmall,
             height: ARTWORK_WIDTHS.trackSmall,

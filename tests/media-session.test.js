@@ -22,10 +22,15 @@ try {
     const calls = [];
     const audio = { currentTime: 30, duration: 120, playbackRate: 1 };
     let clock = 1000;
+    const audit = {
+        controllerInitializations: 0, available: false,
+        attempts: [], successful: [], failed: []
+    };
     const controller = createMediaSessionController({
         mediaSession,
         MediaMetadataClass: Metadata,
         now: () => clock,
+        audit,
         actions: {
             getAudio: () => audio,
             play: () => calls.push("play"),
@@ -57,6 +62,10 @@ try {
     assert("seekto updates the shared audio", audio.currentTime === 55);
     assert("relative seek handlers are not registered",
         !handlers.has("seekbackward") && !handlers.has("seekforward"));
+    assert("debug audit records exactly the intended handler registrations",
+        audit.controllerInitializations === 1 &&
+        audit.attempts.join(",") === "play,pause,nexttrack,previoustrack,seekto" &&
+        audit.successful.length === 5 && audit.failed.length === 0);
 
     controller.syncPosition(audio, { force: true });
     assert("valid position state is synchronized",
@@ -75,6 +84,8 @@ try {
     controller.clear();
     assert("clearing track resets metadata and playback state",
         mediaSession.metadata === null && mediaSession.playbackState === "none");
+    assert("clearing metadata does not clear or re-register action handlers",
+        audit.attempts.length === 5 && handlers.size === 5);
 
     const fallback = createMediaSessionController({ mediaSession: null });
     fallback.updateMetadata({ title: "Ignored" });

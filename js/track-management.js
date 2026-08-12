@@ -286,6 +286,7 @@ export function decorateManagedTrackCard(card, track) {
     }
     const button = document.createElement("button");
     button.type = "button"; button.className = "track-manage-button";
+    button.setAttribute("aria-haspopup", "menu"); button.setAttribute("aria-expanded", "false");
     button.textContent = "⋯"; button.setAttribute("aria-label", `Управление треком ${track.title}`);
     const menu = document.createElement("div");
     menu.className = "track-manage-menu"; menu.hidden = true;
@@ -297,7 +298,7 @@ export function decorateManagedTrackCard(card, track) {
     actions.forEach(([label, action]) => {
         const item = document.createElement("button"); item.type = "button"; item.textContent = label;
         item.addEventListener("click", async (event) => {
-            event.stopPropagation(); menu.hidden = true;
+            event.stopPropagation(); menu.hidden = true; button.setAttribute("aria-expanded", "false");
             try { await action(); } catch (error) { window.alert(error?.message || "Операция не выполнена."); }
         });
         menu.append(item);
@@ -307,6 +308,7 @@ export function decorateManagedTrackCard(card, track) {
         const willOpen = menu.hidden;
         if (willOpen) announceExclusivePopupOpen(menu);
         menu.hidden = !willOpen;
+        button.setAttribute("aria-expanded", String(willOpen));
     });
     card.append(button, menu);
 }
@@ -316,9 +318,19 @@ export function initializeTrackManagement() {
         const owner = event.detail?.owner;
         document.querySelectorAll(".track-manage-menu:not([hidden])")
             .forEach((menu) => {
-                if (menu !== owner && !menu.contains(owner)) menu.hidden = true;
+                if (!owner || (menu !== owner && !menu.contains(owner))) menu.hidden = true;
+                if (menu.hidden) menu.previousElementSibling?.setAttribute("aria-expanded", "false");
             });
     });
+    document.addEventListener("pointerdown", (event) => {
+        document.querySelectorAll(".track-manage-menu:not([hidden])").forEach((menu) => {
+            const toggle = menu.previousElementSibling;
+            if (menu.contains(event.target) || toggle === event.target.closest?.(".track-manage-button")) return;
+            menu.hidden = true;
+            toggle?.setAttribute("aria-expanded", "false");
+        });
+    });
+    window.addEventListener("scroll", () => announceExclusivePopupOpen(null), { passive: true });
     document.querySelectorAll("[data-close-track-editor]")
         .forEach((button) => button.addEventListener("click", () => closeEditor()));
     document.querySelector("[data-edit-cover]")?.addEventListener("click", () => void chooseCover());
@@ -327,5 +339,6 @@ export function initializeTrackManagement() {
     form()?.addEventListener("submit", saveEditor);
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && modal() && !modal().hidden) closeEditor();
+        if (event.key === "Escape") announceExclusivePopupOpen(null);
     });
 }

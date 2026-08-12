@@ -37,7 +37,7 @@ class ReleaseHandler(SUPPORT.QuietHandler):
             return
 
         source = (ROOT / path).read_text(encoding="utf-8")
-        source = source.replace("pwa-v15", self.release)
+        source = source.replace("pwa-v16", self.release)
         if path == "js/script.js":
             source += f'\nwindow.__pwaServedScriptRelease = "{self.release}";\n'
         elif path == "style.css":
@@ -214,20 +214,20 @@ def main():
             assert_release(after_failed_install, "pwa-test-a")
             assert after_failed_install["loadCount"] == initial_load_count
 
-            set_release("pwa-v15")
+            set_release("pwa-test-b")
             client.evaluate("navigator.serviceWorker.getRegistration().then((r) => r.update())")
             wait_for(client,
-                "document.querySelector('meta[name=pojidmusic-release]')?.content === 'pwa-v15' && "
-                "window.__pwaServedScriptRelease === 'pwa-v15'",
+                "document.querySelector('meta[name=pojidmusic-release]')?.content === 'pwa-test-b' && "
+                "window.__pwaServedScriptRelease === 'pwa-test-b'",
                 "release B controller reload", timeout=40)
             wait_for(client,
                 "document.querySelectorAll('#all-tracks .release-card').length > 0",
                 "release B usable UI")
             release_b = client.evaluate(PAGE_STATE)
-            assert_release(release_b, "pwa-v15")
+            assert_release(release_b, "pwa-test-b")
             assert release_b["loadCount"] == initial_load_count + 1, release_b
-            assert release_b["reloadGuard"] == "pwa-v15", release_b
-            assert "pojidmusic-shell-pwa-v15" in release_b["cacheNames"]
+            assert release_b["reloadGuard"] == "pwa-test-b", release_b
+            assert "pojidmusic-shell-pwa-test-b" in release_b["cacheNames"]
             assert "pojidmusic-shell-pwa-test-a" not in release_b["cacheNames"]
             assert "pojidmusic-shell-pwa-test-bad" not in release_b["cacheNames"]
             assert len(release_b["cacheNames"]) == 2, release_b["cacheNames"]
@@ -249,14 +249,14 @@ def main():
             })
             client.call("Page.reload", {"ignoreCache": True})
             wait_for(client,
-                "document.querySelector('meta[name=pojidmusic-release]')?.content === 'pwa-v15' && "
-                "window.__pwaServedScriptRelease === 'pwa-v15'",
+                "document.querySelector('meta[name=pojidmusic-release]')?.content === 'pwa-test-b' && "
+                "window.__pwaServedScriptRelease === 'pwa-test-b'",
                 "offline shell")
             wait_for(client,
                 "document.querySelectorAll('#all-tracks .release-card').length > 0",
                 "offline local catalog", timeout=30)
             offline = client.evaluate(PAGE_STATE)
-            assert_release(offline, "pwa-v15")
+            assert_release(offline, "pwa-test-b")
             assert offline["stylesheetLoaded"]
             assert offline["loadCount"] == before_offline_load_count + 1
             module_failures = same_origin_module_failures(client.events, origin)

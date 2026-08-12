@@ -641,6 +641,7 @@ async function renderMyTracksView() {
 }
 
 async function renderRoute({ scroll = false } = {}) {
+    announceExclusivePopupOpen(null);
     setArtistOwnerMenuOpen(false);
     const route = getRoute();
     if (["account", "myTracks"].includes(route.name)) {
@@ -891,10 +892,15 @@ export function initializeAppNavigation() {
 
     window.addEventListener(EXCLUSIVE_POPUP_OPEN_EVENT, (event) => {
         const wrapper = document.querySelector(".artist-owner-menu");
-        if (wrapper && !wrapper.contains(event.detail?.owner)) {
+        const owner = event.detail?.owner;
+        if (wrapper && (!owner || !wrapper.contains(owner))) {
             setArtistOwnerMenuOpen(false);
         }
     });
+
+    window.addEventListener("scroll", () => {
+        announceExclusivePopupOpen(null);
+    }, { passive: true });
 
     document.addEventListener("keydown", (event) => {
         if (

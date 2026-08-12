@@ -434,6 +434,35 @@ RUNTIME_CHECKS = r"""
     check("fullscreen progress exposes slider semantics",
         fullscreenProgress.getAttribute("role") === "slider" &&
         Number(fullscreenProgress.getAttribute("aria-valuemax")) > 0);
+    window.__testAudio.pause();
+    window.__testAudio.currentTime = Math.min(5, window.__testAudio.duration / 4);
+    await waitFor(() => !window.__testAudio.seeking, "pointer scrub setup");
+    const scrubRect = fullscreenProgress.getBoundingClientRect();
+    const scrubPointer = (type, ratio, buttons) => fullscreenProgress.dispatchEvent(
+        new PointerEvent(type, {
+            bubbles: true, cancelable: true, pointerId: 71, pointerType: "touch",
+            isPrimary: true, button: 0, buttons,
+            clientX: scrubRect.left + scrubRect.width * ratio,
+            clientY: scrubRect.top + scrubRect.height / 2
+        })
+    );
+    const scrubAudioStart = window.__testAudio.currentTime;
+    scrubPointer("pointerdown", 0.2, 1);
+    scrubPointer("pointermove", 0.7, 1);
+    const scrubPreviewTime = Number(fullscreenProgress.getAttribute("aria-valuenow"));
+    check("pointer scrub preview does not seek audio before release",
+        Math.abs(window.__testAudio.currentTime - scrubAudioStart) < 0.2 &&
+        scrubPreviewTime > scrubAudioStart + 5,
+        JSON.stringify({
+            start: scrubAudioStart,
+            current: window.__testAudio.currentTime,
+            preview: fullscreenProgress.getAttribute("aria-valuenow"),
+            duration: window.__testAudio.duration
+        }));
+    scrubPointer("pointerup", 0.7, 0);
+    await waitFor(() => Math.abs(window.__testAudio.currentTime -
+        scrubPreviewTime) < 1.25, "pointer scrub commit");
+    check("pointer scrub seeks exactly on release", true);
     const seekStart = Math.min(10, Math.max(window.__testAudio.duration - 10, 0));
     window.__testAudio.currentTime = seekStart;
     await waitFor(() => Math.abs(window.__testAudio.currentTime - seekStart) < 0.5,
@@ -454,6 +483,7 @@ RUNTIME_CHECKS = r"""
     check("fullscreen progress supports keyboard seeking",
         Math.abs(window.__testAudio.currentTime - expectedKeyboardSeek) < 0.5,
         fullscreenProgress.getAttribute("aria-valuetext"));
+    await window.__testAudio.play();
 
     document.dispatchEvent(new KeyboardEvent("keydown", {
         key: "Escape", bubbles: true

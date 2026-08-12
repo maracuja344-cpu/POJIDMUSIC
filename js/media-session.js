@@ -7,12 +7,37 @@ function clampPosition(position, duration) {
     return Math.min(Math.max(position, 0), duration);
 }
 
+function getRuntimeMediaSessionAudit() {
+    const search = globalThis.location?.search || "";
+    const params = new URLSearchParams(search);
+    const enabled = globalThis.__POJIDMUSIC_DEBUG__ === true ||
+        params.has("media-session-debug") ||
+        params.has("runtime-smoke") ||
+        params.has("top-level-runtime");
+    if (!enabled) return null;
+
+    const audit = globalThis.__pojidmusicMediaSessionAudit || {
+        controllerInitializations: 0,
+        available: false,
+        attempts: [],
+        successful: [],
+        failed: []
+    };
+    globalThis.__pojidmusicMediaSessionAudit = audit;
+    return audit;
+}
+
 export function createMediaSessionController({
     mediaSession = "mediaSession" in navigator ? navigator.mediaSession : null,
     MediaMetadataClass = globalThis.MediaMetadata,
     actions,
-    now = () => performance.now()
+    now = () => performance.now(),
+    audit = getRuntimeMediaSessionAudit()
 } = {}) {
+    if (audit) {
+        audit.controllerInitializations += 1;
+        audit.available = Boolean(mediaSession);
+    }
     if (!mediaSession) {
         return {
             available: false,
@@ -24,9 +49,15 @@ export function createMediaSessionController({
     }
 
     const safeAction = (name, handler) => {
+        audit?.attempts.push(name);
         try {
             mediaSession.setActionHandler(name, handler);
-        } catch {
+            audit?.successful.push(name);
+        } catch (error) {
+            audit?.failed.push({
+                name,
+                error: error?.name || "Error"
+            });
             // Safari and older Chromium builds expose different action subsets.
         }
     };

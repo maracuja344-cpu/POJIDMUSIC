@@ -1,6 +1,7 @@
 import {
     FALLBACK_PLAYER_ACCENT,
-    normalizePlayerAccent
+    normalizePlayerAccent,
+    selectPlayerAccentFromPixels
 } from "../js/player.js";
 
 const output = document.querySelector("#test-output");
@@ -38,6 +39,24 @@ try {
         green.green > green.red && green.green > green.blue && green.green < 255);
     assert("missing artwork uses the same documented fallback",
         equals(FALLBACK_PLAYER_ACCENT, fallback));
+
+    const grayscalePixels = new Uint8ClampedArray(32 * 32 * 4);
+    for (let index = 0; index < grayscalePixels.length; index += 4) {
+        grayscalePixels.set([118, 118, 118, 255], index);
+    }
+    const grayscale = selectPlayerAccentFromPixels(grayscalePixels);
+    assert("true grayscale artwork receives a safe neutral accent",
+        Math.max(grayscale.red, grayscale.green, grayscale.blue) -
+            Math.min(grayscale.red, grayscale.green, grayscale.blue) < 10 &&
+        !equals(grayscale, fallback));
+
+    const detailPixels = grayscalePixels.slice();
+    for (let pixel = 0; pixel < 6; pixel += 1) {
+        detailPixels.set([240, 32, 44, 255], pixel * 4);
+    }
+    const detailed = selectPlayerAccentFromPixels(detailPixels);
+    assert("small saturated artwork detail wins over a grayscale field",
+        detailed.red > detailed.green * 1.8 && detailed.red > detailed.blue * 1.8);
 
     document.body.dataset.testStatus = "passed";
     output.textContent = `${results.join("\n")}\n\n${results.length} passed`;

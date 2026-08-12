@@ -13,6 +13,7 @@ import {
     setPlaybackContextCurrent
 } from "./playback-context.js";
 import {
+    announceExclusivePopupOpen,
     renderFullscreenArtistIdentity,
     renderArtistLinks
 } from "./artist-utils.js";
@@ -105,6 +106,7 @@ let currentCard = null;
 
 /* Пользователь сейчас двигает полосу прогресса */
 let isSeeking = false;
+let scrubState = null;
 
 
 /*
@@ -716,6 +718,7 @@ function openFullscreenPlayer() {
     if (!currentTrack || !fullscreenPlayer) {
         return;
     }
+    announceExclusivePopupOpen(null);
 
     window.clearTimeout(fullscreenCloseTimer);
     window.clearTimeout(fullscreenRevealTimer);
@@ -814,6 +817,7 @@ async function promoteFullscreenArtwork() {
 */
 function closeFullscreenPlayer(fromDrag = false) {
     if (!fullscreenPlayer) return;
+    announceExclusivePopupOpen(null);
 
     /*
     Если плеер уже закрыт,
@@ -1131,6 +1135,8 @@ function loadCoverForColor(source) {
     return new Promise((resolve, reject) => {
         const image = new Image();
 
+        // Canvas may only read Supabase pixels when CORS is selected before src.
+        image.crossOrigin = "anonymous";
         image.decoding = "async";
         image.onload = () => resolve(image);
         image.onerror = reject;
@@ -1173,7 +1179,14 @@ async function extractCoverAccent(source) {
         canvas.width,
         canvas.height
     ).data;
+    return selectPlayerAccentFromPixels(pixels);
+}
+
+
+export function selectPlayerAccentFromPixels(pixels) {
     const colorBins = new Map();
+    let neutralLightness = 0;
+    let visiblePixelCount = 0;
 
     for (
         let pixelIndex = 0;
@@ -1192,6 +1205,8 @@ async function extractCoverAccent(source) {
             green,
             blue
         );
+        visiblePixelCount += 1;
+        neutralLightness += hsl.lightness;
 
         /*
         Почти чёрные, белые и серые пиксели не должны
@@ -1200,7 +1215,7 @@ async function extractCoverAccent(source) {
         if (
             hsl.lightness < 0.05 ||
             hsl.lightness > 0.96 ||
-            hsl.saturation < 0.12
+            hsl.saturation < 0.14
         ) {
             continue;
         }
@@ -1214,20 +1229,22 @@ async function extractCoverAccent(source) {
         const binKey =
             `${hueBin}:${saturationBin}:` +
             `${lightnessBin}`;
-        const weight =
-            0.45 + hsl.saturation;
+        const colorWeight = Math.pow(hsl.saturation, 2.4) *
+            (0.72 + (1 - Math.abs(hsl.lightness - 0.55)) * 0.28);
         const colorBin =
             colorBins.get(binKey) || {
-                weight: 0,
+                colorWeight: 0,
+                count: 0,
                 red: 0,
                 green: 0,
                 blue: 0
             };
 
-        colorBin.weight += weight;
-        colorBin.red += red * weight;
-        colorBin.green += green * weight;
-        colorBin.blue += blue * weight;
+        colorBin.colorWeight += colorWeight;
+        colorBin.count += 1;
+        colorBin.red += red * colorWeight;
+        colorBin.green += green * colorWeight;
+        colorBin.blue += blue * colorWeight;
 
         colorBins.set(binKey, colorBin);
     }
@@ -1235,25 +1252,28 @@ async function extractCoverAccent(source) {
     const dominantBin = Array.from(
         colorBins.values()
     ).sort((firstBin, secondBin) => {
-        return secondBin.weight - firstBin.weight;
+        const firstScore = firstBin.colorWeight / Math.sqrt(firstBin.count);
+        const secondScore = secondBin.colorWeight / Math.sqrt(secondBin.count);
+        return secondScore - firstScore;
     })[0];
 
     if (!dominantBin) {
-        return {
-            ...FALLBACK_PLAYER_ACCENT
-        };
+        if (!visiblePixelCount) return { ...FALLBACK_PLAYER_ACCENT };
+        const average = neutralLightness / visiblePixelCount;
+        const neutral = Math.round(184 + average * 28);
+        return { red: neutral - 3, green: neutral, blue: neutral + 5 };
     }
 
     return normalizePlayerAccent({
         red:
             dominantBin.red /
-            dominantBin.weight,
+            dominantBin.colorWeight,
         green:
             dominantBin.green /
-            dominantBin.weight,
+            dominantBin.colorWeight,
         blue:
             dominantBin.blue /
-            dominantBin.weight
+            dominantBin.colorWeight
     });
 }
 
@@ -1284,10 +1304,11 @@ async function updatePlayerAccent(
     };
 
     if (!coverIsFallback) {
-        if (!coverAccentCache.has(cover)) {
+        const accentCover = getTrackCardArtwork(requestedCover).accent || cover;
+        if (!coverAccentCache.has(accentCover)) {
             coverAccentCache.set(
-                cover,
-                extractCoverAccent(cover)
+                accentCover,
+                extractCoverAccent(accentCover)
                     .catch(() => {
                         return {
                             ...FALLBACK_PLAYER_ACCENT
@@ -1296,7 +1317,7 @@ async function updatePlayerAccent(
             );
         }
 
-        accent = await coverAccentCache.get(cover);
+        accent = await coverAccentCache.get(accentCover);
     }
 
     if (
@@ -2267,6 +2288,7 @@ async function resumePlayback() {
    ========================================================= */
 
 function resetPlayerProgress() {
+    cancelProgressScrub();
     knownDuration = 0;
     playerProgressFill.style.width = "0%";
     playerProgress.style.setProperty(
@@ -3232,24 +3254,7 @@ function playPreviousTrack() {
 Меняет позицию трека по координате указателя.
 */
 function seekAudio(event) {
-    if (!Number.isFinite(audio.duration)) {
-        return;
-    }
-
-    const rect =
-        playerProgress.getBoundingClientRect();
-
-    let percent =
-        (event.clientX - rect.left) /
-        rect.width;
-
-    percent = Math.max(
-        0,
-        Math.min(1, percent)
-    );
-
-    audio.currentTime =
-        percent * audio.duration;
+    updateProgressScrub(event);
 }
 
 
@@ -3257,24 +3262,101 @@ function seekAudio(event) {
 Перемотка через полноэкранную полосу.
 */
 function seekFullscreenAudio(event) {
-    if (!Number.isFinite(audio.duration)) {
-        return;
+    updateProgressScrub(event);
+}
+
+
+function getProgressPointerValue(event, element, duration) {
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !Number.isFinite(duration) || duration <= 0) return null;
+    const percent = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    return { percent, position: percent * duration };
+}
+
+
+function renderPlayerProgress(position, duration) {
+    const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const safePosition = safeDuration && Number.isFinite(position)
+        ? Math.max(0, Math.min(position, safeDuration))
+        : 0;
+    const progressValue = `${safeDuration ? (safePosition / safeDuration) * 100 : 0}%`;
+
+    playerProgressFill.style.width = progressValue;
+    playerProgress.style.setProperty("--progress", progressValue);
+    currentTimeElement.textContent = formatTime(safePosition);
+    if (fullscreenProgressFill) fullscreenProgressFill.style.width = progressValue;
+    fullscreenProgress?.style.setProperty("--progress", progressValue);
+    if (fullscreenCurrentTime) fullscreenCurrentTime.textContent = formatTime(safePosition);
+    updateFullscreenProgressAccessibility(safePosition, safeDuration);
+}
+
+
+function updateProgressScrub(event) {
+    if (!scrubState || event.pointerId !== scrubState.pointerId) return;
+    const value = getProgressPointerValue(event, scrubState.element, scrubState.duration);
+    if (!value) return;
+    scrubState.position = value.position;
+    renderPlayerProgress(value.position, scrubState.duration);
+}
+
+
+function beginProgressScrub(event, element) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const duration = Number(audio.duration);
+    const value = getProgressPointerValue(event, element, duration);
+    if (!value) return;
+
+    event.preventDefault();
+    cancelProgressScrub();
+    scrubState = {
+        element,
+        pointerId: event.pointerId,
+        duration,
+        position: value.position,
+        audio,
+        trackId: currentTrack?.catalogId || null
+    };
+    isSeeking = true;
+    element.classList.add("is-seeking");
+    element.setPointerCapture(event.pointerId);
+    renderPlayerProgress(value.position, duration);
+}
+
+
+function finishProgressScrub(event, commit = true) {
+    if (!scrubState || (event && event.pointerId !== scrubState.pointerId)) return;
+    const state = scrubState;
+    if (event) updateProgressScrub(event);
+    const finalPosition = scrubState?.position ?? state.position;
+
+    scrubState = null;
+    isSeeking = false;
+    state.element.classList.remove("is-seeking");
+    if (state.element.hasPointerCapture?.(state.pointerId)) {
+        state.element.releasePointerCapture(state.pointerId);
     }
 
-    const rect =
-        fullscreenProgress.getBoundingClientRect();
+    if (commit && state.audio === audio && state.trackId === (currentTrack?.catalogId || null)) {
+        audio.currentTime = finalPosition;
+        renderPlayerProgress(finalPosition, state.duration);
+        mediaSessionController.syncPosition(audio, { force: true });
+    } else {
+        renderPlayerProgress(audio.currentTime, audio.duration);
+    }
+}
 
-    let percent =
-        (event.clientX - rect.left) /
-        rect.width;
 
-    percent = Math.max(
-        0,
-        Math.min(1, percent)
-    );
+function cancelProgressScrub() {
+    finishProgressScrub(null, false);
+}
 
-    audio.currentTime =
-        percent * audio.duration;
+
+function setProgressHoverPreview(event, element) {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || isSeeking) return;
+    const value = getProgressPointerValue(event, element, 1);
+    if (!value) return;
+    element.style.setProperty("--preview-progress", `${value.percent * 100}%`);
+    element.classList.add("has-preview");
 }
 
 
@@ -3775,6 +3857,7 @@ fullscreenCoverNext =
                     return;
                 }
 
+                announceExclusivePopupOpen(null);
                 dragPointerId = event.pointerId;
                 dragStartX = event.clientX;
                 dragStartY = event.clientY;
@@ -3968,6 +4051,7 @@ fullscreenCoverNext =
                 return;
             }
 
+            announceExclusivePopupOpen(null);
             miniSwipePointerId = event.pointerId;
             miniSwipeStartX = event.clientX;
             miniSwipeStartY = event.clientY;
@@ -4289,21 +4373,38 @@ fullscreenCoverNext =
        ===================================================== */
 
     let isAdjustingVolume = false;
+    let volumeCloseTimer = null;
+    const desktopVolumeQuery = window.matchMedia(
+        "(hover: hover) and (pointer: fine)"
+    );
+
+    function setVolumeControlOpen(open) {
+        window.clearTimeout(volumeCloseTimer);
+        volumeControl.classList.toggle("is-open", open);
+        volumeButton.setAttribute("aria-expanded", String(open));
+    }
+
+    volumeControl.addEventListener("pointerenter", (event) => {
+        if (desktopVolumeQuery.matches && event.pointerType === "mouse") {
+            setVolumeControlOpen(true);
+        }
+    });
+
+    volumeControl.addEventListener("pointerleave", (event) => {
+        if (!desktopVolumeQuery.matches || event.pointerType !== "mouse") return;
+        volumeCloseTimer = window.setTimeout(() => {
+            if (!volumeControl.matches(":hover") && !volumeControl.contains(document.activeElement)) {
+                setVolumeControlOpen(false);
+            }
+        }, 180);
+    });
 
     volumeButton.addEventListener(
         "click",
         (event) => {
             event.stopPropagation();
 
-            const isOpen =
-                volumeControl.classList.toggle(
-                    "is-open"
-                );
-
-            volumeButton.setAttribute(
-                "aria-expanded",
-                String(isOpen)
-            );
+            setVolumeControlOpen(!volumeControl.classList.contains("is-open"));
         }
     );
 
@@ -4352,12 +4453,7 @@ fullscreenCoverNext =
                 return;
             }
 
-            volumeControl.classList.remove("is-open");
-
-            volumeButton.setAttribute(
-                "aria-expanded",
-                "false"
-            );
+            setVolumeControlOpen(false);
         }
     );
 
@@ -4379,16 +4475,7 @@ fullscreenCoverNext =
     playerProgress.addEventListener(
         "pointerdown",
         (event) => {
-            event.preventDefault();
-
-            isSeeking = true;
-            playerProgress.classList.add("is-seeking");
-
-            playerProgress.setPointerCapture(
-                event.pointerId
-            );
-
-            seekAudio(event);
+            beginProgressScrub(event, playerProgress);
         }
     );
 
@@ -4396,8 +4483,6 @@ fullscreenCoverNext =
     playerProgress.addEventListener(
         "pointermove",
         (event) => {
-            if (!isSeeking) return;
-
             seekAudio(event);
         }
     );
@@ -4406,28 +4491,14 @@ fullscreenCoverNext =
     playerProgress.addEventListener(
         "pointerup",
         (event) => {
-            isSeeking = false;
-            playerProgress.classList.remove("is-seeking");
-
-            if (
-                playerProgress.hasPointerCapture(
-                    event.pointerId
-                )
-            ) {
-                playerProgress.releasePointerCapture(
-                    event.pointerId
-                );
-            }
+            finishProgressScrub(event);
         }
     );
 
 
     playerProgress.addEventListener(
         "pointercancel",
-        () => {
-            isSeeking = false;
-            playerProgress.classList.remove("is-seeking");
-        }
+        (event) => finishProgressScrub(event, false)
     );
 
 
@@ -4438,18 +4509,7 @@ fullscreenCoverNext =
     fullscreenProgress?.addEventListener(
         "pointerdown",
         (event) => {
-            event.preventDefault();
-
-            isSeeking = true;
-            fullscreenProgress.classList.add(
-                "is-seeking"
-            );
-
-            fullscreenProgress.setPointerCapture(
-                event.pointerId
-            );
-
-            seekFullscreenAudio(event);
+            beginProgressScrub(event, fullscreenProgress);
         }
     );
 
@@ -4457,8 +4517,6 @@ fullscreenCoverNext =
     fullscreenProgress?.addEventListener(
         "pointermove",
         (event) => {
-            if (!isSeeking) return;
-
             seekFullscreenAudio(event);
         }
     );
@@ -4467,33 +4525,24 @@ fullscreenCoverNext =
     fullscreenProgress?.addEventListener(
         "pointerup",
         (event) => {
-            isSeeking = false;
-            fullscreenProgress.classList.remove(
-                "is-seeking"
-            );
-
-            if (
-                fullscreenProgress.hasPointerCapture(
-                    event.pointerId
-                )
-            ) {
-                fullscreenProgress.releasePointerCapture(
-                    event.pointerId
-                );
-            }
+            finishProgressScrub(event);
         }
     );
 
 
     fullscreenProgress?.addEventListener(
         "pointercancel",
-        () => {
-            isSeeking = false;
-            fullscreenProgress.classList.remove(
-                "is-seeking"
-            );
-        }
+        (event) => finishProgressScrub(event, false)
     );
+
+    [playerProgress, fullscreenProgress].filter(Boolean).forEach((progressElement) => {
+        progressElement.addEventListener("pointermove", (event) => {
+            setProgressHoverPreview(event, progressElement);
+        });
+        progressElement.addEventListener("pointerleave", () => {
+            progressElement.classList.remove("has-preview");
+        });
+    });
 
     fullscreenProgress?.addEventListener(
         "keydown",
@@ -4626,6 +4675,7 @@ fullscreenCoverNext =
         if (!Number.isFinite(audio.duration)) {
             return;
         }
+        if (isSeeking) return;
 
         const progress =
             (

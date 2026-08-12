@@ -44,8 +44,7 @@ body {
 
 .app-boot-curtain { display: none; }
 
-@media (display-mode: standalone) and (max-width: 932px) and (pointer: coarse) {
-    html.cold-home-boot .app-boot-curtain {
+html.cold-home-boot .app-boot-curtain {
         position: fixed;
         inset: 0;
         z-index: 4000;
@@ -55,10 +54,10 @@ body {
         background: #07070a;
         color: rgba(255, 255, 255, 0.9);
         pointer-events: none;
-    }
+}
 
-    .app-boot-curtain::before,
-    .app-boot-curtain::after {
+.app-boot-curtain::before,
+.app-boot-curtain::after {
         content: "";
         position: absolute;
         right: 0;
@@ -66,24 +65,29 @@ body {
         height: 50.5%;
         background: #07070a;
         transition: transform 420ms cubic-bezier(0.65, 0, 0.35, 1);
-    }
+}
 
-    .app-boot-curtain::before { top: 0; }
-    .app-boot-curtain::after { bottom: 0; }
-    .app-boot-curtain.is-ready::before { transform: translateY(-101%); }
-    .app-boot-curtain.is-ready::after { transform: translateY(101%); }
+.app-boot-curtain::before { top: 0; }
+.app-boot-curtain::after { bottom: 0; }
+.app-boot-curtain.is-ready::before { transform: translateY(-101%); }
+.app-boot-curtain.is-ready::after { transform: translateY(101%); }
 
-    .app-boot-curtain-wordmark {
+.app-boot-curtain-wordmark {
         position: relative;
         z-index: 1;
         font-size: 15px;
         font-weight: 700;
         letter-spacing: 0.22em;
         transition: opacity 180ms ease;
-    }
+}
 
-    .app-boot-curtain.is-ready .app-boot-curtain-wordmark { opacity: 0; }
-    .app-boot-curtain[hidden] { display: none; }
+.app-boot-curtain.is-ready .app-boot-curtain-wordmark { opacity: 0; }
+.app-boot-curtain[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .app-boot-curtain::before,
+    .app-boot-curtain::after,
+    .app-boot-curtain-wordmark { transition-duration: 1ms; }
 }
 
 
@@ -160,10 +164,12 @@ body {
 }
 
 
-.logo:hover {
-    color: var(--accent-primary);
-    letter-spacing: 4px;
-    text-shadow: var(--glow-control-active);
+@media (hover: hover) and (pointer: fine) {
+    .logo:hover {
+        color: var(--accent-primary);
+        letter-spacing: 4px;
+        text-shadow: var(--glow-control-active);
+    }
 }
 
 
@@ -1310,10 +1316,7 @@ JavaScript меняет display на block.
 .player-controls,
 .volume-control,
 .header,
-.logo,
-.track-title,
-.artist-name,
-.section-title {
+.logo {
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -1344,8 +1347,11 @@ img {
 
 
 /*ЗАПРЕТ ВЫДЕЛЕНИЯ В FULLSCREEN ПЛЕЕРЕ*/
-.fullscreen-player,
-.fullscreen-player * {
+.fullscreen-player button,
+.fullscreen-player input,
+.fullscreen-player-progress,
+.fullscreen-player-cover-interaction,
+.fullscreen-player .artist-action-menu {
     -webkit-user-select: none;
     user-select: none;
 
@@ -1806,6 +1812,8 @@ body:has(.mini-player.active) {
 
 /* Заполненная часть прогресса */
 .player-progress-fill {
+    position: relative;
+    z-index: 2;
     width: 0%;
     height: 100%;
 
@@ -1834,7 +1842,6 @@ body:has(.mini-player.active) {
     transition: opacity 160ms ease;
 }
 
-.player-progress:hover .player-progress-thumb,
 .player-progress.is-seeking .player-progress-thumb {
     opacity: 1;
 }
@@ -1842,6 +1849,8 @@ body:has(.mini-player.active) {
 .player-progress.is-seeking .player-progress-fill,
 .fullscreen-player-progress.is-seeking
 .fullscreen-player-progress-fill {
+    position: relative;
+    z-index: 2;
     transition: none;
 }
 
@@ -2003,7 +2012,7 @@ body:has(.mini-player.active) {
     filter:
         drop-shadow(
             0 0 6px
-            rgb(var(--accent-primary-rgb) / 0.48)
+            color-mix(in srgb, var(--player-accent) 48%, transparent)
         );
 }
 
@@ -2231,14 +2240,14 @@ Shuffle и Repeat используют одинаковые классы сос�
 }
 
 
-.volume-button:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.1);
-    filter:
-        drop-shadow(
-            0 0 6px
-            rgb(var(--accent-primary-rgb) / 0.48)
+@media (hover: hover) and (pointer: fine) {
+    .volume-button:hover {
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 0.1);
+        filter: drop-shadow(
+            0 0 6px color-mix(in srgb, var(--player-accent) 48%, transparent)
         );
+    }
 }
 
 .volume-button:focus-visible {
@@ -4229,11 +4238,30 @@ pointer-events: none не даёт частицам
     transition: opacity 160ms ease;
 }
 
-.fullscreen-player-progress:hover
-.fullscreen-player-progress-thumb,
 .fullscreen-player-progress.is-seeking
 .fullscreen-player-progress-thumb {
     opacity: 1;
+}
+
+.player-progress-preview,
+.fullscreen-player-progress-preview {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 1;
+    width: var(--preview-progress, 0%);
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.34);
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .player-progress:hover .player-progress-thumb,
+    .fullscreen-player-progress:hover .fullscreen-player-progress-thumb,
+    .player-progress.has-preview .player-progress-preview,
+    .fullscreen-player-progress.has-preview .fullscreen-player-progress-preview {
+        opacity: 1;
+    }
 }
 
 
@@ -5030,9 +5058,11 @@ html.mobile-device .mini-player {
     transition: color 160ms ease, text-shadow 160ms ease;
 }
 
-.artist-link:hover {
-    color: var(--accent-primary);
-    text-shadow: var(--glow-control-active);
+@media (hover: hover) and (pointer: fine) {
+    .artist-link:hover {
+        color: var(--accent-primary);
+        text-shadow: var(--glow-control-active);
+    }
 }
 
 .artist-link:focus-visible,
@@ -5379,7 +5409,6 @@ body[data-app-view="artist"]::before {
     font-size: 22px;
     transition: opacity 180ms ease, background-color 180ms ease;
 }
-.artist-hero.is-owner .artist-avatar-edit:hover,
 .artist-hero.is-owner .artist-avatar-edit:focus-visible { opacity: 1; }
 .artist-banner-edit {
     top: 18px;
@@ -5387,8 +5416,12 @@ body[data-app-view="artist"]::before {
     opacity: 0;
     transition: opacity 180ms ease, transform 180ms ease;
 }
-.artist-hero.is-owner:hover .artist-banner-edit,
 .artist-banner-edit:focus-visible { opacity: 1; }
+
+@media (hover: hover) and (pointer: fine) {
+    .artist-hero.is-owner .artist-avatar-edit:hover,
+    .artist-hero.is-owner:hover .artist-banner-edit { opacity: 1; }
+}
 .artist-media-edit[hidden], .artist-owner-actions[hidden] { display: none; }
 .artist-hero { --hero-text: #fff; --hero-muted: rgba(255,255,255,.72); --hero-overlay: .34; color: var(--hero-text); transition: color .3s ease; }
 .artist-banner::after { background: linear-gradient(180deg, rgba(10,10,12,.12), rgba(10,10,12,var(--hero-overlay)) 100%); transition: background .3s ease; }
@@ -5443,15 +5476,6 @@ body[data-app-view="artist"]::before {
             box-shadow 180ms ease;
     }
 
-    .artist-owner-actions > .artist-quick-upload:hover,
-    .artist-owner-actions > .artist-settings-button:hover,
-    .artist-banner-edit:hover {
-        border-color: rgba(255, 255, 255, 0.24);
-        background: rgba(14, 14, 18, 0.68);
-        color: rgba(255, 255, 255, 0.96);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
-    }
-
     .artist-owner-actions > .artist-quick-upload:focus-visible,
     .artist-owner-actions > .artist-settings-button:focus-visible,
     .artist-banner-edit:focus-visible {
@@ -5463,6 +5487,17 @@ body[data-app-view="artist"]::before {
     }
 }
 
+@media (min-width: 621px) and (hover: hover) and (pointer: fine) {
+    .artist-owner-actions > .artist-quick-upload:hover,
+    .artist-owner-actions > .artist-settings-button:hover,
+    .artist-banner-edit:hover {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(14, 14, 18, 0.68);
+        color: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    }
+}
+
 .artist-profile-filters { display: flex; gap: 8px; margin: 18px 0; }
 .artist-profile-filter { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.05); color: #fff; }
 .artist-profile-filter.is-active { background: rgba(226,173,255,.18); border-color: rgba(226,173,255,.42); }
@@ -5470,7 +5505,11 @@ body[data-app-view="artist"]::before {
 .track-manage-button { position: absolute; z-index: 4; right: 8px; bottom: 8px; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; background: rgba(10,10,12,.78); color: #fff; font-size: 22px; cursor: pointer; }
 .track-manage-menu { position: absolute; z-index: 8; right: 8px; bottom: 52px; min-width: 150px; padding: 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #18171c; box-shadow: 0 16px 38px rgba(0,0,0,.42); }
 .track-manage-menu button { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: transparent; color: #fff; text-align: left; }
-.track-manage-menu button:hover { background: rgba(255,255,255,.08); }
+.track-manage-menu button:focus-visible { background: rgba(255,255,255,.08); }
+
+@media (hover: hover) and (pointer: fine) {
+    .track-manage-menu button:hover { background: rgba(255,255,255,.08); }
+}
 .track-status-badge { position: absolute; z-index: 3; left: 8px; top: 8px; padding: 5px 8px; border-radius: 999px; background: rgba(10,10,12,.8); color: rgba(255,255,255,.8); font-size: 11px; }
 
 .profile-editor-modal, .track-editor-modal, .crop-modal { position: fixed; inset: 0; z-index: 10020; display: grid; place-items: center; padding: 18px; background: rgba(5,5,7,.78); backdrop-filter: blur(12px); }
@@ -6303,13 +6342,22 @@ html.mobile-device
     text-overflow: ellipsis;
 }
 
-.artist-action-menu-item:hover,
 .artist-action-menu-item:focus-visible {
     color: var(--accent-primary);
     background: rgba(255, 255, 255, 0.08);
     outline: 2px solid var(--accent-primary);
     outline-offset: -2px;
     text-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .artist-action-menu-item:hover {
+        color: var(--accent-primary);
+        background: rgba(255, 255, 255, 0.08);
+        outline: 2px solid var(--accent-primary);
+        outline-offset: -2px;
+        text-shadow: none;
+    }
 }
 
 .release-card:has(.artist-action-menu.is-open) {

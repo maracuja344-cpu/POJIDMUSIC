@@ -378,6 +378,10 @@ function ensureArtistActionMenuHandlers() {
         closeOtherArtistActionMenus(exception);
     });
 
+    window.addEventListener("scroll", () => {
+        closeOtherArtistActionMenus();
+    }, { passive: true });
+
     document.addEventListener("keydown", (event) => {
         if (event.key !== "Escape") return;
 
