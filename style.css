@@ -1391,6 +1391,83 @@ img {
         box-shadow 0.3s;
 }
 
+.track-skeleton {
+    min-height: 182px;
+    pointer-events: none;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.track-skeleton-cover,
+.track-skeleton-line {
+    display: block;
+    background:
+        linear-gradient(
+            105deg,
+            rgba(255, 255, 255, 0.035) 22%,
+            rgba(255, 255, 255, 0.075) 42%,
+            rgba(255, 255, 255, 0.035) 62%
+        );
+    background-size: 240% 100%;
+    animation: track-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.track-skeleton-cover {
+    width: 150px;
+    height: 150px;
+    flex: 0 0 150px;
+    border-radius: 20px;
+}
+
+.track-skeleton-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.track-skeleton-line {
+    height: 16px;
+    border-radius: 999px;
+}
+
+.track-skeleton-title {
+    width: min(78%, 220px);
+    height: 20px;
+}
+
+.track-skeleton-artist {
+    width: min(54%, 150px);
+    margin-top: 14px;
+}
+
+@keyframes track-skeleton-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -100% 0; }
+}
+
+@media (max-width: 768px) {
+    .track-skeleton {
+        min-height: 0;
+    }
+
+    .track-skeleton-cover {
+        width: 100%;
+        height: auto;
+        flex-basis: auto;
+        aspect-ratio: 1 / 1;
+        border-radius: 13px;
+    }
+
+    .track-skeleton-copy {
+        width: 100%;
+    }
+}
+
+#all-tracks,
+#recommendations {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 780px;
+}
+
 
 .release-card.reveal-item {
     opacity: 0;
@@ -2022,9 +2099,9 @@ Shuffle и Repeat используют одинаковые классы сос�
 
 .mini-player .player-mode-button.is-active {
     background-color:
-        rgba(255, 255, 255, 0.08);
+        color-mix(in srgb, var(--player-accent) 14%, transparent);
     box-shadow: var(--glow-player-control-active);
-    color: white;
+    color: var(--player-accent);
     opacity: 1;
 }
 
@@ -3917,8 +3994,27 @@ pointer-events: none не даёт частицам
     .volume-slider-wrapper,
     .release-card.reveal-item,
     .recommendations-section.reveal-section,
-    .fullscreen-player-cover-next {
+    .fullscreen-player-cover-next,
+    .fullscreen-player-cover-wrap,
+    html.mobile-device .mini-player .player-cover,
+    html.mobile-device .mini-player .player-info {
         transition-duration: 1ms;
+    }
+
+    .track-skeleton-cover,
+    .track-skeleton-line {
+        animation: none;
+    }
+
+    .fullscreen-player.track-changing:not(.track-transition-fade)
+    .fullscreen-player-cover-wrap,
+    .fullscreen-player.track-transition-midpoint:not(.track-transition-fade)
+    .fullscreen-player-cover-wrap,
+    html.mobile-device .mini-player.track-changing:not(.track-transition-fade)
+    .player-cover,
+    html.mobile-device .mini-player.track-transition-midpoint:not(.track-transition-fade)
+    .player-cover {
+        transform: none;
     }
 
     .fullscreen-player-desktop-collapse {
@@ -4211,9 +4307,9 @@ Desktop-ползунок вынесен из потока и привязан
 .fullscreen-player-controls
 .player-mode-button.is-active {
     background-color:
-        rgba(255, 255, 255, 0.08);
+        color-mix(in srgb, var(--player-accent) 14%, transparent);
     box-shadow: var(--glow-player-control-active);
-    color: white;
+    color: var(--player-accent);
     opacity: 1;
 }
 
@@ -4351,8 +4447,12 @@ Desktop-ползунок вынесен из потока и привязан
 */
 .fullscreen-player-cover-wrap {
     transition:
+        transform 0.155s cubic-bezier(0.42, 0, 0.58, 1),
         opacity 0.18s ease,
         box-shadow 0.35s ease;
+    transform: perspective(1200px) rotateY(0deg);
+    transform-origin: center;
+    will-change: transform;
 }
 
 
@@ -4381,9 +4481,78 @@ Desktop-ползунок вынесен из потока и привязан
 */
 .fullscreen-player.track-changing
 .fullscreen-player-info {
-    opacity: 0.3;
+    opacity: 0;
 
     transform: translateY(7px);
+}
+
+.fullscreen-player.track-changing:not(.track-transition-fade)
+.fullscreen-player-cover-wrap {
+    transform:
+        perspective(1200px)
+        rotateY(var(--track-flip-out-angle))
+        scale(0.985);
+}
+
+.fullscreen-player.track-transition-midpoint:not(.track-transition-fade)
+.fullscreen-player-cover-wrap {
+    transition: none;
+    transform:
+        perspective(1200px)
+        rotateY(var(--track-flip-in-angle))
+        scale(0.985);
+}
+
+.fullscreen-player.track-transition-fade.track-changing
+.fullscreen-player-cover-wrap {
+    opacity: 0.18;
+}
+
+.fullscreen-player-cover,
+.fullscreen-player-cover-next {
+    backface-visibility: hidden;
+}
+
+html.mobile-device .mini-player .player-cover,
+html.mobile-device .mini-player .player-info {
+    transition:
+        transform 0.155s cubic-bezier(0.42, 0, 0.58, 1),
+        opacity 0.155s ease;
+}
+
+html.mobile-device .mini-player .player-cover {
+    transform: perspective(440px) rotateY(0deg);
+    transform-origin: center;
+    backface-visibility: hidden;
+    will-change: transform;
+}
+
+html.mobile-device .mini-player.track-changing:not(.track-transition-fade)
+.player-cover {
+    opacity: 0.82;
+    transform:
+        perspective(440px)
+        rotateY(var(--track-flip-out-angle))
+        scale(0.97);
+}
+
+html.mobile-device .mini-player.track-transition-midpoint:not(.track-transition-fade)
+.player-cover {
+    transition: none;
+    opacity: 0.82;
+    transform:
+        perspective(440px)
+        rotateY(var(--track-flip-in-angle))
+        scale(0.97);
+}
+
+html.mobile-device .mini-player.track-changing .player-info {
+    opacity: 0;
+    transform: translateY(4px);
+}
+
+html.mobile-device .mini-player.track-transition-midpoint .player-info {
+    transition: none;
 }
 
 
@@ -5092,6 +5261,12 @@ body[data-app-view="artist"]::before {
 }
 .artist-quick-upload { padding: 9px 16px; }
 .artist-settings-button { width: 44px; font-size: 18px; }
+.artist-settings-button svg,
+.artist-owner-menu-toggle svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
 .artist-owner-menu { display: none; position: relative; }
 .artist-owner-menu-popover[hidden] { display: none; }
 .artist-avatar { position: relative; overflow: hidden; }
@@ -6410,7 +6585,7 @@ html.mobile-device .mini-player {
             circle at 50% 30%,
             color-mix(
                 in srgb,
-                var(--player-accent) 18%,
+                var(--player-accent) 22%,
                 transparent
             ),
             transparent 58%
@@ -6443,4 +6618,18 @@ html.mobile-device .mini-player {
     --motion-slow: 500ms;
     --ease-out-smooth:
         cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fullscreen-player-cover-wrap,
+    html.mobile-device .mini-player .player-cover {
+        transform: none !important;
+        transition: opacity 80ms ease !important;
+    }
+
+    .fullscreen-player-info,
+    html.mobile-device .mini-player .player-info {
+        transform: none !important;
+        transition: opacity 80ms ease !important;
+    }
 }

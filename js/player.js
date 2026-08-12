@@ -59,6 +59,8 @@ export const FALLBACK_PLAYER_ACCENT = {
 const COVER_COLOR_SAMPLE_SIZE = 32;
 const TRACK_FADE_OUT_DURATION_MS = 220;
 const TRACK_FADE_IN_DURATION_MS = 360;
+const TRACK_FLIP_MIDPOINT_MS = 155;
+const TRACK_FLIP_CLEANUP_MS = 340;
 const REPEAT_MODES = [
     "off",
     "all",
@@ -2382,12 +2384,83 @@ function initializeFullscreenCoverInteraction() {
 Идентификатор переключения не позволяет старому таймеру
 завершить переход после более нового действия пользователя.
 */
+function resetTrackVisualTransition() {
+    window.clearTimeout(trackSwitchTimer);
+    window.clearTimeout(trackSwitchCleanupTimer);
+    trackSwitchTimer = null;
+    trackSwitchCleanupTimer = null;
+
+    [miniPlayer, fullscreenPlayer].forEach((host) => {
+        if (!host) return;
+        host.classList.remove(
+            "track-changing",
+            "track-transition-next",
+            "track-transition-previous",
+            "track-transition-fade",
+            "track-transition-midpoint"
+        );
+        host.style.removeProperty("--track-flip-out-angle");
+        host.style.removeProperty("--track-flip-in-angle");
+    });
+
+    fullscreenCoverNext?.classList.remove(
+        "is-ready",
+        "is-visible"
+    );
+}
+
 function updateFullscreenCover(
     track,
     cover,
     currentSwitchId,
-    applyCurrentTrack
+    applyCurrentTrack,
+    direction = 0,
+    animate = true
 ) {
+    const fullscreenIsOpen = fullscreenPlayer?.classList.contains("open");
+    const transitionHosts = [miniPlayer];
+    const normalizedDirection = Math.sign(direction);
+
+    if (!animate) {
+        applyCurrentTrack(true);
+        return;
+    }
+
+    if (fullscreenIsOpen) {
+        transitionHosts.push(fullscreenPlayer);
+    }
+
+    transitionHosts.forEach((host) => {
+        if (!host) return;
+        host.classList.remove(
+            "track-transition-next",
+            "track-transition-previous",
+            "track-transition-fade",
+            "track-transition-midpoint"
+        );
+        host.style.setProperty(
+            "--track-flip-out-angle",
+            `${normalizedDirection >= 0 ? -88 : 88}deg`
+        );
+        host.style.setProperty(
+            "--track-flip-in-angle",
+            `${normalizedDirection >= 0 ? 88 : -88}deg`
+        );
+        host.dataset.trackTransitionDirection =
+            normalizedDirection > 0
+                ? "next"
+                : normalizedDirection < 0
+                    ? "previous"
+                    : "fade";
+        host.classList.add(
+            normalizedDirection === 0
+                ? "track-transition-fade"
+                : normalizedDirection > 0
+                    ? "track-transition-next"
+                    : "track-transition-previous"
+        );
+    });
+
     fullscreenCoverNext.src = cover;
     fullscreenCoverNext.alt = "";
     fullscreenCoverNext.classList.add(
@@ -2400,9 +2473,9 @@ function updateFullscreenCover(
     */
     void fullscreenCoverNext.offsetWidth;
 
-    fullscreenPlayer.classList.add(
-        "track-changing"
-    );
+    transitionHosts.forEach((host) => {
+        host?.classList.add("track-changing");
+    });
 
     trackSwitchTimer = window.setTimeout(
         () => {
@@ -2416,13 +2489,22 @@ function updateFullscreenCover(
                 "is-visible"
             );
 
+            transitionHosts.forEach((host) => {
+                if (!host) return;
+                host.classList.add("track-transition-midpoint");
+                host.classList.remove("track-changing");
+            });
+
+            void playerCover?.offsetWidth;
+            void fullscreenCover?.offsetWidth;
+
             requestAnimationFrame(() => {
                 if (
                     currentSwitchId === trackSwitchId
                 ) {
-                    fullscreenPlayer.classList.remove(
-                        "track-changing"
-                    );
+                    transitionHosts.forEach((host) => {
+                        host?.classList.remove("track-transition-midpoint");
+                    });
                 }
             });
 
@@ -2445,20 +2527,36 @@ function updateFullscreenCover(
                             "is-visible"
                         );
 
+                        transitionHosts.forEach((host) => {
+                            if (!host) return;
+                            host.classList.remove(
+                                "track-changing",
+                                "track-transition-next",
+                                "track-transition-previous",
+                                "track-transition-fade",
+                                "track-transition-midpoint"
+                            );
+                            host.style.removeProperty("--track-flip-out-angle");
+                            host.style.removeProperty("--track-flip-in-angle");
+                        });
+
                         trackSwitchTimer = null;
                         trackSwitchCleanupTimer = null;
                     },
-                    430
+                    TRACK_FLIP_CLEANUP_MS - TRACK_FLIP_MIDPOINT_MS
                 );
         },
-        110
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? 70
+            : TRACK_FLIP_MIDPOINT_MS
     );
 }
 
 
 async function playTrack(
     track,
-    sourceCard = null
+    sourceCard = null,
+    { direction = 0 } = {}
 ) {
     if (!track) return;
 
@@ -2499,6 +2597,7 @@ async function playTrack(
     const currentSwitchId = ++trackSwitchId;
     isTrackSwitchPending = true;
     pendingTrackCatalogId = track.catalogId;
+    resetTrackVisualTransition();
     cancelVolumeTransition({
         restoreGain: true
     });
@@ -2555,18 +2654,9 @@ async function playTrack(
         return;
     }
 
-    window.clearTimeout(trackSwitchTimer);
-    window.clearTimeout(trackSwitchCleanupTimer);
+    resetTrackVisualTransition();
 
-    fullscreenPlayer?.classList.remove(
-        "track-changing"
-    );
-
-    fullscreenCoverNext?.classList.remove(
-        "is-ready",
-        "is-visible"
-    );
-
+    const hadCurrentTrack = Boolean(currentTrack);
     currentTrack = track;
     currentCard = card;
     pendingRestoredPosition = 0;
@@ -2585,13 +2675,6 @@ async function playTrack(
     if (currentSwitchId !== trackSwitchId) {
         return;
     }
-
-    const fullscreenIsOpen =
-        Boolean(
-            fullscreenPlayer?.classList.contains(
-                "open"
-            )
-        );
 
     function applyCurrentTrack(
         updateFullscreenCover
@@ -2631,20 +2714,13 @@ async function playTrack(
         startAudio(track.catalogId, requestedPlaybackIntentId);
     }
 
-    if (
-        !fullscreenIsOpen ||
-        !fullscreenCoverNext ||
-        !fullscreenCover
-    ) {
-        applyCurrentTrack(true);
-        return;
-    }
-
     updateFullscreenCover(
         track,
         cover,
         currentSwitchId,
-        applyCurrentTrack
+        applyCurrentTrack,
+        direction,
+        hadCurrentTrack
     );
 }
 
@@ -2756,6 +2832,7 @@ function cancelPendingTrackSwitch() {
     ++trackSwitchId;
     isTrackSwitchPending = false;
     pendingTrackCatalogId = null;
+    resetTrackVisualTransition();
     cancelVolumeTransition({ restoreGain: true });
     return canceledCatalogId;
 }
@@ -2777,7 +2854,7 @@ function playNextTrack({ fromError = false, reason = "manual" } = {}) {
         });
         const targetTrack = queue.find((track) => track.catalogId === targetId);
         if (targetTrack) {
-            playTrack(targetTrack);
+            playTrack(targetTrack, null, { direction: 1 });
             return;
         }
     }
@@ -2800,7 +2877,7 @@ function playNextTrack({ fromError = false, reason = "manual" } = {}) {
         return;
     }
 
-    playTrack(nextTrack);
+    playTrack(nextTrack, null, { direction: 1 });
 }
 
 function handleAutoplayFailure() {
@@ -2883,7 +2960,7 @@ function playPreviousTrack() {
 
     if (!previousTrack) return;
 
-    playTrack(previousTrack);
+    playTrack(previousTrack, null, { direction: -1 });
 }
 
 
