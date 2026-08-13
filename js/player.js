@@ -56,6 +56,49 @@ audioElements.forEach((mediaElement) => {
 let audio = primaryAudio;
 let standbyAudio = transitionAudio;
 
+const PLAYBACK_DIAGNOSTIC_EVENTS = [
+    "ended",
+    "loadstart",
+    "loadedmetadata",
+    "canplay",
+    "play",
+    "playing",
+    "pause",
+    "waiting",
+    "stalled",
+    "error"
+];
+
+function getAudioDiagnosticRole(mediaElement) {
+    if (mediaElement === audio) return "active";
+    if (mediaElement === standbyAudio) return "standby";
+    return "detached";
+}
+
+function logPlaybackDiagnostic(type, mediaElement, details = {}) {
+    console.debug("[POJIDMUSIC playback]", type, {
+        role: getAudioDiagnosticRole(mediaElement),
+        catalogId: currentTrack?.catalogId ?? null,
+        pendingCatalogId: pendingTrackCatalogId,
+        visibilityState: document.visibilityState,
+        paused: mediaElement.paused,
+        ended: mediaElement.ended,
+        readyState: mediaElement.readyState,
+        networkState: mediaElement.networkState,
+        currentTime: mediaElement.currentTime,
+        errorCode: mediaElement.error?.code ?? null,
+        ...details
+    });
+}
+
+audioElements.forEach((mediaElement) => {
+    PLAYBACK_DIAGNOSTIC_EVENTS.forEach((eventName) => {
+        mediaElement.addEventListener(eventName, () => {
+            logPlaybackDiagnostic(eventName, mediaElement);
+        });
+    });
+});
+
 const FALLBACK_COVER = "img/cover.jpg";
 export const FALLBACK_PLAYER_ACCENT = {
     red: 226,
@@ -1875,7 +1918,15 @@ async function startAudio(
 
         applyPlaybackVolume();
 
+        logPlaybackDiagnostic("play() call", targetAudio, {
+            expectedCatalogId,
+            expectedPlaybackIntentId
+        });
         await targetAudio.play();
+        logPlaybackDiagnostic("play() resolved", targetAudio, {
+            expectedCatalogId,
+            expectedPlaybackIntentId
+        });
 
         if (
             targetAudio !== audio ||
@@ -1887,7 +1938,13 @@ async function startAudio(
         }
 
         void preparePredictedNextAudio(expectedCatalogId);
-    } catch {
+    } catch (error) {
+        logPlaybackDiagnostic("play() rejected", targetAudio, {
+            expectedCatalogId,
+            expectedPlaybackIntentId,
+            errorName: error?.name ?? null,
+            errorMessage: error?.message ?? String(error)
+        });
         if (
             currentTrack?.catalogId !==
                 expectedCatalogId ||
@@ -2227,14 +2284,26 @@ async function startPreparedNextImmediately() {
     if (
         !prediction ||
         prediction.fromCatalogId !== currentTrack?.catalogId ||
-        isTrackSwitchPending
+        isTrackSwitchPending ||
+        document.hidden
     ) return false;
     const outgoing = audio;
     const incoming = standbyAudio;
     incoming.volume = userVolume;
     try {
+        logPlaybackDiagnostic("prepared play() call", incoming, {
+            expectedCatalogId: prediction.track.catalogId
+        });
         await incoming.play();
-    } catch {
+        logPlaybackDiagnostic("prepared play() resolved", incoming, {
+            expectedCatalogId: prediction.track.catalogId
+        });
+    } catch (error) {
+        logPlaybackDiagnostic("prepared play() rejected", incoming, {
+            expectedCatalogId: prediction.track.catalogId,
+            errorName: error?.name ?? null,
+            errorMessage: error?.message ?? String(error)
+        });
         return false;
     }
     if (prediction !== predictedNext || outgoing !== audio) {
@@ -2998,7 +3067,7 @@ async function playTrack(
         currentSwitchId,
         applyCurrentTrack,
         direction,
-        hadCurrentTrack
+        hadCurrentTrack && !document.hidden
     );
 }
 

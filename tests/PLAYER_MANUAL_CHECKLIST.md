@@ -15,6 +15,12 @@ mode, source queue, modes, starting track, result, and console/network errors.
 
 ## Next and ended
 
+- [ ] Start playback, switch to another browser tab, and confirm at least three natural transitions continue without returning to POJIDMUSIC.
+- [ ] While POJIDMUSIC remains in the background, use manual Next and confirm the selected track starts.
+- [ ] Repeat the background transition with Repeat One, Shuffle, Repeat All, and the final track of a finite source queue.
+- [ ] Minimize the browser and repeat multiple natural transitions; where supported, repeat with the screen locked/Media Session controls.
+- [ ] In DevTools diagnostics, confirm each transition reaches `ended -> loadstart -> loadedmetadata/canplay -> play() resolved -> play -> playing`, with no rejected `play()`.
+
 - [ ] Next through Home/catalog with shuffle off and Repeat Off/All/One.
 - [ ] Next through Search and Artist Profile queues.
 - [ ] Under Repeat One, manual Next advances rather than restarting current.

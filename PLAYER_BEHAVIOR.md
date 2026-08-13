@@ -236,6 +236,19 @@ All legacy keys survive browser restart because they are in `localStorage`. Sess
 PWA state does not enter player migration. Auth tokens, email, DOM/Audio references and
 signed URLs are never part of the player contract.
 
+### Background continuation
+
+The predicted standby element is used only while the document is visible. In a hidden
+tab, natural `ended` and manual Next keep the already-authorized active `Audio` element,
+resolve the next lazy signed URL through the normal resolver, assign/load that source,
+and call `play()` without waiting for the visual transition midpoint. This avoids both
+a new-media-element autoplay decision and background timer throttling. Returning to the
+page is not required to start playback; `visibilitychange` only persists state.
+
+During the background-playback verification release, both media elements log `ended`,
+`loadstart`, `loadedmetadata`, `canplay`, `play`, `playing`, `pause`, `waiting`, `stalled`,
+and `error`, together with every `play()` call, resolution, or rejection.
+
 ## Persistence Contract
 
 `js/player-persistence.js` owns one key, `pojidmusic-player-state`, independently versioned

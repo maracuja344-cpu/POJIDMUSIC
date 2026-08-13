@@ -209,6 +209,11 @@ fullscreen artwork card and mobile mini-player thumbnail transform; controls sta
 The same switch ID cancels stale signing, preload, midpoint, and cleanup work.
 Play/pause buttons and clicking the current card toggle the singleton audio.
 
+When the document is hidden, automatic and manual forward transitions do not consume the
+standby element and do not wait for the visual midpoint timer. They reuse the active
+media element, while preserving the same queue decision, lazy URL resolver, persistence,
+and UI synchronization pipeline. Crossfade remains a visible-document enhancement.
+
 ### Queue engine as implemented
 
 There is a real persisted queue context, but not yet one cohesive queue-state object.
