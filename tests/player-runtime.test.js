@@ -161,7 +161,7 @@ try {
     await waitFor(() => app.querySelector(".fullscreen-player.open"), "fullscreen open");
     assert("fullscreen opens without replacing current track", currentId(app) === activeId);
 
-    app.documentElement.classList.add("mobile-device");
+    app.documentElement.classList.add("mobile-device", "ios-device");
     const fullscreen = app.querySelector(".fullscreen-player");
     await waitFor(() => fullscreen.classList.contains("is-revealed"),
         "fullscreen content reveal phase");
@@ -170,19 +170,45 @@ try {
     ).opacity) > 0.98, "fullscreen content reveal completion");
     assert("fullscreen uses a two-phase shell/content reveal",
         fullscreen.classList.contains("is-revealed"));
-    const controlButtons = [...fullscreen.querySelectorAll(
-        ".fullscreen-player-controls > button")];
+    const playbackControls = [...fullscreen.querySelectorAll(
+        ".fullscreen-player-prev, .fullscreen-player-toggle, .fullscreen-player-next")];
+    const utilityControls = [...fullscreen.querySelectorAll(
+        ".fullscreen-player-shuffle, .fullscreen-player-repeat, .fullscreen-queue-button")];
     const controlsRect = fullscreen.querySelector(".fullscreen-player-controls")
         .getBoundingClientRect();
     const playRect = app.querySelector(".fullscreen-player-toggle").getBoundingClientRect();
-    assert("mobile controls keep five wide touch targets",
-        controlButtons.length === 5 && controlButtons.every((button) => {
+    assert("mobile playback and utility controls keep wide touch targets",
+        playbackControls.length === 3 && utilityControls.length === 3 &&
+        [...playbackControls, ...utilityControls].every((button) => {
             const bounds = button.getBoundingClientRect();
             return bounds.width >= 44 && bounds.height >= 44;
         }));
     assert("mobile Play/Pause remains visually centered",
         Math.abs((playRect.left + playRect.width / 2) -
             (controlsRect.left + controlsRect.width / 2)) < 2);
+    const mobileNavigation = [...app.querySelectorAll(".mobile-nav-button")];
+    assert("mobile navigation uses semantic buttons",
+        mobileNavigation.length === 3 && mobileNavigation.every((button) => (
+            button.tagName === "BUTTON" && button.type === "button"
+        )));
+    assert("iOS app chrome prevents text selection",
+        getComputedStyle(app.querySelector(".mobile-bottom-navigation")).userSelect === "none" &&
+        getComputedStyle(fullscreen).userSelect === "none" &&
+        getComputedStyle(app.querySelector(".mini-player")).userSelect === "none");
+    click(app.querySelector(".fullscreen-queue-button"));
+    assert("fullscreen Queue opens from the utility row",
+        !app.querySelector(".player-queue-sheet").hidden);
+    click(app.querySelector("[data-close-player-queue]"));
+    const fullscreenShuffle = app.querySelector(".fullscreen-player-shuffle");
+    click(fullscreenShuffle);
+    assert("fullscreen Shuffle uses the shared player state",
+        app.querySelector(".player-shuffle").classList.contains("is-active") ===
+        fullscreenShuffle.classList.contains("is-active"));
+    const fullscreenRepeat = app.querySelector(".fullscreen-player-repeat");
+    click(fullscreenRepeat);
+    assert("fullscreen Repeat uses the shared player state",
+        app.querySelector(".player-repeat").dataset.repeatMode ===
+        fullscreenRepeat.dataset.repeatMode);
     assert("fullscreen artist panel never contains an avatar",
         !fullscreen.querySelector(".fullscreen-player-artist-avatar"));
     swipe(fullscreen, { fromX: 310, fromY: 300, toX: 180, toY: 308 });

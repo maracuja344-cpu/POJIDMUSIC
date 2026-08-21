@@ -19,12 +19,50 @@
     <iframe src="../index.html?mobile-v2-preview=1" title="POJIDMUSIC mobile preview"></iframe>
     <script>
         const frame = document.querySelector("iframe");
+        const params = new URLSearchParams(location.search);
+        const previewWidth = Number(params.get("width"));
+        const previewHeight = Number(params.get("height"));
+        const safeTop = Number(params.get("safeTop"));
+        const safeBottom = Number(params.get("safeBottom"));
+
+        if (previewWidth > 0 && previewHeight > 0) {
+            document.documentElement.style.width = `${previewWidth}px`;
+            document.documentElement.style.height = `${previewHeight}px`;
+            document.body.style.width = `${previewWidth}px`;
+            document.body.style.height = `${previewHeight}px`;
+            frame.style.width = `${previewWidth}px`;
+            frame.style.height = `${previewHeight}px`;
+        }
+
         frame.addEventListener("load", () => {
             frame.contentDocument.documentElement.classList.add(
                 "mobile-device",
                 "ios-device",
                 "standalone-mode"
             );
+
+            if (safeTop >= 0 && safeBottom >= 0 && (safeTop || safeBottom)) {
+                const safeAreaPreview = frame.contentDocument.createElement("style");
+                safeAreaPreview.textContent = `
+                    :root {
+                        --mobile-nav-bottom: calc(6px + ${safeBottom}px);
+                        --mobile-player-bottom: calc(
+                            var(--mobile-nav-height) + 12px + ${safeBottom}px
+                        );
+                    }
+                    html.mobile-device .fullscreen-player {
+                        padding-top: calc(10px + ${safeTop}px);
+                        padding-bottom: calc(18px + ${safeBottom}px);
+                    }
+                    html.mobile-device body {
+                        padding-bottom: calc(var(--mobile-nav-height) + 34px + ${safeBottom}px);
+                    }
+                    html.mobile-device body:has(.mini-player.active) {
+                        padding-bottom: calc(var(--mobile-nav-height) + 94px + ${safeBottom}px);
+                    }
+                `;
+                frame.contentDocument.head.append(safeAreaPreview);
+            }
         });
     </script>
 </body>

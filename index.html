@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="pojidmusic-release" content="pwa-v22">
+    <meta name="pojidmusic-release" content="pwa-v25">
 
     <meta
         name="viewport"
@@ -1259,6 +1259,7 @@
                             d="M4 7H7.5C9 7 10.2 7.7 11.1 9L15.9 16C16.8 17.3 18 18 19.5 18H21M18 15L21 18L18 21M4 18H7.5C9 18 10.2 17.3 11.1 16L15.9 9C16.8 7.7 18 7 19.5 7H21M18 4L21 7L18 10"
                         ></path>
                     </svg>
+                    <span class="fullscreen-control-label">Shuffle</span>
                 </button>
 
 
@@ -1347,6 +1348,22 @@
                         class="repeat-one-indicator"
                         aria-hidden="true"
                     >1</span>
+
+                    <span class="fullscreen-control-label">Repeat</span>
+                </button>
+
+                <button
+                    class="fullscreen-queue-button"
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-controls="player-queue-sheet"
+                    aria-expanded="false"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6H16M4 12H16M4 18H12"></path>
+                        <path d="M18 15V21L22 18L18 15Z"></path>
+                    </svg>
+                    <span>Queue</span>
                 </button>
 
                 <div class="fullscreen-volume-control">
@@ -1362,22 +1379,6 @@
                 </div>
 
             </div>
-
-            <div class="fullscreen-player-mobile-actions">
-                <button
-                    class="fullscreen-queue-button"
-                    type="button"
-                    aria-haspopup="dialog"
-                    aria-controls="player-queue-sheet"
-                >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 6H16M4 12H16M4 18H12"></path>
-                        <path d="M18 15V21L22 18L18 15Z"></path>
-                    </svg>
-                    <span>Queue</span>
-                </button>
-            </div>
-
         </div>
 
         <div
