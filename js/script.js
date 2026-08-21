@@ -69,6 +69,9 @@ import {
     initializeMobileEnvironment
 } from "./mobile.js";
 import {
+    initializeMobileAppShell
+} from "./mobile-shell.js";
+import {
     getCatalogTracks,
     setCatalogTracks
 } from "./catalog-state.js";
@@ -555,6 +558,7 @@ async function initializeWebsiteOnce() {
     WebView сразу получает облегчённые эффекты и надёжный рендер.
     */
     initializeMobileEnvironment();
+    initializeMobileAppShell();
 
     /* Создаём раздел «Новинки» */
     renderNewTracks();

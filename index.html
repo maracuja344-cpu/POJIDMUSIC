@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="pojidmusic-release" content="pwa-v17">
+    <meta name="pojidmusic-release" content="pwa-v22">
 
     <meta
         name="viewport"
@@ -803,6 +803,10 @@
                 <path d="M6 6L18 18M18 6L6 18"></path>
             </svg>
         </button>
+        <button
+            class="search-cancel-button"
+            type="button"
+        >Отмена</button>
     </div>
 
 
@@ -815,6 +819,13 @@
         <h2 class="section-title">
             РЕЗУЛЬТАТЫ ПОИСКА
         </h2>
+
+        <div class="search-artists" hidden>
+            <h3 class="search-group-title">Артисты</h3>
+            <div class="search-artists-list"></div>
+        </div>
+
+        <h3 class="search-group-title search-tracks-title" hidden>Треки</h3>
 
         <div class="tracks-row search-results-list"></div>
 
@@ -1040,6 +1051,45 @@
 
     </div>
 
+    <nav
+        class="mobile-bottom-navigation"
+        aria-label="Основные разделы"
+    >
+        <button
+            class="mobile-nav-button is-active"
+            type="button"
+            data-mobile-tab="home"
+            aria-current="page"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.5 10.5L12 3.5L20.5 10.5V20H14.5V14H9.5V20H3.5V10.5Z"></path>
+            </svg>
+            <span>Home</span>
+        </button>
+        <button
+            class="mobile-nav-button"
+            type="button"
+            data-mobile-tab="search"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <path d="M15.5 15.5L21 21"></path>
+            </svg>
+            <span>Search</span>
+        </button>
+        <button
+            class="mobile-nav-button"
+            type="button"
+            data-mobile-tab="profile"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4.5 21C5.2 16.8 7.7 14.5 12 14.5C16.3 14.5 18.8 16.8 19.5 21"></path>
+            </svg>
+            <span>Profile</span>
+        </button>
+    </nav>
+
 <!-- =====================================================
      ПОЛНОЭКРАННЫЙ ПЛЕЕР
      ===================================================== -->
@@ -1086,6 +1136,8 @@
 
     <!-- Основное содержимое большого плеера -->
     <div class="fullscreen-player-content">
+
+        <div class="fullscreen-player-drag-handle" aria-hidden="true"></div>
 
         <div class="fullscreen-player-desktop-actions">
             <button
@@ -1311,12 +1363,53 @@
 
             </div>
 
+            <div class="fullscreen-player-mobile-actions">
+                <button
+                    class="fullscreen-queue-button"
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-controls="player-queue-sheet"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6H16M4 12H16M4 18H12"></path>
+                        <path d="M18 15V21L22 18L18 15Z"></path>
+                    </svg>
+                    <span>Queue</span>
+                </button>
+            </div>
+
         </div>
 
         <div
             class="fullscreen-player-artist-identity"
             hidden
         ></div>
+
+        <div
+            id="player-queue-sheet"
+            class="player-queue-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Очередь воспроизведения"
+            hidden
+        >
+            <button
+                class="player-queue-backdrop"
+                type="button"
+                aria-label="Закрыть очередь"
+                data-close-player-queue
+            ></button>
+            <div class="player-queue-panel">
+                <div class="player-queue-heading">
+                    <div>
+                        <p>Далее</p>
+                        <h2>Очередь</h2>
+                    </div>
+                    <button type="button" data-close-player-queue aria-label="Закрыть очередь">×</button>
+                </div>
+                <div class="player-queue-list"></div>
+            </div>
+        </div>
 </section>
 
 

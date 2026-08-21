@@ -644,14 +644,6 @@ async function renderRoute({ scroll = false } = {}) {
     announceExclusivePopupOpen(null);
     setArtistOwnerMenuOpen(false);
     const route = getRoute();
-    if (["account", "myTracks"].includes(route.name)) {
-        const auth = await getAuthModule();
-        const artist = await refreshLinkedArtist(auth.getCurrentAuthState().profile?.id);
-        navigate(artist
-            ? { name: "artist", artistSlug: artist.slug }
-            : { name: "catalog" }, { replace: true, scroll });
-        return;
-    }
     setActiveView(route.name);
     if (route.name === "artist") await renderArtistView(route.artistSlug);
     else if (route.name === "account") await renderAccountView();
@@ -663,6 +655,30 @@ async function renderRoute({ scroll = false } = {}) {
     }
     syncRenderedTrackCardsWithPlayerState();
     if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+export async function openCurrentProfile({ scroll = true } = {}) {
+    const auth = await getAuthModule();
+    const state = auth.getCurrentAuthState();
+
+    if (!state.user) {
+        document.querySelector(".auth-open-button")?.click();
+        return false;
+    }
+
+    const artist = await refreshLinkedArtist(state.profile?.id);
+    navigate(
+        artist
+            ? { name: "artist", artistSlug: artist.slug }
+            : { name: "account" },
+        { scroll }
+    );
+    return true;
+}
+
+export function openCatalogView({ scroll = true } = {}) {
+    clearActiveSearch();
+    navigate({ name: "catalog" }, { scroll });
 }
 
 function navigate(route, { replace = false, scroll = true } = {}) {
@@ -839,9 +855,7 @@ export function initializeAppNavigation() {
         if (action) {
             event.preventDefault();
             closeProfileMenu();
-            if (action === "profile" && linkedArtist) {
-                navigate({ name: "artist", artistSlug: linkedArtist.slug });
-            }
+            if (action === "profile") void openCurrentProfile();
             return;
         }
         if (event.target.closest("[data-account-my-tracks]")) {

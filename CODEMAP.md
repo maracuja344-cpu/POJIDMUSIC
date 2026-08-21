@@ -1,6 +1,6 @@
 # POJIDMUSIC: architectural codemap
 
-Audit date: 2026-08-10. This document describes the code currently present in the
+Audit date: 2026-08-22. This document describes the code currently present in the
 repository. It is not a description of an intended or older architecture.
 
 ## 1. Project summary
@@ -61,6 +61,7 @@ visual change.
 |   |-- artist-utils.js         artist credits, identity link and exclusive action menus
 |   |-- image-cropper.js        reusable crop modal and focal backgrounds
 |   |-- mobile.js               device/standalone detection and gesture guards
+|   |-- mobile-shell.js         mobile Home/Search/Profile composition and tab state
 |   |-- pull-to-refresh.js      mobile/PWA catalog refresh gesture
 |   `-- supabase/
 |       |-- config.js           public project URL and anon key
@@ -99,6 +100,7 @@ index.html -> tracks.js (global `tracks`)
 script.js -> render -> player -> catalog-state, playback-context, queue-decisions,
                               artist-utils, audio-url-resolver
           -> search -> render + player + catalog-state
+          -> mobile-shell -> search + dynamic app-navigation
           -> dynamic app-navigation -> render + search + player + tracks-api
                             -> track-management + artist-media + data-repository
           -> carousel, mobile, pull-to-refresh, catalog-state
@@ -117,7 +119,8 @@ There is no strict import cycle through `player.js`, but the graph remains stron
 coupled: `render.js` and `search.js` directly call player UI synchronization, while
 navigation imports rendering, search, player, data access, media mutation, and
 management. The critical static closure no longer includes `app-navigation.js` or the
-Supabase SDK; the measured closure fell from 26 to 18 local modules.
+Supabase SDK; the measured closure is now 19 local modules after adding the mobile
+composition owner.
 
 `navigation.js` exports section/hash navigation but is not imported or initialized by
 the current entry point. Its behavior is effectively dead code.
@@ -152,10 +155,11 @@ all affected render/reconcile functions.
 URL and `hidden` switches among persistent `<main>` elements. Track-card children are
 recreated inside views, but the page shell, player DOM, JS modules, and `Audio` survive.
 
-Current behavior of `renderRoute` redirects both account and my-tracks routes to the
-linked artist (or catalog) before their render branches. Consequently the account and
-my-tracks render functions/views are currently unreachable through this router. Search
-is not a URL route; it hides catalog sections and recreates result cards in place.
+`mobile-shell.js` owns only mobile presentation state for the stable Home, Search, and
+Profile bottom tabs. Home and Profile delegate URL changes to `app-navigation.js`;
+Search remains an in-memory catalog mode and now renders distinct track and artist
+results after a 180 ms UI debounce. Account routes are reachable for signed-in profiles
+without a linked artist, while linked artists still open their existing Artist Profile.
 
 ### Storage
 
@@ -346,7 +350,7 @@ Supabase project has every migration applied.
 
 | Priority | Location | Finding and consequence | Recommended direction (not implemented) |
 | --- | --- | --- | --- |
-| Addressed (PWA phase) | `service-worker.js`, `supabase/client.js` | Precache omitted eight required modules and the unpinned cross-origin SDK graph was not in Cache Storage. | The verified 28-module closure and exact seven-resource SDK bundle graph now install before activation; graph drift fails an automated check. |
+| Addressed (PWA phase) | `service-worker.js`, `supabase/client.js` | Precache omitted eight required modules and the unpinned cross-origin SDK graph was not in Cache Storage. | The verified 29-module closure and exact seven-resource SDK bundle graph now install before activation; graph drift fails an automated check. |
 | Addressed (PWA phase) | `service-worker.js`, `script.js`, `index.html` | Stale-while-revalidate could mix fresh HTML with old JS/CSS and claim without reloading an open graph. | Release-matched navigation, immutable cache-first shell generations, exact controller tokens, and one guarded reload make update atomic. |
 | Addressed (phase 2) | `audio-url-resolver.js`, `tracks-api.js`, `player.js` | Startup previously made O(track count) signed-URL API calls. | Catalog mapping is metadata-only; play resolves one URL and may prefetch one deterministic next track. |
 | High | `tracks-api.js:390-402` | Owner artist view selects all RLS-visible tracks then filters by artist client-side. | Query the relation/artist ID server-side and select only required rows. |
@@ -418,7 +422,8 @@ back to the original. Measurements and live endpoint verification are recorded i
 - **High:** browser tests now cover core player transitions, route continuity, and the
   data-cache primitive, but no automated tests cover live RLS contracts or PWA
   update/offline flows.
-- **Medium:** manual router contains unreachable account/my-tracks branches.
+- **Addressed (mobile v2 milestone 1):** account/my-tracks render branches are reachable;
+  the mobile Profile tab opens the linked Artist Profile or the account surface.
 - **Medium:** query fallback ladders conceal schema drift and multiply failure latency.
 - **Medium:** data store has no events; refresh correctness depends on a manual cascade.
 - **Medium:** direct UI-to-player imports couple rendering to engine state.

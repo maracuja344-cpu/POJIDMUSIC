@@ -1,4 +1,4 @@
-const RELEASE_VERSION = "pwa-v17";
+const RELEASE_VERSION = "pwa-v22";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
@@ -25,6 +25,7 @@ const CRITICAL_SHELL_ASSETS = [
     "./js/mobile.js",
     "./js/media-session.js",
     "./js/playback-context.js",
+    "./js/mobile-shell.js",
     "./js/player.js",
     "./js/player-persistence.js",
     "./js/pull-to-refresh.js",

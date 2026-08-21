@@ -250,6 +250,9 @@ let fullscreenProgressFill;
 let fullscreenCurrentTime;
 let fullscreenDurationTime;
 let fullscreenVolumeSlider;
+let fullscreenQueueButton;
+let playerQueueSheet;
+let playerQueueList;
 let coverTiltFrame = null;
 let coverPointerClientX = 0;
 let coverPointerClientY = 0;
@@ -829,6 +832,46 @@ function openFullscreenPlayer() {
     }, 100);
 }
 
+function renderPlayerQueue() {
+    if (!playerQueueList) return;
+
+    const queue = getPlaybackQueue();
+    playerQueueList.replaceChildren();
+
+    queue.forEach((track, index) => {
+        const button = document.createElement("button");
+        const artwork = document.createElement("img");
+        const copy = document.createElement("span");
+        const title = document.createElement("strong");
+        const artist = document.createElement("small");
+        const isCurrent = track.catalogId === currentTrack?.catalogId;
+
+        button.type = "button";
+        button.className = "player-queue-item";
+        button.dataset.queueTrackId = track.catalogId;
+        button.classList.toggle("is-current", isCurrent);
+        button.setAttribute("aria-current", isCurrent ? "true" : "false");
+
+        artwork.src = getTrackCardArtwork(track.cover || FALLBACK_COVER).small;
+        artwork.alt = "";
+        artwork.loading = index < 4 ? "eager" : "lazy";
+        artwork.decoding = "async";
+        title.textContent = track.title || "Без названия";
+        artist.textContent = track.artist || "Неизвестный артист";
+        copy.append(title, artist);
+        button.append(artwork, copy);
+        playerQueueList.append(button);
+    });
+}
+
+function setPlayerQueueOpen(open) {
+    if (!playerQueueSheet) return;
+    if (open) renderPlayerQueue();
+    playerQueueSheet.hidden = !open;
+    document.body.classList.toggle("player-queue-open", open);
+    fullscreenQueueButton?.setAttribute("aria-expanded", String(open));
+}
+
 async function promoteFullscreenArtwork() {
     const track = currentTrack;
     const requestedCover = track?.cover || FALLBACK_COVER;
@@ -861,6 +904,7 @@ async function promoteFullscreenArtwork() {
 function closeFullscreenPlayer(fromDrag = false) {
     if (!fullscreenPlayer) return;
     announceExclusivePopupOpen(null);
+    setPlayerQueueOpen(false);
 
     /*
     Если плеер уже закрыт,
@@ -3663,6 +3707,10 @@ fullscreenCoverNext =
             ".fullscreen-volume-slider"
         );
 
+    fullscreenQueueButton = document.querySelector(".fullscreen-queue-button");
+    playerQueueSheet = document.querySelector(".player-queue-sheet");
+    playerQueueList = document.querySelector(".player-queue-list");
+
 
     /*
     Защита от отсутствующих элементов.
@@ -4261,6 +4309,26 @@ fullscreenCoverNext =
             closeFullscreenPlayer();
         }
     );
+
+    fullscreenQueueButton?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setPlayerQueueOpen(true);
+    });
+
+    playerQueueSheet?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-close-player-queue]")) {
+            setPlayerQueueOpen(false);
+            fullscreenQueueButton?.focus();
+            return;
+        }
+
+        const queueItem = event.target.closest("[data-queue-track-id]");
+        if (!queueItem) return;
+        const track = findTrackByCatalogId(queueItem.dataset.queueTrackId);
+        if (!track) return;
+        setPlayerQueueOpen(false);
+        void playTrack(track, null);
+    });
 
 
     /*

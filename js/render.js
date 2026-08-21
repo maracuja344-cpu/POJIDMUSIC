@@ -120,7 +120,7 @@ export function createTrackCard(
     card.dataset.trackId = track.catalogId;
 
     const coverWrap = document.createElement("div");
-    coverWrap.className = "cover-wrap";
+    coverWrap.className = "cover-wrap track-card-artwork";
 
     const cover = document.createElement("img");
     cover.className = "cover";
@@ -133,14 +133,14 @@ export function createTrackCard(
     playState.textContent = "❚❚";
 
     const info = document.createElement("div");
-    info.className = "release-info";
+    info.className = "release-info track-card-info";
 
     const title = document.createElement("h2");
-    title.className = "track-title";
+    title.className = "track-title track-card-title";
     title.textContent = track.title;
 
     const artist = document.createElement("p");
-    artist.className = "artist-name";
+    artist.className = "artist-name track-card-artist";
     renderArtistLinks(artist, track);
 
     coverWrap.append(cover, playState);
@@ -150,6 +150,7 @@ export function createTrackCard(
     if (showArtistAction) {
         const artistActions = document.createElement("div");
         renderArtistActionMenu(artistActions, track);
+        artistActions.classList.add("track-card-actions");
         card.append(artistActions);
     }
 
