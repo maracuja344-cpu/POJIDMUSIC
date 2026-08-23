@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import socket
 import subprocess
 import tempfile
@@ -37,7 +38,7 @@ class ReleaseHandler(SUPPORT.QuietHandler):
             return
 
         source = (ROOT / path).read_text(encoding="utf-8")
-        source = source.replace("pwa-v16", self.release)
+        source = re.sub(r"pwa-v\d+", self.release, source)
         if path == "js/script.js":
             source += f'\nwindow.__pwaServedScriptRelease = "{self.release}";\n'
         elif path == "style.css":

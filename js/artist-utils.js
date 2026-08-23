@@ -1,3 +1,6 @@
+import { hasStableArtistIdentity } from "./profile-routing.js";
+
+
 const EXPLICIT_FEATURE_PATTERN = /\s+(?:feat\.?|ft\.?)\s+/i;
 const AMBIGUOUS_CREDIT_PATTERN = /(?:&|\/|,|\s+x\s+|\s+with\s+)/i;
 export const EXCLUSIVE_POPUP_OPEN_EVENT = "pojidmusic:popup-open";
@@ -116,6 +119,13 @@ export function getArtistDisplayCredit(track) {
 
 
 export function createArtistLink(artist) {
+    if (!hasStableArtistIdentity(artist)) {
+        const label = document.createElement("span");
+        label.className = "artist-link artist-link-unavailable";
+        label.textContent = artist?.displayName || "Неизвестный исполнитель";
+        return label;
+    }
+
     const link = document.createElement("a");
     const targetUrl = new URL(window.location.href);
 
@@ -180,7 +190,7 @@ export function renderFullscreenArtistIdentity(
     if (!container) return;
 
     ensureArtistActionMenuHandlers();
-    const artists = getTrackArtists(track).filter((artist) => artist?.slug);
+    const artists = getTrackArtists(track).filter(hasStableArtistIdentity);
     const artist = artists[0];
     container.replaceChildren();
 
@@ -410,7 +420,7 @@ export function renderArtistActionMenu(
     ensureArtistActionMenuHandlers();
     container.replaceChildren();
 
-    const artists = getTrackArtists(track).filter((artist) => artist?.slug);
+    const artists = getTrackArtists(track).filter(hasStableArtistIdentity);
     if (!artists.length) {
         container.hidden = true;
         return;

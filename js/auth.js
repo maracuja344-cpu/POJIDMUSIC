@@ -9,6 +9,10 @@ import {
     announceExclusivePopupOpen,
     EXCLUSIVE_POPUP_OPEN_EVENT
 } from "./artist-utils.js";
+import {
+    activateRequestedArtistAccount,
+    userRequestedArtistAccount
+} from "./artist-onboarding.js";
 
 
 let authInitialized = false;
@@ -17,6 +21,7 @@ let previouslyFocusedElement = null;
 let profileRequestId = 0;
 let renderedAuthUserId;
 let activeAuthElements = null;
+const artistActivationRequests = new Map();
 const authStateListeners = new Set();
 let currentAuthState = Object.freeze({
     session: null,
@@ -115,6 +120,39 @@ function setMessage(elements, text, type = "") {
         type === "success"
     );
     elements.message.hidden = text === "";
+}
+
+
+function getArtistActivationMessage(error) {
+    const code = String(error?.code || "");
+    const message = String(error?.message || "").toLowerCase();
+
+    if (code === "23505" || message.includes("already reserved")) {
+        return "Это имя артиста уже занято. Аккаунт создан как слушатель; выберите другое имя или обратитесь к администратору.";
+    }
+
+    return "Не удалось подготовить профиль артиста. Аккаунт остаётся профилем слушателя; попробуйте войти ещё раз.";
+}
+
+
+async function completeRequestedArtistOnboarding(user) {
+    if (!userRequestedArtistAccount(user)) return null;
+    if (artistActivationRequests.has(user.id)) {
+        return artistActivationRequests.get(user.id);
+    }
+
+    const request = activateRequestedArtistAccount(supabase, user)
+        .then((result) => {
+            clearUserScopedData();
+            return result;
+        })
+        .catch((error) => {
+            artistActivationRequests.delete(user.id);
+            throw error;
+        });
+
+    artistActivationRequests.set(user.id, request);
+    return request;
 }
 
 
@@ -331,6 +369,13 @@ async function findProfile(userId, {
 async function refreshProfile(elements, user, session) {
     if (!user?.id) return;
 
+    let artistActivationError = null;
+    try {
+        await completeRequestedArtistOnboarding(user);
+    } catch (error) {
+        artistActivationError = error;
+    }
+
     const requestId = ++profileRequestId;
     const refreshFromBackground = () => {
         if (
@@ -387,7 +432,11 @@ async function refreshProfile(elements, user, session) {
         profileState: result.state
     });
 
-    if (result.state === "missing") {
+    if (artistActivationError) {
+        elements.profileNote.textContent =
+            getArtistActivationMessage(artistActivationError);
+        elements.profileNote.hidden = false;
+    } else if (result.state === "missing") {
         elements.profileNote.textContent =
             "Профиль ещё подготавливается";
         elements.profileNote.hidden = false;
@@ -523,6 +572,8 @@ function validateSignup(form, elements) {
         String(formData.get("password") || "");
     const passwordRepeat =
         String(formData.get("password_repeat") || "");
+    const accountType =
+        String(formData.get("account_type") || "listener");
 
     if (!displayName) {
         setMessage(elements, "Укажите имя.", "error");
@@ -548,6 +599,11 @@ function validateSignup(form, elements) {
         return null;
     }
 
+    if (!["listener", "artist"].includes(accountType)) {
+        setMessage(elements, "Выберите тип аккаунта.", "error");
+        return null;
+    }
+
     if (!form.reportValidity()) {
         return null;
     }
@@ -555,7 +611,8 @@ function validateSignup(form, elements) {
     return {
         displayName,
         email,
-        password
+        password,
+        accountType
     };
 }
 
@@ -585,7 +642,10 @@ async function handleSignupSubmit(event, elements) {
             password: values.password,
             options: {
                 data: {
-                    display_name: values.displayName
+                    display_name: values.displayName,
+                    // UX intent only. Database authorization comes exclusively
+                    // from the authenticated onboarding RPC and profiles.role.
+                    account_type: values.accountType
                 }
             }
         });
@@ -602,10 +662,23 @@ async function handleSignupSubmit(event, elements) {
         form.reset();
 
         if (data.session) {
+            try {
+                await completeRequestedArtistOnboarding(data.user);
+            } catch (activationError) {
+                applyAuthSession(elements, data.session);
+                setMessage(
+                    elements,
+                    getArtistActivationMessage(activationError),
+                    "error"
+                );
+                return;
+            }
             applyAuthSession(elements, data.session);
             setMessage(
                 elements,
-                "Регистрация завершена. Вы вошли в аккаунт.",
+                values.accountType === "artist"
+                    ? "Регистрация завершена. Профиль артиста готов."
+                    : "Регистрация завершена. Вы вошли в аккаунт.",
                 "success"
             );
             return;
@@ -613,13 +686,17 @@ async function handleSignupSubmit(event, elements) {
 
         setMessage(
             elements,
-            "Регистрация отправлена. Откройте письмо и подтвердите email, затем войдите.",
+            values.accountType === "artist"
+                ? "Подтвердите email и войдите — Artist Profile будет создан автоматически."
+                : "Регистрация отправлена. Откройте письмо и подтвердите email, затем войдите.",
             "success"
         );
         setAuthMode(elements, "login");
         setMessage(
             elements,
-            "Регистрация отправлена. Откройте письмо и подтвердите email, затем войдите.",
+            values.accountType === "artist"
+                ? "Подтвердите email и войдите — Artist Profile будет создан автоматически."
+                : "Регистрация отправлена. Откройте письмо и подтвердите email, затем войдите.",
             "success"
         );
     } catch {

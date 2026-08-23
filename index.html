@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="pojidmusic-release" content="pwa-v25">
+    <meta name="pojidmusic-release" content="pwa-v26">
 
     <meta
         name="viewport"
@@ -157,6 +157,15 @@
                         data-profile-action="profile"
                     >
                         Профиль
+                    </button>
+
+                    <button
+                        class="profile-menu-item"
+                        type="button"
+                        role="menuitem"
+                        data-profile-action="settings"
+                    >
+                        Настройки аккаунта
                     </button>
 
                     <button
@@ -315,6 +324,15 @@
                         autocomplete="email"
                         required
                     >
+
+                    <label for="auth-signup-account-type">Тип аккаунта</label>
+                    <select
+                        id="auth-signup-account-type"
+                        name="account_type"
+                    >
+                        <option value="listener">Слушатель</option>
+                        <option value="artist">Артист</option>
+                    </select>
 
                     <label for="auth-signup-password">
                         Пароль
@@ -578,8 +596,8 @@
             <div class="account-profile-heading">
                 <div class="profile-avatar" data-account-avatar aria-hidden="true"></div>
                 <div>
-                    <p class="profile-kicker">Аккаунт</p>
-                    <h1 id="account-profile-title" data-account-name>Профиль</h1>
+                    <p class="profile-kicker">Настройки аккаунта</p>
+                    <h1 id="account-profile-title" data-account-name>Аккаунт</h1>
                     <p class="profile-meta" data-account-meta></p>
                 </div>
             </div>
@@ -657,7 +675,7 @@
                 </div>
                 <div class="artist-owner-actions" data-artist-owner-actions hidden>
                     <button class="artist-quick-upload" type="button" data-profile-quick-upload>Загрузить трек</button>
-                    <button class="artist-settings-button" type="button" data-open-artist-settings aria-label="Настройки профиля">
+                    <button class="artist-settings-button" type="button" data-open-account-settings aria-label="Настройки аккаунта">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
                     </button>
                     <div class="artist-owner-menu">
@@ -682,8 +700,11 @@
                             <button type="button" role="menuitem" data-profile-quick-upload>
                                 Загрузить трек
                             </button>
-                            <button type="button" role="menuitem" data-open-artist-settings>
-                                Настройки профиля
+                            <button type="button" role="menuitem" data-open-artist-profile-editor>
+                                Редактировать профиль артиста
+                            </button>
+                            <button type="button" role="menuitem" data-open-account-settings>
+                                Настройки аккаунта
                             </button>
                         </div>
                     </div>

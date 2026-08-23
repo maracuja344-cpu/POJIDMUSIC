@@ -8,6 +8,7 @@ import { isPlayableRelease } from "./tracks-utils.js";
 import { getCatalogTracks } from "./catalog-state.js";
 import { isMobileDevice } from "./mobile.js";
 import { syncRenderedTrackCardsWithPlayerState } from "./player.js";
+import { hasStableArtistIdentity } from "./profile-routing.js";
 
 let activeSearchContext = null;
 let mobileSearchActive = false;
@@ -35,10 +36,11 @@ function findArtists(query) {
     getCatalogTracks().forEach((track) => {
         if (!isPlayableRelease(track)) return;
         getTrackArtists(track).forEach((artist) => {
+            if (!hasStableArtistIdentity(artist)) return;
             const displayName = String(artist.displayName || "").trim();
             if (!displayName || !displayName.toLowerCase().includes(query)) return;
-            const slug = String(artist.slug || "").trim();
-            const key = slug || displayName.toLowerCase();
+            const slug = artist.slug;
+            const key = artist.id;
             if (!artistsByKey.has(key)) {
                 artistsByKey.set(key, { displayName, slug });
             }

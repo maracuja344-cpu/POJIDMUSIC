@@ -330,7 +330,8 @@ html.cold-home-boot .app-boot-curtain {
 .auth-submit-button:focus-visible,
 .auth-tab:focus-visible,
 .auth-close-button:focus-visible,
-.auth-form input:focus-visible {
+.auth-form input:focus-visible,
+.auth-form select:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
@@ -544,7 +545,8 @@ html.cold-home-boot .app-boot-curtain {
     font-size: 14px;
 }
 
-.auth-form input {
+.auth-form input,
+.auth-form select {
     width: 100%;
     min-height: 46px;
 
@@ -558,7 +560,8 @@ html.cold-home-boot .app-boot-curtain {
     font: inherit;
 }
 
-.auth-form input:focus {
+.auth-form input:focus,
+.auth-form select:focus {
     border-color: rgba(255, 255, 255, 0.34);
 }
 

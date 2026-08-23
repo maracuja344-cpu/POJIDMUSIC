@@ -58,15 +58,50 @@ def open_artist_profile(client, app_url):
         "Home cards did not render",
     )
     client.evaluate("document.documentElement.classList.add('mobile-device')")
-    client.evaluate(
-        "document.querySelector('#new .artist-action-menu-toggle').click();"
-        "document.querySelector('#new [role=menuitem]').click()"
+    wait_for(
+        client,
+        "Boolean(document.querySelector('#new [data-artist-slug]'))",
+        "Home did not resolve a stable Artist link",
     )
+    client.evaluate("""
+        window.__stableArtistMenuFixtureReady = false;
+        import('./js/artist-utils.js').then(({ renderArtistActionMenu }) => {
+            const link = document.querySelector('#new [data-artist-slug]');
+            const card = link?.closest('.release-card');
+            if (!link || !card) return;
+            const actions = document.createElement('div');
+            actions.className = 'track-card-actions';
+            card.append(actions);
+            renderArtistActionMenu(actions, {
+                title: card.querySelector('.track-title')?.textContent || 'Release',
+                artists: [{
+                    id: `runtime-${link.dataset.artistSlug}`,
+                    slug: link.dataset.artistSlug,
+                    displayName: link.textContent.trim(),
+                    isFallback: false
+                }]
+            });
+            window.__stableArtistMenuFixtureReady = Boolean(
+                actions.querySelector('.artist-action-menu-toggle')
+            );
+        });
+    """)
+    wait_for(
+        client,
+        "window.__stableArtistMenuFixtureReady === true",
+        "Stable Artist action fixture did not render",
+    )
+    client.evaluate("document.querySelector('#new [data-artist-slug]').click()")
     wait_for(
         client,
         "document.querySelector('#artist-profile:not([hidden]) [data-artist-name]')"
         "?.textContent.trim() !== 'Артист'",
         "Artist Profile did not render",
+    )
+    wait_for(
+        client,
+        "Boolean(document.querySelector('#artist-profile [data-artist-tracks] .release-card'))",
+        "Direct Artist route did not render a published release",
     )
     client.evaluate("scrollTo(0, 0)")
 
@@ -101,9 +136,10 @@ def apply_owner_fixture(client):
             const card = document.querySelector(
                 '#artist-profile [data-artist-tracks] .release-card'
             );
-            const track = catalog.getCatalogTracks().find(
+            const tracks = catalog.getCatalogTracks();
+            const track = tracks.find(
                 (candidate) => candidate.catalogId === card?.dataset.trackId
-            );
+            ) || tracks.find((candidate) => candidate.source === 'supabase');
             if (card && track && !card.querySelector('.track-manage-button')) {
                 management.decorateManagedTrackCard(card, track);
             }
@@ -325,10 +361,13 @@ def main():
                 document.querySelector('[data-toggle-artist-owner-menu]').click();
             """)
             client.evaluate("""
-                document.querySelector(
-                    '.artist-owner-menu-popover [data-profile-quick-upload]'
-                ).click()
+                document.querySelector('.artist-quick-upload').click()
             """)
+            wait_for(
+                client,
+                "window.__artistProfileUploadDelegated === true",
+                "Upload entry did not delegate after lazy initialization",
+            )
             upload_state = client.evaluate("""
                 (() => ({
                     ownerOpen: document.querySelector('.artist-owner-menu')
@@ -341,7 +380,8 @@ def main():
             assert menu_state["items"] == [
                 "Изменить баннер",
                 "Загрузить трек",
-                "Настройки профиля",
+                "Редактировать профиль артиста",
+                "Настройки аккаунта",
             ], menu_state
             assert not menu_state["overlapsIdentity"], menu_state
             assert exclusive_release == {"ownerOpen": False, "releaseOpen": True}, exclusive_release

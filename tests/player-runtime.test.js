@@ -91,6 +91,8 @@ function currentId(document) {
 }
 
 async function loadApp() {
+    frame.style.width = "390px";
+    frame.style.height = "844px";
     frame.src = `../index.html?runtime-smoke=${Date.now()}`;
     await waitFor(() => frame.contentDocument?.querySelectorAll(
         ".release-card[data-track-id^='local:']").length >= 3,
@@ -231,10 +233,11 @@ try {
         currentId(app) === beforeControlSwipe);
 
     const progress = app.querySelector(".fullscreen-player-progress");
+    const beforeProgressSwipe = currentId(app);
     swipe(progress, { fromX: 80, fromY: 500, toX: 280, toY: 500 });
     await wait(50);
     assert("fullscreen progress is excluded from swipe navigation",
-        currentId(app) === beforeControlSwipe && fullscreen.classList.contains("open"));
+        currentId(app) === beforeProgressSwipe && fullscreen.classList.contains("open"));
 
     click(app.querySelector(".fullscreen-player-desktop-collapse"));
     await waitFor(() => !fullscreen.classList.contains("open"), "fullscreen close");

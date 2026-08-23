@@ -14,6 +14,7 @@
 20260808030000_fix_artist_links_and_media_protection.sql
 20260808040000_add_structured_collab_upload.sql
 20260808050000_unify_artist_profile_management.sql
+20260823090000_enforce_artist_profile_invariant.sql
 ```
 
 Миграция artist system добавляет отдельные `artists` и `track_artists`, защищённую RPC для кредитов и консервативный backfill старого `artist_name`. Неоднозначные кредиты она не угадывает: такие строки остаются fallback и выводятся как `NOTICE` для ручной проверки.
@@ -25,6 +26,14 @@
 Миграция `20260808040000_add_structured_collab_upload.sql` обратно совместимо расширяет credits RPC ordered-массивами Artist ID/name для нескольких primary и featured artists и добавляет защищённый autocomplete по имени, normalized name и handle.
 
 Миграция `20260808050000_unify_artist_profile_management.sql` добавляет независимые crop metadata для avatar/banner и owner/admin RPC для переименования Artist entity, транзакционного редактирования structured credits и versioned cover path, hide/restore и удаления трека. Execute остаётся только у `authenticated`; прямые table writes и public audio не открываются.
+
+Миграция `20260823090000_enforce_artist_profile_invariant.sql` вводит атомарный
+инвариант `profile role=artist -> linked artists row`. Параметрическая server-side
+функция доступна только триггеру, а браузер вызывает только параметрический-free RPC
+`activate_current_user_as_artist()`, который берёт пользователя из `auth.uid()`.
+Будущие совпадения имён не присваиваются автоматически: конфликт имени откатывает
+операцию. Exact-name backfill ограничен подтверждёнными production-профилями Zhorik
+и Lufy и требует однозначной незанятой строки Artist.
 
 ## Как применить вручную
 
@@ -54,6 +63,11 @@
 - В выводе SQL Editor проверены `NOTICE` о кредитах, требующих ручного разбора.
 - В **Authentication → Users** создание тестового пользователя автоматически создаёт строку `profiles` с ролью `listener`.
 - Клиент с Publishable Key видит только опубликованные треки.
-- Роль `artist` назначается только администратором или вручную доверенным оператором, а не из пользовательских metadata.
+- Выбор artist при signup хранится только как UX-намерение `account_type`; роль и
+  связь создаёт защищённый RPC/trigger. `user_metadata` не является источником
+  авторизации.
+- Для каждого `profiles.role = 'artist'` существует ровно одна строка `artists` с
+  `linked_profile_id = profiles.id`; конфликт будущего имени не оставляет частично
+  назначенную роль.
 
 Создание тестового Auth-пользователя и любые проверки с данными выполняйте отдельным этапом. Secret Key, `service_role` и Database Password нельзя добавлять в браузерный код.

@@ -36,6 +36,10 @@ import {
     applyArtworkBackground,
     ARTWORK_WIDTHS
 } from "./artwork.js";
+import {
+    getProfileDestination,
+    isArtistOwner
+} from "./profile-routing.js";
 
 const DEFAULT_TITLE = "POJIDMUSIC";
 const ARTIST_MEDIA_BUCKET = "artist-media";
@@ -58,7 +62,7 @@ const artistColorCache = new Map();
 function getElements() {
     return {
         catalog: document.querySelector("#catalog-view"),
-        account: document.querySelector("#account-profile"),
+        settings: document.querySelector("#account-profile"),
         artist: document.querySelector("#artist-profile"),
         myTracks: document.querySelector("#my-tracks")
     };
@@ -170,7 +174,9 @@ function getRoute() {
     const url = new URL(window.location.href);
     const artistSlug = url.searchParams.get("artist")?.trim();
     if (artistSlug) return { name: "artist", artistSlug };
-    if (url.searchParams.get("view") === "account") return { name: "account" };
+    if (["settings", "account"].includes(url.searchParams.get("view"))) {
+        return { name: "settings" };
+    }
     if (url.searchParams.get("view") === "my-tracks") return { name: "myTracks" };
     return { name: "catalog" };
 }
@@ -181,7 +187,7 @@ function buildRouteUrl(route) {
     url.searchParams.delete("view");
     url.hash = "";
     if (route.name === "artist") url.searchParams.set("artist", route.artistSlug);
-    if (route.name === "account") url.searchParams.set("view", "account");
+    if (route.name === "settings") url.searchParams.set("view", "settings");
     if (route.name === "myTracks") url.searchParams.set("view", "my-tracks");
     return `${url.pathname}${url.search}`;
 }
@@ -254,7 +260,7 @@ const fetchLinkedArtist = (profileId) => profileId
         onUpdate: (artist) => {
             linkedArtist = artist;
             updateProfileMenu(artist);
-            if (["account", "myTracks"].includes(getRoute().name)) {
+            if (["settings", "myTracks"].includes(getRoute().name)) {
                 void renderRoute();
             }
         }
@@ -508,11 +514,7 @@ async function renderArtistView(slug) {
     const auth = await getAuthModule();
     const authState = auth.getCurrentAuthState();
     document.body.dataset.currentProfileRole = authState.profile?.role || "";
-    const owner = Boolean(
-        artist?.id &&
-        artist.linkedProfileId &&
-        artist.linkedProfileId === authState.user?.id
-    );
+    const owner = isArtistOwner(artist, authState.user?.id);
     renderedArtistOwner = owner;
     view.querySelector(".artist-hero")?.classList.toggle("is-owner", owner);
     if (owner) {
@@ -572,7 +574,7 @@ function updateProfileMenu(artist) {
     const artistPage = document.querySelector("[data-profile-action='artist']");
     if (myTracks) myTracks.hidden = !artist;
     if (artistPage) artistPage.hidden = !artist;
-    if (profile) profile.hidden = !artist;
+    if (profile) profile.hidden = false;
 }
 
 async function refreshLinkedArtist(profileId) {
@@ -591,7 +593,7 @@ async function renderAccountView() {
     const name = profile?.display_name?.trim() ||
         state.user?.user_metadata?.display_name?.trim() ||
         state.user?.email || "Профиль";
-    if (renderId !== routeRenderId || getRoute().name !== "account") return;
+    if (renderId !== routeRenderId || getRoute().name !== "settings") return;
 
     view.querySelector("[data-account-name]").textContent = name;
     view.querySelector("[data-account-meta]").textContent = state.user
@@ -606,10 +608,10 @@ async function renderAccountView() {
     view.querySelector("[data-account-actions]").hidden = !state.user;
 
     const artist = profile ? await refreshLinkedArtist(profile.id) : null;
-    if (renderId !== routeRenderId || getRoute().name !== "account") return;
+    if (renderId !== routeRenderId || getRoute().name !== "settings") return;
     view.querySelector("[data-account-my-tracks]").hidden = !artist;
     view.querySelector("[data-account-artist-page]").hidden = !artist;
-    document.title = `Профиль — ${DEFAULT_TITLE}`;
+    document.title = `Настройки — ${DEFAULT_TITLE}`;
 }
 
 function trackHasStructuredArtist(track, artistId) {
@@ -646,7 +648,7 @@ async function renderRoute({ scroll = false } = {}) {
     const route = getRoute();
     setActiveView(route.name);
     if (route.name === "artist") await renderArtistView(route.artistSlug);
-    else if (route.name === "account") await renderAccountView();
+    else if (route.name === "settings") await renderAccountView();
     else if (route.name === "myTracks") await renderMyTracksView();
     else {
         ++routeRenderId;
@@ -659,20 +661,35 @@ async function renderRoute({ scroll = false } = {}) {
 
 export async function openCurrentProfile({ scroll = true } = {}) {
     const auth = await getAuthModule();
-    const state = auth.getCurrentAuthState();
+    let state = auth.getCurrentAuthState();
 
     if (!state.user) {
         document.querySelector(".auth-open-button")?.click();
         return false;
     }
 
+    if (state.profileState !== "ready") {
+        await auth.reloadCurrentProfile();
+        state = auth.getCurrentAuthState();
+    }
+
     const artist = await refreshLinkedArtist(state.profile?.id);
-    navigate(
+    navigate(getProfileDestination({
+        user: state.user,
+        profile: state.profile,
         artist
-            ? { name: "artist", artistSlug: artist.slug }
-            : { name: "account" },
-        { scroll }
-    );
+    }), { scroll });
+    return true;
+}
+
+
+export async function openSettings({ scroll = true } = {}) {
+    const auth = await getAuthModule();
+    if (!auth.getCurrentAuthState().user) {
+        document.querySelector(".auth-open-button")?.click();
+        return false;
+    }
+    navigate({ name: "settings" }, { scroll });
     return true;
 }
 
@@ -856,6 +873,7 @@ export function initializeAppNavigation() {
             event.preventDefault();
             closeProfileMenu();
             if (action === "profile") void openCurrentProfile();
+            if (action === "settings") void openSettings();
             return;
         }
         if (event.target.closest("[data-account-my-tracks]")) {
@@ -879,9 +897,14 @@ export function initializeAppNavigation() {
             if (renderedArtistOwner) void recropArtistMedia("banner");
             return;
         }
-        if (event.target.closest("[data-open-artist-settings]")) {
+        if (event.target.closest("[data-open-artist-profile-editor]")) {
             setArtistOwnerMenuOpen(false);
             void openProfileEditor();
+            return;
+        }
+        if (event.target.closest("[data-open-account-settings]")) {
+            setArtistOwnerMenuOpen(false);
+            void openSettings();
             return;
         }
         if (event.target.closest("[data-profile-quick-upload]")) {
@@ -950,7 +973,7 @@ export function initializeAppNavigation() {
         unsubscribeAuthState ||= auth.subscribeToAuthState((state) => {
             document.body.dataset.currentProfileRole = state.profile?.role || "";
             void refreshLinkedArtist(state.profile?.id);
-            if (["account", "myTracks", "artist"].includes(getRoute().name)) {
+            if (["settings", "myTracks", "artist"].includes(getRoute().name)) {
                 void renderRoute();
             }
         });

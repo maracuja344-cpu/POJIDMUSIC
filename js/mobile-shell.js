@@ -30,7 +30,7 @@ function syncTabFromView() {
     }
 
     const view = document.body.dataset.appView;
-    setActiveTab(["account", "artist", "myTracks"].includes(view)
+    setActiveTab(["settings", "artist", "myTracks"].includes(view)
         ? "profile"
         : "home");
 }

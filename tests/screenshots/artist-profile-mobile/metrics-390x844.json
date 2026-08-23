@@ -10,25 +10,25 @@
       "widest": [
         {
           "selector": ".fullscreen-player-background",
-          "width": 498.199951171875,
-          "right": 444.09996032714844
+          "width": 472.760009765625,
+          "right": 431.38002014160156
         }
       ],
       "hero": {
         "x": 12,
-        "y": 86,
+        "y": 80,
         "width": 366,
         "height": 390,
         "right": 378,
-        "bottom": 476
+        "bottom": 470
       },
       "identity": {
         "x": 55,
-        "y": 384.53125,
+        "y": 378.53125,
         "width": 280,
         "height": 72.46875,
         "right": 335,
-        "bottom": 457
+        "bottom": 451
       },
       "avatar": {
         "x": 0,
@@ -40,11 +40,11 @@
       },
       "owner": {
         "x": 315,
-        "y": 105,
+        "y": 99,
         "width": 44,
         "height": 44,
         "right": 359,
-        "bottom": 149
+        "bottom": 143
       },
       "bannerEdit": {
         "x": 0,
@@ -120,7 +120,8 @@
     "items": [
       "Изменить баннер",
       "Загрузить трек",
-      "Настройки профиля"
+      "Редактировать профиль артиста",
+      "Настройки аккаунта"
     ],
     "overlapsIdentity": false
   },

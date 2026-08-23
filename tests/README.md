@@ -13,6 +13,7 @@ http://127.0.0.1:8765/tests/playback-context.test.html
 http://127.0.0.1:8765/tests/artwork.test.html
 http://127.0.0.1:8765/tests/queue-decisions.test.html
 http://127.0.0.1:8765/tests/mobile-player-ux.test.html
+http://127.0.0.1:8765/tests/phase2-profile-flow.test.html
 http://127.0.0.1:8765/tests/player-runtime.test.html
 ```
 
@@ -55,6 +56,11 @@ python tests/artist-profile-mobile-runtime.py --width 390 --height 844
 python tests/artist-profile-mobile-runtime.py --width 393 --height 852
 python tests/artist-profile-mobile-runtime.py --width 360 --height 740
 ```
+
+The Phase 2 page covers artist signup intent, the parameterless activation RPC,
+repeat login, owner/listener routing, stable Artist URLs, Settings, and Upload entry.
+After applying the matching migration, run `phase2-database-check.sql` in the Supabase
+SQL editor; it exercises the profile/artist invariant and rolls its fixtures back.
 
 Verify the production PWA dependency manifest and release marker with:
 

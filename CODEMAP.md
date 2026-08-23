@@ -1,6 +1,6 @@
 # POJIDMUSIC: architectural codemap
 
-Audit date: 2026-08-22. This document describes the code currently present in the
+Audit date: 2026-08-23. This document describes the code currently present in the
 repository. It is not a description of an intended or older architecture.
 
 ## 1. Project summary
@@ -55,6 +55,8 @@ visual change.
 |   |-- navigation.js           hash/section navigation; currently not initialized
 |   |-- carousel.js             recommendation cloning, scrolling, cleanup
 |   |-- auth.js                 Supabase Auth and profile state
+|   |-- artist-onboarding.js    artist signup intent and protected activation RPC adapter
+|   |-- profile-routing.js      pure Profile/Settings/Artist routing and ownership rules
 |   |-- track-upload.js         validation and multi-step track upload
 |   |-- track-management.js     owner/admin edit, visibility, delete actions
 |   |-- artist-media.js         avatar/banner processing and persistence
@@ -104,12 +106,13 @@ script.js -> render -> player -> catalog-state, playback-context, queue-decision
           -> dynamic app-navigation -> render + search + player + tracks-api
                             -> track-management + artist-media + data-repository
           -> carousel, mobile, pull-to-refresh, catalog-state
-          -> dynamic auth -> data-repository + Supabase
+          -> dynamic auth -> artist-onboarding + data-repository + Supabase
           -> on-demand track-upload -> auth + data-repository + Supabase
 
 data-repository, tracks-api, auth, track-upload, track-management, artist-media,
 app-navigation -> supabase/client -> remote esm.sh Supabase SDK
 
+app-navigation, artist-utils, search -> profile-routing
 data-repository -> data-cache
 audio-url-resolver -> audio-url-resolver-core -> data-cache
                    -> dynamic supabase/client only for signed remote audio
@@ -151,15 +154,18 @@ all affected render/reconcile functions.
 ### Navigation
 
 `app-navigation.js` is a small manual router. It maps `?artist=slug`,
-`?view=account`, and `?view=my-tracks`; `history.pushState/replaceState` changes the
+`?view=settings`, and `?view=my-tracks`; legacy `?view=account` is normalized to
+Settings. `history.pushState/replaceState` changes the
 URL and `hidden` switches among persistent `<main>` elements. Track-card children are
 recreated inside views, but the page shell, player DOM, JS modules, and `Audio` survive.
 
 `mobile-shell.js` owns only mobile presentation state for the stable Home, Search, and
 Profile bottom tabs. Home and Profile delegate URL changes to `app-navigation.js`;
-Search remains an in-memory catalog mode and now renders distinct track and artist
-results after a 180 ms UI debounce. Account routes are reachable for signed-in profiles
-without a linked artist, while linked artists still open their existing Artist Profile.
+Search remains an in-memory catalog mode and renders distinct track and artist results
+after a 180 ms UI debounce. Profile opens the shared Artist Page for an artist owner;
+listeners and unavailable artist links fall back to the separate Settings route.
+Only catalog Artist rows with a stable ID and slug produce links or outward URLs;
+legacy `credit-*` identities remain non-interactive text.
 
 ### Storage
 
@@ -291,7 +297,8 @@ Storage buckets: `track-audio` (private), `track-covers` (public), `profile-avat
 
 RPCs called by the frontend: `search_artists_for_credit`, `set_track_artist_credits`,
 `update_artist_profile`, `set_artist_crop`, `set_artist_media_with_crop`,
-`update_managed_track`, `set_managed_track_visibility`, and `delete_managed_track`.
+`update_managed_track`, `set_managed_track_visibility`, `delete_managed_track`, and
+the parameterless `activate_current_user_as_artist`.
 
 ### Query flows
 
@@ -303,7 +310,8 @@ RPCs called by the frontend: `search_artists_for_credit`, `set_track_artist_cred
   Owners additionally query all RLS-visible tracks, filter artist association in the
   browser, and map matching rows without signing audio.
 - Profile/settings: Auth loads `profiles`; linked-artist resolution queries `artists` by
-  `linked_profile_id`. Route/auth/media events can repeat these queries.
+  `linked_profile_id`. Artist signup/login may first invoke the idempotent activation
+  RPC; repository invalidation then forces the linked profile/artist read.
 - Upload: fresh Auth session, `profiles(id,role)`, sequential audio and cover uploads,
   `tracks` insert, then credits RPC; failures attempt row/object cleanup.
 - Edit/manage: artist suggestion RPC; optional cover upload; update/visibility/delete
@@ -334,17 +342,24 @@ complete query/invalidation inventory and measured before/after request counts.
 
 ### Auth and authorization
 
-Email/password login and signup use Supabase Auth. A profile trigger creates the public
-profile; the client retries briefly if replication/API visibility lags. Roles are
-`listener`, `artist`, and `admin`. The frontend hides upload and owner controls based on
-profile role, linked artist, owner ID, or admin state.
+Email/password login and signup use Supabase Auth. The base Auth trigger creates a
+listener profile; the client retries briefly if replication/API visibility lags. An
+artist selection is only UX intent in `user_metadata.account_type`. On an authenticated
+session the parameterless RPC derives identity from `auth.uid()` and, in one database
+transaction, changes the role and invokes a profile trigger that creates and links the
+Artist entity. Future name collisions raise and roll the role change back; name matching
+is not a registration mechanism. Roles are `listener`, `artist`, and `admin`. The
+frontend hides upload and owner controls based on profile role, linked artist, owner ID,
+or admin state.
 
 These frontend checks are presentation guards, not the security boundary. The included
 migrations enable RLS on core tables, protect privileged profile fields, gate track
 mutations by role/owner/status, gate Storage paths by `auth.uid()`, and put management
 operations behind security-checked RPCs. No obvious frontend-only mutation permission
 was found. Deployment drift remains a risk: the repository cannot prove that the live
-Supabase project has every migration applied.
+Supabase production was verified after `20260823090000_enforce_artist_profile_invariant`:
+all four artist profiles are linked. Its one-time exact-name backfill linked only the
+confirmed Zhorik and Lufy profiles to their existing unclaimed Artist rows.
 
 ## 7. Performance and reliability findings
 
@@ -358,6 +373,8 @@ Supabase project has every migration applied.
 | Addressed (artwork phase) | `artwork.js`, `render.js`, `player.js` | Cards previously used public originals at every size. | Supabase transforms now provide measured responsive tiers; fullscreen promotes to original on demand. |
 | Addressed (phase 1) | `data-repository.js`, `app-navigation.js` | Repeated artist route reads used to repeat per render. | Memory TTL/SWR cache now removes immediate repeated reads; legacy fallbacks remain serial only after errors. |
 | Addressed (phase 1) | `data-repository.js`, `auth.js`, `track-upload.js` | Profile and linked-artist reads were independent. | Shared repository and in-flight dedup now cover display profile and linked artist; upload permission remains deliberately fresh. |
+| Addressed (mobile phase 2) | `auth.js`, `artist-onboarding.js`, migration `20260823090000` | Artist role could exist without a linked Artist entity and client metadata could be mistaken for authority. | Auth metadata is UX intent only; authenticated RPC + trigger enforce the atomic profile/Artist invariant. |
+| Addressed (mobile phase 2) | `app-navigation.js`, `profile-routing.js`, `artist-utils.js`, `search.js` | Profile and Account shared one route and fallback `credit-*` identities could leak into URLs. | Artist owners route to the shared Artist Page, Settings is separate, and only persisted Artist IDs/slugs navigate. |
 | Medium | `search.js:264-334` | Each keystroke scans all tracks, clears results, recreates cards, observers, and images; no debounce. | Index normalized searchable fields and debounce/incrementally update. |
 | Medium | `player.js:1337-1380` | Play/pause synchronization repeatedly queries and updates every card in the document. | Maintain an ID-to-rendered-cards registry in the UI adapter. |
 | Medium | `player.js:198-227`, `catalog-state.js` | Deduplication and repeated ID lookups are linear; queue building can be O(n^2). | Keep a catalog ID map and derive ordered lists once per catalog version. |
@@ -424,6 +441,9 @@ back to the original. Measurements and live endpoint verification are recorded i
   update/offline flows.
 - **Addressed (mobile v2 milestone 1):** account/my-tracks render branches are reachable;
   the mobile Profile tab opens the linked Artist Profile or the account surface.
+- **Addressed (mobile Phase 2):** server-side artist onboarding is atomic; confirmed
+  legacy artist profiles are linked; Settings and Artist routes have distinct contracts;
+  fallback credits no longer become URLs.
 - **Medium:** query fallback ladders conceal schema drift and multiply failure latency.
 - **Medium:** data store has no events; refresh correctness depends on a manual cascade.
 - **Medium:** direct UI-to-player imports couple rendering to engine state.

@@ -1,4 +1,4 @@
-const RELEASE_VERSION = "pwa-v25";
+const RELEASE_VERSION = "pwa-v26";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
@@ -11,6 +11,7 @@ const CRITICAL_SHELL_ASSETS = [
     "./manifest.webmanifest",
     "./img/cover.jpg",
     "./js/app-navigation.js",
+    "./js/artist-onboarding.js",
     "./js/artist-media.js",
     "./js/artist-utils.js",
     "./js/artwork.js",
@@ -28,6 +29,7 @@ const CRITICAL_SHELL_ASSETS = [
     "./js/mobile-shell.js",
     "./js/player.js",
     "./js/player-persistence.js",
+    "./js/profile-routing.js",
     "./js/pull-to-refresh.js",
     "./js/queue-decisions.js",
     "./js/render.js",

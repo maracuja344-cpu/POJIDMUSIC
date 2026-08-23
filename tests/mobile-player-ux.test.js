@@ -18,6 +18,7 @@ try {
         title: "Test track",
         artist: "Test artist",
         artists: [{
+            id: "artist-test",
             displayName: "Test artist",
             slug: "test-artist",
             role: "primary",
@@ -29,18 +30,21 @@ try {
         artist: "cwa & Lufy",
         artists: [
             {
+                id: "artist-vb-cb",
                 displayName: "vb cb",
                 slug: "vb-cb",
                 role: "primary",
                 position: 0
             },
             {
+                id: "artist-cwa",
                 displayName: "cwa",
                 slug: "cwa",
                 role: "primary",
                 position: 1
             },
             {
+                id: "artist-lufy",
                 displayName: "Lufy",
                 slug: "lufy",
                 role: "featured",

@@ -26,6 +26,7 @@ TEST_PAGES = [
     "playback-context.test.html",
     "media-session.test.html",
     "mobile-player-ux.test.html",
+    "phase2-profile-flow.test.html",
     "player-runtime.test.html",
 ]
 
