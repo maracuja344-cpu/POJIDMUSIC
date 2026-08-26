@@ -13,6 +13,41 @@ function randomItem(values, random) {
     return values[Math.floor(random() * values.length)] || null;
 }
 
+export function buildShuffleOrder({
+    queueIds,
+    currentId,
+    random = Math.random
+}) {
+    const ids = uniqueIds(queueIds);
+    if (!ids.length) return [];
+
+    const anchorId = ids.includes(currentId) ? currentId : ids[0];
+    const futureIds = ids.filter((id) => id !== anchorId);
+    for (let index = futureIds.length - 1; index > 0; index -= 1) {
+        const target = Math.floor(random() * (index + 1));
+        [futureIds[index], futureIds[target]] = [futureIds[target], futureIds[index]];
+    }
+    return [anchorId, ...futureIds];
+}
+
+export function reconcileShuffleOrder({
+    orderIds,
+    queueIds,
+    currentId,
+    random = Math.random
+}) {
+    const queue = uniqueIds(queueIds);
+    if (!queue.length) return [];
+    const valid = new Set(queue);
+    const restored = uniqueIds(orderIds).filter((id) => valid.has(id));
+    const anchorId = valid.has(currentId) ? currentId : queue[0];
+    if (!restored.includes(anchorId)) {
+        return buildShuffleOrder({ queueIds: queue, currentId: anchorId, random });
+    }
+    const missing = queue.filter((id) => !restored.includes(id));
+    return [...restored, ...missing];
+}
+
 export function getSequentialQueueId({
     queueIds,
     currentId,

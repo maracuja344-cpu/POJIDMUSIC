@@ -1,7 +1,7 @@
 import { reconcileQueueSnapshot } from "./queue-decisions.js";
 
 export const PLAYER_SNAPSHOT_KEY = "pojidmusic-player-state";
-export const PLAYER_SNAPSHOT_VERSION = 1;
+export const PLAYER_SNAPSHOT_VERSION = 2;
 
 export const LEGACY_PLAYER_KEYS = Object.freeze([
     "player-track-id",
@@ -91,6 +91,7 @@ export function createDefaultPlayerSnapshot() {
         volume: 0.1,
         repeatMode: "off",
         shuffle: false,
+        shuffleOrder: { ids: [] },
         queue: { ids: [], currentIndex: -1 },
         history: { ids: [], index: -1 },
         source: { type: "catalog", id: "catalog", label: "catalog" },
@@ -116,6 +117,7 @@ export function normalizePlayerSnapshot(value) {
             ? value.repeatMode
             : defaults.repeatMode,
         shuffle: value?.shuffle === true,
+        shuffleOrder: { ids: uniqueIds(value?.shuffleOrder?.ids ?? value?.shuffleOrder) },
         queue: normalizeQueue(value?.queue),
         history: normalizeHistory(value?.history),
         source: normalizeSource(value?.source),
@@ -132,7 +134,7 @@ export function deserializePlayerSnapshot(serialized) {
     if (!serialized) return null;
     try {
         const parsed = JSON.parse(serialized);
-        if (parsed?.version !== PLAYER_SNAPSHOT_VERSION) return null;
+        if (![1, PLAYER_SNAPSHOT_VERSION].includes(parsed?.version)) return null;
         return normalizePlayerSnapshot(parsed);
     } catch {
         return null;
@@ -257,6 +259,7 @@ export function reconcilePlayerSnapshot(snapshot, validIds, catalogIds = []) {
         catalogIds
     });
     const ids = normalized.history.ids.filter((id) => valid.has(id));
+    const shuffleOrderIds = normalized.shuffleOrder.ids.filter((id) => valid.has(id));
     const currentHistoryId = normalized.history.ids[normalized.history.index];
     let historyIndex = currentHistoryId ? ids.lastIndexOf(currentHistoryId) : -1;
     if (historyIndex < 0 && currentIsValid) {
@@ -275,6 +278,7 @@ export function reconcilePlayerSnapshot(snapshot, validIds, catalogIds = []) {
                 ? queue.queueIds.indexOf(normalized.currentTrackId)
                 : -1
         },
-        history: { ids, index: historyIndex }
+        history: { ids, index: historyIndex },
+        shuffleOrder: { ids: shuffleOrderIds }
     });
 }

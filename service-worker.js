@@ -1,4 +1,4 @@
-const RELEASE_VERSION = "pwa-v26";
+const RELEASE_VERSION = "pwa-v27";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";

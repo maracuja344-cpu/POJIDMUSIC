@@ -141,7 +141,10 @@ CAPTURE_AUDIO = r"""
     Object.defineProperty(window, "__testAudio", {
         configurable: true,
         get() {
-            return window.__testAudios.find((audio) => !audio.paused && audio.currentSrc) ||
+            return (window.__testLastPlayingAudio?.currentSrc
+                ? window.__testLastPlayingAudio
+                : null) ||
+                window.__testAudios.find((audio) => !audio.paused && audio.currentSrc) ||
                 window.__testAudios.find((audio) => audio.currentSrc) ||
                 window.__testAudios[0];
         }
@@ -150,6 +153,9 @@ CAPTURE_AUDIO = r"""
         const audio = new NativeAudio(...args);
         window.__testAudios.push(audio);
         window.__testEndedCount = 0;
+        audio.addEventListener("playing", () => {
+            window.__testLastPlayingAudio = audio;
+        });
         audio.addEventListener("ended", () => { window.__testEndedCount += 1; });
         return audio;
     }
@@ -339,12 +345,17 @@ RUNTIME_CHECKS = r"""
     await waitFor(() => currentId() === "local:5", "finite search context selection");
     await sleep(700);
     const lastId = currentId();
+    Object.defineProperty(document, "hidden", {
+        configurable: true,
+        get: () => true
+    });
     await dispatchEndedAtBoundary({ pause: true });
     await waitFor(() => currentId() !== lastId &&
         document.querySelector(".player-toggle.playing"),
-        "Repeat Off autoplay continuation");
-    check("ended event at Repeat Off finite boundary enters autoplay",
-        currentId() !== lastId,
+        "hidden Repeat Off autoplay continuation");
+    delete document.hidden;
+    check("hidden ended event continues playback through the active Audio owner",
+        currentId() !== lastId && !window.__testAudio.paused,
         JSON.stringify({ id: currentId(), endedCount: window.__testEndedCount,
             paused: window.__testAudio.paused, ended: window.__testAudio.ended }));
 
@@ -369,17 +380,28 @@ RUNTIME_CHECKS = r"""
     await sleep(700);
 
     const shuffle = document.querySelector(".player-shuffle");
-    if (!shuffle.classList.contains("active")) click(shuffle);
+    if (!shuffle.classList.contains("is-active")) click(shuffle);
     const beforeShuffle = currentId();
+    click(document.querySelector(".fullscreen-queue-button"));
+    const materializedQueue = [...document.querySelectorAll("[data-queue-track-id]")]
+        .map((item) => item.dataset.queueTrackId);
+    check("shuffle Queue anchors the unchanged current track",
+        materializedQueue[0] === beforeShuffle,
+        JSON.stringify({ beforeShuffle, materializedQueue }));
+    check("shuffle Queue exposes a materialized future order",
+        materializedQueue.length > 1);
+    click(document.querySelector("[data-close-player-queue]"));
     click(document.querySelector(".player-next"));
-    await waitFor(() => currentId() !== beforeShuffle, "shuffle Next");
-    check("shuffle Next selects another track", currentId() !== beforeShuffle);
+    await waitFor(() => currentId() === materializedQueue[1], "shuffle Next");
+    check("shuffle Next follows the visible Queue order",
+        currentId() === materializedQueue[1]);
     await sleep(700);
     const firstShuffleId = currentId();
     click(document.querySelector(".player-next"));
-    await waitFor(() => currentId() !== firstShuffleId, "second shuffle Next");
+    await waitFor(() => currentId() === materializedQueue[2], "second shuffle Next");
     const secondShuffleId = currentId();
-    check("second shuffle Next selects another track", secondShuffleId !== firstShuffleId);
+    check("second shuffle Next keeps following the visible Queue order",
+        secondShuffleId === materializedQueue[2]);
     await sleep(700);
     click(document.querySelector(".player-prev"));
     await waitFor(() => currentId() === firstShuffleId, "shuffle Previous");

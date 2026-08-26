@@ -226,7 +226,7 @@ and UI synchronization pipeline. Crossfade remains a visible-document enhancemen
 
 ### Queue engine as implemented
 
-There is a real persisted queue context, but not yet one cohesive queue-state object.
+There is a persisted canonical queue context plus one materialized shuffle playback order.
 When a card is selected, `setContextFromCard` inspects its nearest DOM container and
 copies current card IDs for artist, my-tracks, search, or recommendations. Otherwise it
 uses the full catalog. Playback after that resolves IDs from data, so removing the card
@@ -237,7 +237,10 @@ The engine functions are:
 
 - `getPlaybackQueue`: resolves context IDs, with a catalog fallback.
 - `getSequentialTrack`: ordered navigation and repeat-all wrapping.
-- `getShuffledTrack`: random unplayed selection and shuffle-cycle reset.
+- `buildShuffleOrder` / `reconcileShuffleOrder`: materialize and restore the actual
+  shuffled future without mutating canonical source order or replacing current.
+- `getShuffledTrack`: advances through that materialized order and rebuilds it only at
+  a Repeat All cycle boundary.
 - `getHistoryTrack`: backward/forward history traversal.
 - `getTrackForNavigation`: precedence among history, repeat-one, queue, and autoplay.
 - `beginAutoplay`: replaces the source with a shuffled global catalog context.
@@ -250,10 +253,10 @@ shuffle is enabled), is capped at 100 IDs, and is persisted independently.
 
 | Scenario | Current behavior |
 | --- | --- |
-| Normal playback | One audio instance; card sets source queue; both player UIs sync. |
-| Next | Uses forward history first, then shuffled/sequential queue. |
+| Normal playback | One active Audio owner plus the bounded transition channel; card sets source queue; both player UIs sync. |
+| Next | Uses shuffle forward history only while shuffled; otherwise follows the visible materialized/canonical queue. |
 | Previous | Uses history only; no sequential fallback or repeat-all wrap. |
-| Shuffle | Avoids IDs in the current cycle; previous/forward traverse history. |
+| Shuffle | Current stays fixed; Queue shows current plus the exact randomized future; Previous/forward traverse history. |
 | Repeat Off | End of source queue starts global autoplay instead of stopping. |
 | Repeat All | Sequential Next wraps; shuffle begins a new cycle. |
 | Repeat One, natural end | Restarts current track at time zero. |
@@ -261,7 +264,7 @@ shuffle is enabled), is capped at 100 IDs, and is persisted independently.
 | Last artist track | With repeat off, source changes to global autoplay. |
 | Artist navigation | Artist/query fetch and card rerender; audio continues. |
 | Page/view transition | Shell and audio persist; card mirror is resynchronized. |
-| Reload | Track/UI/position/modes/queue/history restore paused. |
+| Reload | Track/UI/position/modes/canonical queue/materialized shuffle/history restore paused. |
 | Current card removed | Audio continues; `currentCard` can be detached; new cards sync by ID. |
 | Current catalog row removed on refresh | Audio is paused and cleared; fullscreen closes. |
 
@@ -272,14 +275,15 @@ shuffle is enabled), is capped at 100 IDs, and is persisted independently.
   in tests before changing this.
 - **High:** Previous always uses history (`player.js:602`, `2652-2658`), so the first
   played item cannot go to a preceding queue item and Repeat All cannot wrap backward.
-- **High:** Forward history takes precedence even after shuffle is disabled, since
-  history is recorded in every mode. Mode changes can therefore produce surprising Next.
+- **Addressed (player phase B):** forward history is consulted only while shuffle is
+  active; disabling shuffle immediately restores canonical Next semantics.
 - **Medium:** context `currentIndex` is persisted but navigation recomputes index from
   `currentTrack`; two representations can temporarily disagree.
 - **Medium:** queue creation reads DOM card order. Data playback is resilient after the
   snapshot, but filtered/incompletely rendered cards define source membership.
-- **Medium:** `startAudio` catches a rejected `play()` without invoking autoplay-error
-  continuation, while media-element `error` does. Failure behavior depends on failure path.
+- **Addressed (player phase B):** `startAudio` captures the active media element after
+  async signed-URL resolution and performs one readiness-gated continuation retry after
+  natural `ended`; autoplay-policy rejection is never retried.
 - **Low:** current-card references may remain detached until the next lookup, although
   visible state synchronization is ID-based and remains functional.
 
@@ -451,7 +455,7 @@ back to the original. Measurements and live endpoint verification are recorded i
 
 ## 11. Recommended refactoring order
 
-No step below is implemented by this audit.
+The roadmap below records both remaining boundaries and already addressed foundations.
 
 1. **Stabilize and characterize.** Add deterministic tests for the scenario matrix,
    catalog refresh, route transitions, auth roles/RLS integration, and PWA update/offline
@@ -464,7 +468,8 @@ No step below is implemented by this audit.
    commands/events and move mini/fullscreen/card synchronization behind adapters.
 4. **Consolidate the queue engine.** Make `currentTrack`, ordered queue, current index,
    history, source, repeat, and shuffle one tested state machine independent of DOM.
-5. **Addressed: version persistence.** Schema v1 validates the player snapshot, migrates
+5. **Addressed: version persistence.** Schema v2 validates the player snapshot, migrates
+   v1 in place, persists the materialized shuffle order, migrates
    existing localStorage keys, reconciles catalog IDs and always restores paused.
 6. **Expand the data repository/cache.** Profile/artist caching and lazy signed-audio
    resolution are in place. Add measured owner-track/catalog reads only where RLS and

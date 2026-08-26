@@ -18,9 +18,10 @@ import {
     renderArtistLinks
 } from "./artist-utils.js";
 import {
+    buildShuffleOrder,
     getHistoryDecision,
     getSequentialQueueId,
-    getShuffleDecision,
+    reconcileShuffleOrder,
     shouldRepeatCurrentTrack
 } from "./queue-decisions.js";
 import {
@@ -194,6 +195,7 @@ let shuffleHistory = [];
 let shuffleHistoryIndex = -1;
 let pendingShuffleHistoryIndex = null;
 let shuffleCycleIds = new Set();
+let shuffleOrderIds = [];
 let autoplayErrorAttempts = 0;
 let audioErrorRecoveryPending = false;
 let audioErrorRetrySwitchId = -1;
@@ -421,6 +423,38 @@ function getPlaybackQueue() {
     return getCatalogPlaybackQueue();
 }
 
+function getCanonicalQueueIds() {
+    return getPlaybackQueue().map((track) => track.catalogId);
+}
+
+function rebuildShuffleOrder(anchorId = currentTrack?.catalogId) {
+    shuffleOrderIds = buildShuffleOrder({
+        queueIds: getCanonicalQueueIds(),
+        currentId: anchorId
+    });
+    shuffleCycleIds = new Set(anchorId ? [anchorId] : []);
+    return shuffleOrderIds;
+}
+
+function reconcileCurrentShuffleOrder() {
+    shuffleOrderIds = reconcileShuffleOrder({
+        orderIds: shuffleOrderIds,
+        queueIds: getCanonicalQueueIds(),
+        currentId: currentTrack?.catalogId
+    });
+    return shuffleOrderIds;
+}
+
+function getVisibleQueue() {
+    const canonicalQueue = getPlaybackQueue();
+    if (!shuffleEnabled || !currentTrack) return canonicalQueue;
+    const tracksById = new Map(canonicalQueue.map((track) => [track.catalogId, track]));
+    const order = reconcileCurrentShuffleOrder();
+    const currentIndex = order.indexOf(currentTrack.catalogId);
+    const visibleIds = currentIndex >= 0 ? order.slice(currentIndex) : order;
+    return visibleIds.map((id) => tracksById.get(id)).filter(Boolean);
+}
+
 
 function updatePlaybackModeButtons() {
     shuffleButtons.forEach((button) => {
@@ -547,12 +581,17 @@ function recordTrackInShuffleHistory(track) {
 function toggleShuffleMode() {
     shuffleEnabled = !shuffleEnabled;
     pendingShuffleHistoryIndex = null;
-    shuffleCycleIds = new Set(currentTrack ? [currentTrack.catalogId] : []);
+    if (shuffleEnabled) rebuildShuffleOrder();
+    else {
+        shuffleOrderIds = [];
+        shuffleCycleIds = new Set(currentTrack ? [currentTrack.catalogId] : []);
+    }
     invalidatePredictedNext();
     schedulePredictedNextRefresh();
 
     savePlaybackModes();
     updatePlaybackModeButtons();
+    if (playerQueueSheet && !playerQueueSheet.hidden) renderPlayerQueue();
 }
 
 
@@ -577,6 +616,7 @@ function restorePlaybackModes(snapshot) {
     repeatMode = REPEAT_MODES.includes(snapshot.repeatMode)
         ? snapshot.repeatMode
         : "off";
+    shuffleOrderIds = [...snapshot.shuffleOrder.ids];
 
     updatePlaybackModeButtons();
 }
@@ -592,20 +632,20 @@ function getSequentialTrack(direction, playbackQueue) {
     return playbackQueue.find((track) => track.catalogId === catalogId) || null;
 }
 
-function getShuffledTrack(direction, playbackQueue) {
-    const decision = getShuffleDecision({
-        queueIds: playbackQueue.map((track) => track.catalogId),
-        currentId: currentTrack?.catalogId,
-        direction,
-        repeatMode,
-        historyIds: shuffleHistory,
-        historyIndex: shuffleHistoryIndex,
-        validHistoryIds: getCatalogTracks().map((track) => track.catalogId),
-        cycleIds: [...shuffleCycleIds]
+function getShuffledTrack(direction) {
+    if (direction < 0 || !currentTrack) return null;
+    let order = reconcileCurrentShuffleOrder();
+    let catalogId = getSequentialQueueId({
+        queueIds: order,
+        currentId: currentTrack.catalogId,
+        direction: 1,
+        repeatMode: "off"
     });
-    pendingShuffleHistoryIndex = decision.historyIndex;
-    shuffleCycleIds = new Set(decision.cycleIds);
-    return findTrackByCatalogId(decision.catalogId);
+    if (!catalogId && repeatMode === "all") {
+        order = rebuildShuffleOrder(currentTrack.catalogId);
+        catalogId = order[1] || order[0] || null;
+    }
+    return findTrackByCatalogId(catalogId);
 }
 
 function getHistoryTrack(direction) {
@@ -673,13 +713,13 @@ function getTrackForNavigation(
         return currentTrack;
     }
 
-    const futureHistoryTrack = getHistoryTrack(1);
+    const futureHistoryTrack = shuffleEnabled ? getHistoryTrack(1) : null;
     if (futureHistoryTrack && !fromError) return futureHistoryTrack;
     pendingShuffleHistoryIndex = null;
 
     const playbackQueue = getPlaybackQueue();
     const targetTrack = shuffleEnabled
-        ? getShuffledTrack(1, playbackQueue)
+        ? getShuffledTrack(1)
         : getSequentialTrack(1, playbackQueue);
     if (targetTrack && (!fromError || targetTrack.catalogId !== currentTrack?.catalogId)) {
         return targetTrack;
@@ -835,7 +875,7 @@ function openFullscreenPlayer() {
 function renderPlayerQueue() {
     if (!playerQueueList) return;
 
-    const queue = getPlaybackQueue();
+    const queue = getVisibleQueue();
     playerQueueList.replaceChildren();
 
     queue.forEach((track, index) => {
@@ -851,6 +891,10 @@ function renderPlayerQueue() {
         button.dataset.queueTrackId = track.catalogId;
         button.classList.toggle("is-current", isCurrent);
         button.setAttribute("aria-current", isCurrent ? "true" : "false");
+        button.setAttribute(
+            "aria-label",
+            `${isCurrent ? "Сейчас играет: " : "Далее: "}${track.title || "Без названия"} — ${track.artist || "Неизвестный артист"}`
+        );
 
         artwork.src = getTrackCardArtwork(track.cover || FALLBACK_COVER).small;
         artwork.alt = "";
@@ -935,8 +979,8 @@ function closeFullscreenPlayer(fromDrag = false) {
 
     if (fromDrag) {
         fullscreenPlayer.style.transition =
-            "transform 300ms " +
-            "cubic-bezier(0.32, 0, 0.67, 0)";
+            "transform 320ms " +
+            "cubic-bezier(0.22, 1, 0.36, 1)";
 
         fullscreenPlayer.style.transform =
             "translate3d(0, 100vh, 0)";
@@ -1773,24 +1817,33 @@ function predictNextTrack() {
     if (!currentTrack || repeatMode === "one") return null;
     const savedPendingIndex = pendingShuffleHistoryIndex;
     const savedCycleIds = new Set(shuffleCycleIds);
+    const savedShuffleOrderIds = [...shuffleOrderIds];
     const savedContext = getPlaybackContext();
     let nextTrack;
     let predictedPendingIndex;
     let predictedCycleIds;
+    let predictedShuffleOrderIds;
     suppressPredictionInvalidation = true;
     try {
         nextTrack = getTrackForNavigation(1, { reason: "ended" });
         predictedPendingIndex = pendingShuffleHistoryIndex;
         predictedCycleIds = new Set(shuffleCycleIds);
+        predictedShuffleOrderIds = [...shuffleOrderIds];
         const changedContext = getPlaybackContext().id !== savedContext.id;
         if (changedContext) setPlaybackContext(savedContext);
         pendingShuffleHistoryIndex = savedPendingIndex;
         shuffleCycleIds = savedCycleIds;
+        shuffleOrderIds = savedShuffleOrderIds;
     } finally {
         suppressPredictionInvalidation = false;
     }
     if (!nextTrack || nextTrack.catalogId === currentTrack.catalogId) return null;
-    return { track: nextTrack, predictedPendingIndex, predictedCycleIds };
+    return {
+        track: nextTrack,
+        predictedPendingIndex,
+        predictedCycleIds,
+        predictedShuffleOrderIds
+    };
 }
 
 function waitForPreparedAudio(mediaElement, requestId) {
@@ -1935,9 +1988,10 @@ function clearPlaybackError() {
 */
 async function startAudio(
     expectedCatalogId = currentTrack?.catalogId,
-    expectedPlaybackIntentId = playbackIntentId
+    expectedPlaybackIntentId = playbackIntentId,
+    { continuation = false, retryAttempt = 0 } = {}
 ) {
-    const targetAudio = audio;
+    let targetAudio = audio;
     setFullscreenLoadingState(true);
 
     try {
@@ -1960,6 +2014,7 @@ async function startAudio(
             });
         }
 
+        targetAudio = audio;
         applyPlaybackVolume();
 
         logPlaybackDiagnostic("play() call", targetAudio, {
@@ -1994,6 +2049,44 @@ async function startAudio(
                 expectedCatalogId ||
             playbackIntentId !== expectedPlaybackIntentId
         ) {
+            return;
+        }
+
+        if (
+            continuation &&
+            retryAttempt < 1 &&
+            error?.name !== "NotAllowedError"
+        ) {
+            await new Promise((resolve) => {
+                if (targetAudio.readyState >= 2) {
+                    resolve();
+                    return;
+                }
+                let settled = false;
+                const finish = () => {
+                    if (settled) return;
+                    settled = true;
+                    window.clearTimeout(timeoutId);
+                    targetAudio.removeEventListener("canplay", finish);
+                    targetAudio.removeEventListener("loadeddata", finish);
+                    targetAudio.removeEventListener("error", finish);
+                    resolve();
+                };
+                const timeoutId = window.setTimeout(finish, 2500);
+                targetAudio.addEventListener("canplay", finish, { once: true });
+                targetAudio.addEventListener("loadeddata", finish, { once: true });
+                targetAudio.addEventListener("error", finish, { once: true });
+            });
+            if (
+                targetAudio === audio &&
+                currentTrack?.catalogId === expectedCatalogId &&
+                playbackIntentId === expectedPlaybackIntentId
+            ) {
+                return startAudio(expectedCatalogId, expectedPlaybackIntentId, {
+                    continuation: true,
+                    retryAttempt: retryAttempt + 1
+                });
+            }
             return;
         }
 
@@ -2044,6 +2137,7 @@ function savePlayerState() {
         volume: userVolume,
         repeatMode,
         shuffle: shuffleEnabled,
+        shuffleOrder: { ids: shuffleOrderIds },
         queue: {
             ids: context.queueIds,
             currentIndex: context.currentIndex
@@ -2302,6 +2396,7 @@ async function startPredictedCrossfade() {
     predictedNext = null;
     pendingShuffleHistoryIndex = prediction.predictedPendingIndex;
     shuffleCycleIds = prediction.predictedCycleIds;
+    shuffleOrderIds = prediction.predictedShuffleOrderIds;
     audio = incoming;
     standbyAudio = outgoing;
     crossfadeState = {
@@ -2357,6 +2452,7 @@ async function startPreparedNextImmediately() {
     predictedNext = null;
     pendingShuffleHistoryIndex = prediction.predictedPendingIndex;
     shuffleCycleIds = prediction.predictedCycleIds;
+    shuffleOrderIds = prediction.predictedShuffleOrderIds;
     audio = incoming;
     standbyAudio = outgoing;
     outgoing.pause();
@@ -2938,7 +3034,8 @@ async function playTrack(
         direction = 0,
         preparedCover = null,
         reuseAudio = false,
-        startPlayback = true
+        startPlayback = true,
+        continuation = false
     } = {}
 ) {
     if (!track) return;
@@ -3051,7 +3148,9 @@ async function playTrack(
     pendingRestoredPosition = 0;
     knownDuration = 0;
     setPlaybackContextCurrent(track.catalogId);
+    if (shuffleEnabled && direction === 0) rebuildShuffleOrder(track.catalogId);
     recordTrackInShuffleHistory(track);
+    if (playerQueueSheet && !playerQueueSheet.hidden) renderPlayerQueue();
 
     /*
     Аудиофайл начинает загружаться сразу, но play()
@@ -3101,7 +3200,7 @@ async function playTrack(
         savePlayerState();
 
         if (startPlayback) {
-            startAudio(track.catalogId, requestedPlaybackIntentId);
+            startAudio(track.catalogId, requestedPlaybackIntentId, { continuation });
         }
     }
 
@@ -3272,7 +3371,10 @@ function playNextTrack({ fromError = false, reason = "manual" } = {}) {
         return;
     }
 
-    playTrack(nextTrack, null, { direction: 1 });
+    playTrack(nextTrack, null, {
+        direction: 1,
+        continuation: reason === "ended" && !fromError
+    });
 }
 
 function handleAutoplayFailure() {
@@ -3518,6 +3620,13 @@ function restorePlayerState() {
     }
     pendingShuffleHistoryIndex = null;
     shuffleCycleIds = new Set([savedTrackObject.catalogId]);
+    shuffleOrderIds = shuffleEnabled
+        ? reconcileShuffleOrder({
+            orderIds: snapshot.shuffleOrder.ids,
+            queueIds: getCanonicalQueueIds(),
+            currentId: savedTrackObject.catalogId
+        })
+        : [];
     pendingRestoredPosition = snapshot.position;
     knownDuration = snapshot.duration;
 
@@ -3768,6 +3877,7 @@ fullscreenCoverNext =
             shuffleCycleIds = new Set(
                 currentTrack ? [currentTrack.catalogId] : []
             );
+            if (shuffleEnabled) rebuildShuffleOrder(currentTrack?.catalogId);
             schedulePredictedNextRefresh();
         }
     );
@@ -3797,6 +3907,8 @@ fullscreenCoverNext =
             "[role='button']",
             ".fullscreen-player-progress",
             ".fullscreen-player-artist-identity",
+            ".player-queue-panel",
+            ".player-queue-list",
             ".artist-action-menu"
         ].join(", ");
 

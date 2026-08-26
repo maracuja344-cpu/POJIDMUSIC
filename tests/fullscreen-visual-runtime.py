@@ -249,9 +249,11 @@ def run_viewport(server_port, output_dir, spec):
                 controls = metrics["rects"]["controls"]
                 artist_panel = metrics["rects"]["artistPanel"]
                 panel_gap = artist_panel["y"] - controls["bottom"]
+                panel_is_visible = artist_panel["display"] != "none"
                 metrics["artistPanelLayout"] = {
                     "gapFromControls": panel_gap,
-                    "belowControls": panel_gap >= 12,
+                    "visible": panel_is_visible,
+                    "belowControls": not panel_is_visible or panel_gap >= 12,
                     "insideViewport": not artist_panel["clipped"],
                 }
                 assert metrics["artistPanelLayout"]["belowControls"], metrics

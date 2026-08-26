@@ -1,8 +1,10 @@
 import {
+    buildShuffleOrder,
     getHistoryDecision,
     getSequentialQueueId,
     getShuffleDecision,
     reconcileQueueSnapshot,
+    reconcileShuffleOrder,
     shouldRepeatCurrentTrack
 } from "../js/queue-decisions.js";
 
@@ -111,6 +113,31 @@ try {
         shuffle({ queueIds: ["a"] }).catalogId === null);
     assert("one-item shuffle under Repeat All returns current",
         shuffle({ queueIds: ["a"], repeatMode: "all" }).catalogId === "a");
+
+    const materialized = buildShuffleOrder({
+        queueIds: ["a", "b", "c", "d"],
+        currentId: "c",
+        random: () => 0
+    });
+    assert("materialized shuffle keeps current track as the anchor",
+        materialized[0] === "c");
+    assert("materialized shuffle contains each canonical queue ID once",
+        JSON.stringify([...materialized].sort()) === JSON.stringify(["a", "b", "c", "d"]));
+    const restoredOrder = reconcileShuffleOrder({
+        orderIds: ["c", "stale", "a"],
+        queueIds: ["a", "b", "c"],
+        currentId: "c"
+    });
+    assert("shuffle order drops stale IDs and appends new tracks",
+        JSON.stringify(restoredOrder) === JSON.stringify(["c", "a", "b"]));
+    const migratedOrder = reconcileShuffleOrder({
+        orderIds: [],
+        queueIds: ["a", "b", "c"],
+        currentId: "b",
+        random: () => 0
+    });
+    assert("missing persisted shuffle order is rebuilt around current",
+        migratedOrder[0] === "b" && migratedOrder.length === 3);
 
     const reconciled = reconcileQueueSnapshot({
         queueIds: ["stale", "b", "c"],

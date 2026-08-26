@@ -42,6 +42,7 @@ try {
         volume: 0.65,
         repeatMode: "one",
         shuffle: true,
+        shuffleOrder: { ids: ["a", "b"] },
         queue: { ids: ["a", "b"], currentIndex: 0 },
         history: { ids: ["a", "b", "a"], index: 1 },
         source: { type: "artist", id: "artist-x", label: "Artist X" },
@@ -55,6 +56,8 @@ try {
     assert("volume restores", restored.volume === 0.65);
     assert("repeat restores", restored.repeatMode === "one");
     assert("shuffle restores", restored.shuffle === true);
+    assert("materialized shuffle order restores",
+        JSON.stringify(restored.shuffleOrder.ids) === JSON.stringify(["a", "b"]));
     assert("position restores", restored.position === 42.5);
     assert("known duration restores without resolving audio",
         restored.duration === 75.25);
@@ -64,6 +67,14 @@ try {
         deserializePlayerSnapshot('{"version":99,"currentTrackId":"a"}') === null);
     assert("malformed JSON does not break boot",
         deserializePlayerSnapshot("{bad") === null);
+    const upgradedV1 = deserializePlayerSnapshot(JSON.stringify({
+        ...source,
+        version: 1,
+        shuffleOrder: undefined
+    }));
+    assert("version 1 snapshot upgrades without losing playback state",
+        upgradedV1.version === 2 && upgradedV1.currentTrackId === "a" &&
+        upgradedV1.shuffleOrder.ids.length === 0);
 
     const legacy = memoryStorage({
         "player-track": "music/a.mp3",
@@ -100,6 +111,8 @@ try {
         reconciled.currentTrackId === "a" && reconciled.queue.currentIndex === 0);
     assert("stale history IDs are removed without losing duplicates",
         JSON.stringify(reconciled.history.ids) === JSON.stringify(["a", "a"]));
+    assert("stale shuffle order IDs are removed",
+        JSON.stringify(reconciled.shuffleOrder.ids) === JSON.stringify(["a"]));
 
     const removed = reconcilePlayerSnapshot(source, ["b", "c"], ["b", "c"]);
     assert("removed current track produces idle state",

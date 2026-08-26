@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="pojidmusic-release" content="pwa-v26">
+    <meta name="pojidmusic-release" content="pwa-v27">
 
     <meta
         name="viewport"
@@ -1295,7 +1295,7 @@
                         aria-hidden="true"
                     >
                         <path
-                            d="M6 5V19M18 6L9 12L18 18V6Z"
+                            d="M17.5 5.5L7.5 12L17.5 18.5V5.5Z"
                         ></path>
                     </svg>
                 </button>
@@ -1342,7 +1342,7 @@
                         aria-hidden="true"
                     >
                         <path
-                            d="M18 5V19M6 6L15 12L6 18V6Z"
+                            d="M6.5 5.5L16.5 12L6.5 18.5V5.5Z"
                         ></path>
                     </svg>
                 </button>
@@ -1424,10 +1424,14 @@
             <div class="player-queue-panel">
                 <div class="player-queue-heading">
                     <div>
-                        <p>Далее</p>
+                        <p>Фактический порядок</p>
                         <h2>Очередь</h2>
                     </div>
-                    <button type="button" data-close-player-queue aria-label="Закрыть очередь">×</button>
+                    <button type="button" data-close-player-queue aria-label="Свернуть очередь">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 9L12 15L18 9"></path>
+                        </svg>
+                    </button>
                 </div>
                 <div class="player-queue-list"></div>
             </div>
