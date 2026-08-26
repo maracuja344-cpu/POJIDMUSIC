@@ -69,6 +69,25 @@ export function getSequentialQueueId({
     return direction > 0 ? ids[0] : ids[ids.length - 1];
 }
 
+export function getQueuePerspectiveIds({
+    queueIds,
+    currentId,
+    repeatMode = "off"
+}) {
+    const ids = uniqueIds(queueIds);
+    if (!currentId) return ids;
+
+    const currentIndex = ids.indexOf(currentId);
+    if (currentIndex < 0) return ids;
+
+    const currentAndFuture = ids.slice(currentIndex);
+    if (repeatMode !== "all" || currentIndex === 0) {
+        return currentAndFuture;
+    }
+
+    return [...currentAndFuture, ...ids.slice(0, currentIndex)];
+}
+
 export function getHistoryDecision({
     historyIds,
     historyIndex,

@@ -6,7 +6,7 @@
   "mobileClass": true,
   "mini": {
     "width": 366,
-    "height": 72
+    "height": 64
   },
   "searchCard": {
     "width": 370,
@@ -15,75 +15,60 @@
   "visibleMiniButtons": [
     "Воспроизвести"
   ],
-  "durationBeforeReload": "1:15",
-  "restoredDuration": "1:15",
+  "durationBeforeReload": "2:11",
+  "restoredDuration": "2:11",
   "miniGeometry": {
     "cover": {
-      "top": 773.0701293945312,
-      "bottom": 817.0701293945312,
-      "height": 44,
-      "center": 795.0701293945312
+      "top": 714.1976928710938,
+      "bottom": 762.1854248046875,
+      "height": 47.98773193359375,
+      "center": 738.1915588378906
     },
     "info": {
-      "top": 773.0701293945312,
-      "bottom": 817.0701293945312,
-      "height": 44,
-      "center": 795.0701293945312
+      "top": 721.2427368164062,
+      "bottom": 755.124755859375,
+      "height": 33.88201904296875,
+      "center": 738.1837463378906
     },
     "title": {
-      "top": 777.2732543945312,
-      "bottom": 795.2732543945312,
-      "height": 18,
-      "center": 786.2732543945312
+      "top": 721.2427368164062,
+      "bottom": 738.73828125,
+      "height": 17.49554443359375,
+      "center": 729.9905090332031
     },
     "artist": {
-      "top": 797.2732543945312,
-      "bottom": 812.8670043945312,
-      "height": 15.59375,
-      "center": 805.0701293945312
+      "top": 740.73779296875,
+      "bottom": 755.124755859375,
+      "height": 14.386962890625,
+      "center": 747.9312744140625
     }
   },
   "fullscreenGeometry": {
     "controls": {
-      "top": 595.03125,
-      "right": 374,
-      "bottom": 663.03125,
-      "left": 16,
-      "width": 358,
-      "height": 68
+      "top": 526.1382446289062,
+      "right": 368,
+      "bottom": 652.1382446289062,
+      "left": 22,
+      "width": 346,
+      "height": 126
     },
     "panel": {
-      "top": 774,
-      "right": 374,
-      "bottom": 832,
-      "left": 16,
-      "width": 358,
-      "height": 58
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0,
+      "width": 0,
+      "height": 0
     },
-    "gap": 110.96875,
+    "gap": -652.1382446289062,
     "viewport": [
       390,
       844
     ]
   },
   "artistProfile": {
-    "cards": 7,
+    "cards": 4,
     "artistActions": 0
   },
-  "collaborationMenu": {
-    "title": "Labuba",
-    "label": "Выберите артиста:",
-    "artists": [
-      "Frenbat9",
-      "triplepeepy"
-    ],
-    "open": true,
-    "bounds": {
-      "top": 348.75,
-      "right": 370,
-      "bottom": 435.75,
-      "left": 146
-    },
-    "withinViewport": true
-  }
+  "collaborationMenu": null
 }

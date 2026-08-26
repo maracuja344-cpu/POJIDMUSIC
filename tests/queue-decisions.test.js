@@ -1,6 +1,7 @@
 import {
     buildShuffleOrder,
     getHistoryDecision,
+    getQueuePerspectiveIds,
     getSequentialQueueId,
     getShuffleDecision,
     reconcileQueueSnapshot,
@@ -81,6 +82,19 @@ try {
         sequential({ queueIds: [], currentId: null }) === null);
     assert("missing current ID falls back to first queue ID",
         sequential({ currentId: "stale" }) === "a");
+
+    assert("Queue perspective starts with current and keeps only the real future",
+        JSON.stringify(getQueuePerspectiveIds({
+            queueIds: ["a", "b", "c", "d"],
+            currentId: "c",
+            repeatMode: "off"
+        })) === JSON.stringify(["c", "d"]));
+    assert("Repeat All Queue perspective includes the real wrapped future",
+        JSON.stringify(getQueuePerspectiveIds({
+            queueIds: ["a", "b", "c", "d"],
+            currentId: "c",
+            repeatMode: "all"
+        })) === JSON.stringify(["c", "d", "a", "b"]));
 
     assert("Previous uses backward history", history().catalogId === "a");
     assert("forward history returns its cursor",

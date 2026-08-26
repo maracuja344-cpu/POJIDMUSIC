@@ -20,6 +20,7 @@ import {
 import {
     buildShuffleOrder,
     getHistoryDecision,
+    getQueuePerspectiveIds,
     getSequentialQueueId,
     reconcileShuffleOrder,
     shouldRepeatCurrentTrack
@@ -447,8 +448,18 @@ function reconcileCurrentShuffleOrder() {
 
 function getVisibleQueue() {
     const canonicalQueue = getPlaybackQueue();
-    if (!shuffleEnabled || !currentTrack) return canonicalQueue;
     const tracksById = new Map(canonicalQueue.map((track) => [track.catalogId, track]));
+
+    if (!shuffleEnabled) {
+        const visibleIds = getQueuePerspectiveIds({
+            queueIds: canonicalQueue.map((track) => track.catalogId),
+            currentId: currentTrack?.catalogId,
+            repeatMode
+        });
+        return visibleIds.map((id) => tracksById.get(id)).filter(Boolean);
+    }
+
+    if (!currentTrack) return canonicalQueue;
     const order = reconcileCurrentShuffleOrder();
     const currentIndex = order.indexOf(currentTrack.catalogId);
     const visibleIds = currentIndex >= 0 ? order.slice(currentIndex) : order;
@@ -608,6 +619,7 @@ function cycleRepeatMode() {
 
     savePlaybackModes();
     updatePlaybackModeButtons();
+    if (playerQueueSheet && !playerQueueSheet.hidden) renderPlayerQueue();
 }
 
 
@@ -911,8 +923,14 @@ function renderPlayerQueue() {
 function setPlayerQueueOpen(open) {
     if (!playerQueueSheet) return;
     if (open) renderPlayerQueue();
-    playerQueueSheet.hidden = !open;
     document.body.classList.toggle("player-queue-open", open);
+    playerQueueSheet.hidden = !open;
+    if (open && fullscreenPlayer) fullscreenPlayer.scrollTop = 0;
+    playerQueueSheet.setAttribute(
+        "aria-modal",
+        String(open && window.matchMedia("(max-width: 932px)").matches)
+    );
+    fullscreenQueueButton?.classList.toggle("is-active", open);
     fullscreenQueueButton?.setAttribute("aria-expanded", String(open));
 }
 

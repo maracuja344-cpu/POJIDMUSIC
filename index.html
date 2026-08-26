@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="pojidmusic-release" content="pwa-v27">
+    <meta name="pojidmusic-release" content="pwa-v28">
 
     <meta
         name="viewport"
@@ -1155,7 +1155,8 @@
 </div>
 
 
-    <!-- Основное содержимое большого плеера -->
+    <!-- Player and desktop queue share one responsive layout. -->
+    <div class="fullscreen-player-layout">
     <div class="fullscreen-player-content">
 
         <div class="fullscreen-player-drag-handle" aria-hidden="true"></div>
@@ -1263,7 +1264,63 @@
 
             <!-- Кнопки управления -->
             <div class="fullscreen-player-controls">
+                <div class="fullscreen-player-primary-controls">
+                <!-- Предыдущий трек -->
+                <button
+                    class="fullscreen-player-prev"
+                    type="button"
+                    aria-label="Предыдущий трек"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M17.5 5.5L7.5 12L17.5 18.5V5.5Z"
+                        ></path>
+                    </svg>
+                </button>
 
+                <!-- Play / Pause -->
+                <button
+                    class="fullscreen-player-toggle"
+                    type="button"
+                    aria-label="Воспроизвести или поставить на паузу"
+                >
+                    <svg
+                        class="fullscreen-play-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M8 5V19L19 12L8 5Z"></path>
+                    </svg>
+                    <svg
+                        class="fullscreen-pause-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M7 5H10V19H7V5ZM14 5H17V19H14V5Z"></path>
+                    </svg>
+                </button>
+
+                <!-- Следующий трек -->
+                <button
+                    class="fullscreen-player-next"
+                    type="button"
+                    aria-label="Следующий трек"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M6.5 5.5L16.5 12L6.5 18.5V5.5Z"
+                        ></path>
+                    </svg>
+                </button>
+                </div>
+
+                <div class="fullscreen-player-secondary-controls">
                 <button
                     class="player-mode-button fullscreen-player-shuffle"
                     type="button"
@@ -1281,70 +1338,6 @@
                         ></path>
                     </svg>
                     <span class="fullscreen-control-label">Shuffle</span>
-                </button>
-
-
-                <!-- Предыдущий трек -->
-                <button
-                    class="fullscreen-player-prev"
-                    type="button"
-                    aria-label="Предыдущий трек"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M17.5 5.5L7.5 12L17.5 18.5V5.5Z"
-                        ></path>
-                    </svg>
-                </button>
-
-
-                <!-- Play / Pause -->
-                <button
-                    class="fullscreen-player-toggle"
-                    type="button"
-                    aria-label="Воспроизвести или поставить на паузу"
-                >
-                    <!-- Иконка Play -->
-                    <svg
-                        class="fullscreen-play-icon"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M8 5V19L19 12L8 5Z"
-                        ></path>
-                    </svg>
-
-                    <!-- Иконка Pause -->
-                    <svg
-                        class="fullscreen-pause-icon"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M7 5H10V19H7V5ZM14 5H17V19H14V5Z"
-                        ></path>
-                    </svg>
-                </button>
-
-
-                <!-- Следующий трек -->
-                <button
-                    class="fullscreen-player-next"
-                    type="button"
-                    aria-label="Следующий трек"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M6.5 5.5L16.5 12L6.5 18.5V5.5Z"
-                        ></path>
-                    </svg>
                 </button>
 
 
@@ -1386,6 +1379,7 @@
                     </svg>
                     <span>Queue</span>
                 </button>
+                </div>
 
                 <div class="fullscreen-volume-control">
                     <input
@@ -1400,12 +1394,11 @@
                 </div>
 
             </div>
-        </div>
-
         <div
             class="fullscreen-player-artist-identity"
             hidden
         ></div>
+        </div>
 
         <div
             id="player-queue-sheet"
@@ -1435,6 +1428,7 @@
                 </div>
                 <div class="player-queue-list"></div>
             </div>
+        </div>
         </div>
 </section>
 

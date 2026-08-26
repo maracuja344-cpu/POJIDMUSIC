@@ -239,6 +239,8 @@ The engine functions are:
 - `getSequentialTrack`: ordered navigation and repeat-all wrapping.
 - `buildShuffleOrder` / `reconcileShuffleOrder`: materialize and restore the actual
   shuffled future without mutating canonical source order or replacing current.
+- `getQueuePerspectiveIds`: presents current first, followed only by the actual future;
+  Repeat All appends the canonical wrap that will really play.
 - `getShuffledTrack`: advances through that materialized order and rebuilds it only at
   a Repeat All cycle boundary.
 - `getHistoryTrack`: backward/forward history traversal.
@@ -257,6 +259,7 @@ shuffle is enabled), is capped at 100 IDs, and is persisted independently.
 | Next | Uses shuffle forward history only while shuffled; otherwise follows the visible materialized/canonical queue. |
 | Previous | Uses history only; no sequential fallback or repeat-all wrap. |
 | Shuffle | Current stays fixed; Queue shows current plus the exact randomized future; Previous/forward traverse history. |
+| Queue presentation | Mobile uses an isolated bottom sheet; desktop adds a side panel to the shared Player/Queue grid without a modal backdrop. |
 | Repeat Off | End of source queue starts global autoplay instead of stopping. |
 | Repeat All | Sequential Next wraps; shuffle begins a new cycle. |
 | Repeat One, natural end | Restarts current track at time zero. |
