@@ -15,11 +15,17 @@
 20260808040000_add_structured_collab_upload.sql
 20260808050000_unify_artist_profile_management.sql
 20260823090000_enforce_artist_profile_invariant.sql
+20260902191700_create_telegram_accounts.sql
 ```
 
 Миграция artist system добавляет отдельные `artists` и `track_artists`, защищённую RPC для кредитов и консервативный backfill старого `artist_name`. Неоднозначные кредиты она не угадывает: такие строки остаются fallback и выводятся как `NOTICE` для ручной проверки.
 
 Последняя миграция добавляет пути аватара и баннера артиста, публичные buckets `artist-media` и `profile-avatars`, узкие Storage RLS-политики и RPC `set_artist_media_path`. RPC связывает только уже загруженный объект с артистом, которым управляет текущий связанный аккаунт; прямой `UPDATE artists` клиенту по-прежнему не разрешён.
+
+Миграция `20260902191700_create_telegram_accounts.sql` добавляет закрытую таблицу
+однозначной связи Telegram/Supabase. Для неё включён RLS, клиентские policies
+отсутствуют, а права `anon` и `authenticated` явно отозваны; доступ остаётся только у
+серверной Edge Function `telegram-auth`.
 
 Исправляющая миграция `20260808030000_fix_artist_links_and_media_protection.sql` консервативно связывает однозначные primary-credit с artist-профилем владельца при точном совпадении display name, применяет то же правило к будущим кредитам и запрещает удалять из Storage ещё используемые avatar/banner-объекты.
 

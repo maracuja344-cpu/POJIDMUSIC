@@ -1,6 +1,6 @@
 # POJIDMUSIC: architectural codemap
 
-Audit date: 2026-08-23. This document describes the code currently present in the
+Audit date: 2026-09-02. This document describes the code currently present in the
 repository. It is not a description of an intended or older architecture.
 
 ## 1. Project summary
@@ -68,7 +68,10 @@ visual change.
 |   `-- supabase/
 |       |-- config.js           public project URL and anon key
 |       `-- client.js           singleton client; exact bundled esm.sh dependency
-`-- supabase/migrations/        schema, functions, RLS, and Storage policies
+`-- supabase/
+    |-- config.toml            per-Function gateway configuration
+    |-- functions/telegram-auth  Telegram validation and Auth orchestration
+    `-- migrations/            schema, functions, RLS, and Storage policies
 ```
 
 Largest and most overloaded files: `player.js` (4125 lines), `track-upload.js`
@@ -298,7 +301,7 @@ absent, although an OS may still choose its own lock-screen button layout.
 
 ### Tables, relations, buckets, and RPCs
 
-Tables: `profiles`, `tracks`, `artists`, `track_artists`; Auth uses `auth.users`.
+Tables: `profiles`, `tracks`, `artists`, `track_artists`, `telegram_accounts`; Auth uses `auth.users`.
 Storage buckets: `track-audio` (private), `track-covers` (public), `profile-avatars`
 (public), `artist-media` (public).
 
@@ -367,6 +370,14 @@ was found. Deployment drift remains a risk: the repository cannot prove that the
 Supabase production was verified after `20260823090000_enforce_artist_profile_invariant`:
 all four artist profiles are linked. Its one-time exact-name backfill linked only the
 confirmed Zhorik and Lufy profiles to their existing unclaimed Artist rows.
+
+`telegram-auth` is public only at the Edge gateway layer (`verify_jwt=false`): every
+action validates raw Telegram Mini App `initData` HMAC and freshness before Auth or
+database access, while `link` additionally validates a Supabase bearer token. The
+server-only `telegram_accounts` table has unique Telegram/user ownership, RLS with no
+client policies, and revoked `anon`/`authenticated` grants. The function returns only
+a one-time magic-link token hash for client-side `verifyOtp`, never a session or admin
+credential.
 
 ## 7. Performance and reliability findings
 
