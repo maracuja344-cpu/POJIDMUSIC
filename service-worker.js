@@ -1,9 +1,9 @@
-const RELEASE_VERSION = "pwa-v36";
+const RELEASE_VERSION = "pwa-v37";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
-const ENTRY_VERSION = "36";
+const ENTRY_VERSION = "37";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html",
