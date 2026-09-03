@@ -8,6 +8,7 @@ import { isMobileDevice } from "./mobile.js";
 let initialized = false;
 let navigationModulePromise = null;
 let authModulePromise = null;
+let trackUploadModulePromise = null;
 let unsubscribeAuthState = null;
 
 const mobileNavigationStyles = document.createElement("link");
@@ -26,6 +27,15 @@ function loadNavigation() {
 function loadAuth() {
     authModulePromise ||= import("./auth.js");
     return authModulePromise;
+}
+
+function loadTrackUpload() {
+    trackUploadModulePromise ||= import("./track-upload.js")
+        .then((module) => {
+            module.initializeTrackUpload();
+            return module;
+        });
+    return trackUploadModulePromise;
 }
 
 function renderNavigationMarkup() {
@@ -156,6 +166,7 @@ async function openSearch() {
 
 async function openUpload() {
     exitMobileSearch({ clear: true });
+    await loadTrackUpload();
     const uploadButton = document.querySelector(
         ".profile-menu .track-upload-open-button"
     ) || document.querySelector(".track-upload-open-button");
