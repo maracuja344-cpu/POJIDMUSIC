@@ -1,10 +1,10 @@
-const RELEASE_VERSION = "pwa-v45";
+const RELEASE_VERSION = "pwa-v46";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "45";
+const ENTRY_VERSION = "46";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-upload-wizard.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
@@ -29,15 +29,6 @@ function versionNavigationHtml(html) {
 }
 function htmlResponse(html, sourceResponse) { const headers = new Headers(sourceResponse?.headers || {}); headers.set("Content-Type", "text/html; charset=utf-8"); headers.set("Cache-Control", "no-store"); return new Response(html, { status: sourceResponse?.status || 200, statusText: sourceResponse?.statusText || "OK", headers }); }
 async function handleNavigation(request) { const cache = await caches.open(SHELL_CACHE); try { const response = await fetch(request, { cache: "no-store" }); if (response.ok) { const html = await response.clone().text(); if (html.includes(RELEASE_MARKER) || html.includes(SERVED_RELEASE_MARKER)) { const versioned = htmlResponse(versionNavigationHtml(html), response); await cache.put(indexUrl, versioned.clone()); return versioned; } } } catch {} const cached = await cache.match(indexUrl); if (!cached) return Response.error(); const html = await cached.text(); return htmlResponse(versionNavigationHtml(html), cached); }
-async function handleShellAsset(canonicalUrl, request) {
-    const url = new URL(request.url);
-    if (url.searchParams.has("v")) {
-        try {
-            const fresh = await fetch(request, { cache: "no-store" });
-            if (fresh.ok) return fresh;
-        } catch {}
-    }
-    return await getCachedShellResponse(canonicalUrl) || new Response("POJIDMUSIC app shell cache is incomplete.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-}
+async function handleShellAsset(canonicalUrl, request) { const url = new URL(request.url); if (url.searchParams.has("v")) { try { const fresh = await fetch(request, { cache: "no-store" }); if (fresh.ok) return fresh; } catch {} } return await getCachedShellResponse(canonicalUrl) || new Response("POJIDMUSIC app shell cache is incomplete.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
 async function handleSdkAsset(request) { const cache = await caches.open(SDK_CACHE); const cached = await cache.match(request); if (cached) return cached; try { return await fetch(request); } catch { return Response.error(); } }
 self.addEventListener("fetch", (event) => { const { request } = event; if (request.method !== "GET") return; const url = new URL(request.url); if (sdkUrls.has(url.href)) { event.respondWith(handleSdkAsset(request)); return; } if (url.origin !== self.location.origin) return; if (request.mode === "navigate" && [scopePath, indexPath].includes(url.pathname)) { event.respondWith(handleNavigation(request)); return; } const canonicalUrl = shellUrlByPath.get(url.pathname); if (canonicalUrl) event.respondWith(handleShellAsset(canonicalUrl, request)); });
