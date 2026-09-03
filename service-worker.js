@@ -1,15 +1,17 @@
-const RELEASE_VERSION = "pwa-v37";
+const RELEASE_VERSION = "pwa-v38";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
-const ENTRY_VERSION = "37";
+const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
+const ENTRY_VERSION = "38";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html",
     "./style.css",
     "./telegram-profile.css",
     "./mobile-navigation.css",
+    "./track-upload-wizard.css",
     "./tracks.js",
     "./manifest.webmanifest",
     "./img/cover.jpg",
@@ -43,7 +45,8 @@ const CRITICAL_SHELL_ASSETS = [
     "./js/track-management.js",
     "./js/tracks-api.js",
     "./js/tracks-utils.js",
-    "./js/track-upload.js"
+    "./js/track-upload.js",
+    "./js/track-upload-wizard.js"
 ];
 
 const OPTIONAL_SHELL_ASSETS = [
@@ -135,9 +138,26 @@ async function getCachedShellResponse(canonicalUrl) {
 }
 
 function versionNavigationHtml(html) {
-    return html
+    let nextHtml = html
+        .replace(RELEASE_MARKER, SERVED_RELEASE_MARKER)
         .replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`)
         .replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`);
+
+    if (!nextHtml.includes("track-upload-wizard.css")) {
+        nextHtml = nextHtml.replace(
+            "</head>",
+            `    <link rel="stylesheet" href="track-upload-wizard.css?v=${ENTRY_VERSION}">\n</head>`
+        );
+    }
+
+    if (!nextHtml.includes("js/track-upload-wizard.js")) {
+        nextHtml = nextHtml.replace(
+            '<script\n        type="module"\n        src="js/script.js?v=' + ENTRY_VERSION + '"\n    ></script>',
+            `<script type="module" src="js/track-upload-wizard.js?v=${ENTRY_VERSION}"></script>\n\n    <script\n        type="module"\n        src="js/script.js?v=${ENTRY_VERSION}"\n    ></script>`
+        );
+    }
+
+    return nextHtml;
 }
 
 function htmlResponse(html, sourceResponse) {
@@ -158,7 +178,7 @@ async function handleNavigation(request) {
         const response = await fetch(request, { cache: "no-store" });
         if (response.ok) {
             const html = await response.clone().text();
-            if (html.includes(RELEASE_MARKER)) {
+            if (html.includes(RELEASE_MARKER) || html.includes(SERVED_RELEASE_MARKER)) {
                 const versioned = htmlResponse(versionNavigationHtml(html), response);
                 await cache.put(indexUrl, versioned.clone());
                 return versioned;
