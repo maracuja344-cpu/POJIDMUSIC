@@ -9,6 +9,8 @@ import { getCatalogTracks } from "./catalog-state.js";
 let initialized = false;
 let navigationModulePromise = null;
 let authModulePromise = null;
+let uploadWizardPromise = null;
+let feedbackModulePromise = null;
 let unsubscribeAuthState = null;
 let catalogLoadTimer = null;
 let catalogLoadDeadlineTimer = null;
@@ -29,6 +31,16 @@ function loadNavigation() {
 function loadAuth() {
     authModulePromise ||= import("./auth.js");
     return authModulePromise;
+}
+
+function loadUploadWizard() {
+    uploadWizardPromise ||= import("./track-upload-wizard-entry.js");
+    return uploadWizardPromise;
+}
+
+function loadFeedback() {
+    feedbackModulePromise ||= import("./feedback.js");
+    return feedbackModulePromise;
 }
 
 function shouldShowCatalogLoadScreen() {
@@ -299,6 +311,7 @@ async function openUpload() {
     if (!uploadButton) return;
 
     try {
+        await loadUploadWizard();
         const module = await import("./track-upload.js");
         module.initializeTrackUpload();
         uploadButton.click();
@@ -333,6 +346,13 @@ async function observeRole() {
 export function initializeMobileAppShell() {
     if (initialized) return;
     initialized = true;
+
+    void loadUploadWizard().catch((error) => {
+        console.error("Не удалось инициализировать мастер загрузки.", error);
+    });
+    void loadFeedback().catch((error) => {
+        console.error("Не удалось инициализировать фидбек.", error);
+    });
 
     initializeCatalogLoadScreen();
     renderNavigationMarkup();
