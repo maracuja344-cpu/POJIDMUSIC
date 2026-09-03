@@ -1,10 +1,10 @@
-const RELEASE_VERSION = "pwa-v39";
+const RELEASE_VERSION = "pwa-v40";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "39";
+const ENTRY_VERSION = "40";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html",
@@ -46,7 +46,8 @@ const CRITICAL_SHELL_ASSETS = [
     "./js/tracks-api.js",
     "./js/tracks-utils.js",
     "./js/track-upload.js",
-    "./js/track-upload-wizard.js"
+    "./js/track-upload-wizard.js",
+    "./js/track-upload-wizard-entry.js"
 ];
 
 const OPTIONAL_SHELL_ASSETS = [
@@ -81,6 +82,7 @@ const sdkUrls = new Set(SDK_ASSETS);
 const indexUrl = new URL("./index.html", self.registration.scope).href;
 const indexPath = new URL(indexUrl).pathname;
 const scopePath = new URL(self.registration.scope).pathname;
+const scriptPath = new URL("./js/script.js", self.registration.scope).pathname;
 
 async function cacheOptionalAssets(cache) {
     await Promise.allSettled(
@@ -138,26 +140,10 @@ async function getCachedShellResponse(canonicalUrl) {
 }
 
 function versionNavigationHtml(html) {
-    let nextHtml = html
+    return html
         .replace(RELEASE_MARKER, SERVED_RELEASE_MARKER)
         .replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`)
         .replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`);
-
-    if (!nextHtml.includes("track-upload-wizard.css")) {
-        nextHtml = nextHtml.replace(
-            "</head>",
-            `    <link rel="stylesheet" href="track-upload-wizard.css?v=${ENTRY_VERSION}">\n</head>`
-        );
-    }
-
-    if (!nextHtml.includes("js/track-upload-wizard.js")) {
-        nextHtml = nextHtml.replace(
-            "</body>",
-            `    <script type="module" src="js/track-upload-wizard.js?v=${ENTRY_VERSION}"></script>\n</body>`
-        );
-    }
-
-    return nextHtml;
 }
 
 function htmlResponse(html, sourceResponse) {
@@ -195,13 +181,33 @@ async function handleNavigation(request) {
 }
 
 async function handleShellAsset(canonicalUrl) {
-    return await getCachedShellResponse(canonicalUrl) || new Response(
-        "POJIDMUSIC app shell cache is incomplete.",
-        {
-            status: 503,
-            headers: { "Content-Type": "text/plain; charset=utf-8" }
-        }
-    );
+    const cached = await getCachedShellResponse(canonicalUrl);
+    if (!cached) {
+        return new Response(
+            "POJIDMUSIC app shell cache is incomplete.",
+            {
+                status: 503,
+                headers: { "Content-Type": "text/plain; charset=utf-8" }
+            }
+        );
+    }
+
+    const pathname = new URL(canonicalUrl).pathname;
+    if (pathname !== scriptPath) return cached;
+
+    const source = await cached.text();
+    const wizardImport = '\nimport "./track-upload-wizard-entry.js";\n';
+    const body = source.includes("track-upload-wizard-entry.js")
+        ? source
+        : source + wizardImport;
+    const headers = new Headers(cached.headers);
+    headers.set("Content-Type", "text/javascript; charset=utf-8");
+    headers.set("Cache-Control", "no-store");
+    return new Response(body, {
+        status: cached.status,
+        statusText: cached.statusText,
+        headers
+    });
 }
 
 async function handleSdkAsset(request) {
