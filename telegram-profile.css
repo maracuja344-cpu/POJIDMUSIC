@@ -1,5 +1,5 @@
 html[data-telegram-mini-app="true"] .account-profile-view {
-    padding: 26px 18px 150px;
+    padding: 22px 18px 150px;
 }
 
 html[data-telegram-mini-app="true"] .account-profile-view .profile-surface {
@@ -9,9 +9,11 @@ html[data-telegram-mini-app="true"] .account-profile-view .profile-surface {
     border: 0;
     border-radius: 28px;
     background:
-        radial-gradient(circle at 20% 0%, rgba(174, 111, 255, 0.14), transparent 34%),
-        rgba(255, 255, 255, 0.035);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        radial-gradient(circle at 50% -12%, rgba(174, 111, 255, 0.16), transparent 38%),
+        rgba(255, 255, 255, 0.032);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.075),
+        0 24px 70px rgba(0, 0, 0, 0.16);
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
 }
@@ -20,7 +22,7 @@ html[data-telegram-mini-app="true"] .account-profile-heading {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 13px;
     text-align: center;
 }
 
@@ -29,13 +31,13 @@ html[data-telegram-mini-app="true"] .account-profile-heading > div:last-child {
 }
 
 html[data-telegram-mini-app="true"] [data-account-avatar] {
-    width: 112px;
-    height: 112px;
-    flex: 0 0 112px;
+    width: 116px;
+    height: 116px;
+    flex: 0 0 116px;
     border-radius: 50%;
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.14),
-        0 16px 46px rgba(0, 0, 0, 0.28);
+        0 14px 38px rgba(0, 0, 0, 0.24);
 }
 
 html[data-telegram-mini-app="true"] .account-profile-heading .profile-kicker,
@@ -44,48 +46,52 @@ html[data-telegram-mini-app="true"] .account-profile-heading .profile-meta {
 }
 
 html[data-telegram-mini-app="true"] #account-profile-title {
-    margin: 0;
+    margin: 1px 0 0;
     max-width: 100%;
     overflow-wrap: anywhere;
     color: #fff;
-    font-size: clamp(30px, 8vw, 42px);
-    line-height: 1.02;
-    letter-spacing: -0.035em;
+    font-size: clamp(32px, 8vw, 43px);
+    line-height: 1;
+    letter-spacing: -0.04em;
 }
 
 html[data-telegram-mini-app="true"] .account-profile-details {
-    margin: 24px 0 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    margin: 18px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
 }
 
 html[data-telegram-mini-app="true"] .account-profile-details > div {
     min-width: 0;
-    padding: 15px 14px;
+    padding: 8px 12px;
     border: 1px solid rgba(255, 255, 255, 0.075);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.035);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.04);
 }
 
 html[data-telegram-mini-app="true"] .account-profile-details dt {
-    margin: 0 0 7px;
-    color: rgba(255, 255, 255, 0.42);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    display: none;
 }
 
 html[data-telegram-mini-app="true"] .account-profile-details dd {
     margin: 0;
     min-width: 0;
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.94);
-    font-size: 16px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 14px;
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-details > div:nth-child(2) dd::before {
+    content: "• ";
+    color: rgba(255, 255, 255, 0.34);
 }
 
 html[data-telegram-mini-app="true"] .profile-email-row {
@@ -93,24 +99,40 @@ html[data-telegram-mini-app="true"] .profile-email-row {
 }
 
 html[data-telegram-mini-app="true"] .profile-actions {
-    margin-top: 14px;
+    margin-top: 22px;
     display: grid;
     gap: 9px;
 }
 
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button {
-    min-height: 50px;
-    border-radius: 16px;
+    min-height: 52px;
+    border-radius: 17px;
     border-color: rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.055);
-    color: rgba(255, 255, 255, 0.88);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 15px;
     font-weight: 650;
+    transition:
+        transform 120ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button:active {
+    transform: scale(0.985);
+}
+
+html[data-telegram-mini-app="true"] .profile-actions [data-account-artist-page] {
+    background: rgba(255, 255, 255, 0.105);
+    color: #fff;
 }
 
 html[data-telegram-mini-app="true"] .profile-actions [data-change-account-avatar] {
+    min-height: 46px;
+    border-color: transparent;
     background: transparent;
-    color: rgba(255, 255, 255, 0.58);
+    color: rgba(255, 255, 255, 0.46);
+    font-size: 14px;
 }
 
 html[data-telegram-mini-app="true"] .profile-form-message:empty {
@@ -119,17 +141,21 @@ html[data-telegram-mini-app="true"] .profile-form-message:empty {
 
 @media (max-width: 560px) {
     html[data-telegram-mini-app="true"] .account-profile-view {
-        padding-top: 20px;
+        padding-top: 18px;
     }
 
     html[data-telegram-mini-app="true"] .account-profile-view .profile-surface {
-        padding: 24px 18px 18px;
+        padding: 24px 18px 17px;
         border-radius: 24px;
     }
 
     html[data-telegram-mini-app="true"] [data-account-avatar] {
-        width: 104px;
-        height: 104px;
-        flex-basis: 104px;
+        width: 108px;
+        height: 108px;
+        flex-basis: 108px;
+    }
+
+    html[data-telegram-mini-app="true"] .account-profile-details dd {
+        max-width: 168px;
     }
 }
