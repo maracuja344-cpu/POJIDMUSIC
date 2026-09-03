@@ -1,10 +1,10 @@
-const RELEASE_VERSION = "pwa-v40";
+const RELEASE_VERSION = "pwa-v41";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "40";
+const ENTRY_VERSION = "41";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html",
@@ -27,6 +27,7 @@ const CRITICAL_SHELL_ASSETS = [
     "./js/catalog-state.js",
     "./js/data-cache.js",
     "./js/data-repository.js",
+    "./js/feedback.js",
     "./js/image-cropper.js",
     "./js/mobile.js",
     "./js/media-session.js",
@@ -82,7 +83,6 @@ const sdkUrls = new Set(SDK_ASSETS);
 const indexUrl = new URL("./index.html", self.registration.scope).href;
 const indexPath = new URL(indexUrl).pathname;
 const scopePath = new URL(self.registration.scope).pathname;
-const scriptPath = new URL("./js/script.js", self.registration.scope).pathname;
 
 async function cacheOptionalAssets(cache) {
     await Promise.allSettled(
@@ -181,33 +181,13 @@ async function handleNavigation(request) {
 }
 
 async function handleShellAsset(canonicalUrl) {
-    const cached = await getCachedShellResponse(canonicalUrl);
-    if (!cached) {
-        return new Response(
-            "POJIDMUSIC app shell cache is incomplete.",
-            {
-                status: 503,
-                headers: { "Content-Type": "text/plain; charset=utf-8" }
-            }
-        );
-    }
-
-    const pathname = new URL(canonicalUrl).pathname;
-    if (pathname !== scriptPath) return cached;
-
-    const source = await cached.text();
-    const wizardImport = '\nimport "./track-upload-wizard-entry.js";\n';
-    const body = source.includes("track-upload-wizard-entry.js")
-        ? source
-        : source + wizardImport;
-    const headers = new Headers(cached.headers);
-    headers.set("Content-Type", "text/javascript; charset=utf-8");
-    headers.set("Cache-Control", "no-store");
-    return new Response(body, {
-        status: cached.status,
-        statusText: cached.statusText,
-        headers
-    });
+    return await getCachedShellResponse(canonicalUrl) || new Response(
+        "POJIDMUSIC app shell cache is incomplete.",
+        {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8" }
+        }
+    );
 }
 
 async function handleSdkAsset(request) {
