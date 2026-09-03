@@ -4,12 +4,14 @@ import {
     exitMobileSearch
 } from "./search.js";
 import { isMobileDevice } from "./mobile.js";
+import { getCatalogTracks } from "./catalog-state.js";
 
 let initialized = false;
 let navigationModulePromise = null;
 let authModulePromise = null;
-let trackUploadModulePromise = null;
 let unsubscribeAuthState = null;
+let catalogLoadTimer = null;
+let catalogLoadDeadlineTimer = null;
 
 const mobileNavigationStyles = document.createElement("link");
 mobileNavigationStyles.rel = "stylesheet";
@@ -29,13 +31,137 @@ function loadAuth() {
     return authModulePromise;
 }
 
-function loadTrackUpload() {
-    trackUploadModulePromise ||= import("./track-upload.js")
-        .then((module) => {
-            module.initializeTrackUpload();
-            return module;
-        });
-    return trackUploadModulePromise;
+function shouldShowCatalogLoadScreen() {
+    const url = new URL(window.location.href);
+    return !url.searchParams.get("artist") && !url.searchParams.get("view");
+}
+
+function createCatalogLoadScreen() {
+    if (!shouldShowCatalogLoadScreen()) return null;
+
+    const existing = document.querySelector(".catalog-load-screen");
+    if (existing) return existing;
+
+    const style = document.createElement("style");
+    style.dataset.catalogLoadScreenStyles = "true";
+    style.textContent = `
+        html.catalog-load-screen-active body {
+            overflow: hidden !important;
+        }
+        html.catalog-load-screen-active .track-skeleton {
+            display: none !important;
+        }
+        .catalog-load-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            display: grid;
+            place-items: center;
+            background: #07070a;
+            color: #fff;
+            opacity: 1;
+            transition: opacity 220ms ease;
+        }
+        .catalog-load-screen.is-ready {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .catalog-load-screen-inner {
+            display: grid;
+            justify-items: center;
+            gap: 18px;
+        }
+        .catalog-load-screen-wordmark {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: .22em;
+        }
+        .catalog-load-screen-line {
+            position: relative;
+            width: 72px;
+            height: 2px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(255,255,255,.12);
+        }
+        .catalog-load-screen-line::after {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 40%;
+            border-radius: inherit;
+            background: rgba(255,255,255,.86);
+            animation: catalog-load-slide 900ms ease-in-out infinite;
+        }
+        @keyframes catalog-load-slide {
+            0% { transform: translateX(-110%); }
+            55% { transform: translateX(95%); }
+            100% { transform: translateX(250%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .catalog-load-screen,
+            .catalog-load-screen-line::after {
+                transition-duration: 1ms;
+                animation-duration: 1ms;
+            }
+        }
+    `;
+    document.head.append(style);
+
+    const screen = document.createElement("div");
+    screen.className = "catalog-load-screen";
+    screen.setAttribute("role", "status");
+    screen.setAttribute("aria-live", "polite");
+    screen.innerHTML = `
+        <div class="catalog-load-screen-inner">
+            <span class="catalog-load-screen-wordmark">POJIDMUSIC</span>
+            <span class="catalog-load-screen-line" aria-hidden="true"></span>
+        </div>
+    `;
+
+    document.documentElement.classList.add("catalog-load-screen-active");
+    document.body.append(screen);
+    return screen;
+}
+
+function finishCatalogLoadScreen(screen) {
+    if (!screen || screen.classList.contains("is-ready")) return;
+
+    window.clearInterval(catalogLoadTimer);
+    window.clearTimeout(catalogLoadDeadlineTimer);
+    catalogLoadTimer = null;
+    catalogLoadDeadlineTimer = null;
+
+    document.querySelectorAll(".track-skeleton").forEach((card) => card.remove());
+    screen.classList.add("is-ready");
+    document.documentElement.classList.remove("catalog-load-screen-active");
+
+    window.setTimeout(() => {
+        screen.remove();
+        document.querySelector("style[data-catalog-load-screen-styles]")?.remove();
+    }, 260);
+}
+
+function initializeCatalogLoadScreen() {
+    const screen = createCatalogLoadScreen();
+    if (!screen) return;
+
+    const hasSupabaseTracks = () => getCatalogTracks().some((track) => (
+        track?.source === "supabase"
+    ));
+
+    if (hasSupabaseTracks()) {
+        finishCatalogLoadScreen(screen);
+        return;
+    }
+
+    catalogLoadTimer = window.setInterval(() => {
+        if (hasSupabaseTracks()) finishCatalogLoadScreen(screen);
+    }, 60);
+
+    catalogLoadDeadlineTimer = window.setTimeout(() => {
+        finishCatalogLoadScreen(screen);
+    }, 12000);
 }
 
 function renderNavigationMarkup() {
@@ -166,11 +292,19 @@ async function openSearch() {
 
 async function openUpload() {
     exitMobileSearch({ clear: true });
-    await loadTrackUpload();
     const uploadButton = document.querySelector(
         ".profile-menu .track-upload-open-button"
     ) || document.querySelector(".track-upload-open-button");
-    uploadButton?.click();
+
+    if (!uploadButton) return;
+
+    try {
+        const module = await import("./track-upload.js");
+        module.initializeTrackUpload();
+        uploadButton.click();
+    } catch (error) {
+        console.error("Не удалось открыть загрузку трека.", error);
+    }
 }
 
 async function openArtist() {
@@ -200,6 +334,7 @@ export function initializeMobileAppShell() {
     if (initialized) return;
     initialized = true;
 
+    initializeCatalogLoadScreen();
     renderNavigationMarkup();
     void observeRole();
 
