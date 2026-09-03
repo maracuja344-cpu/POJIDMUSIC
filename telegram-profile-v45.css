@@ -1,0 +1,42 @@
+/* v45: cache-independent Telegram profile action layout */
+html[data-telegram-mini-app="true"] .account-profile-view { padding: 8px 18px 150px; }
+html[data-telegram-mini-app="true"] .account-profile-view .profile-surface { width:min(100%,560px); margin:0 auto; padding:10px 0 0; border:0; background:transparent; box-shadow:none; }
+html[data-telegram-mini-app="true"] .account-profile-heading { display:flex; flex-direction:column; align-items:center; gap:11px; text-align:center; }
+html[data-telegram-mini-app="true"] .account-profile-heading .profile-kicker,
+html[data-telegram-mini-app="true"] .account-profile-heading .profile-meta { display:none; }
+html[data-telegram-mini-app="true"] [data-account-avatar] { width:100px; height:100px; flex:0 0 100px; border-radius:50%; box-shadow:0 0 0 1px rgba(255,255,255,.14),0 14px 38px rgba(0,0,0,.25); }
+html[data-telegram-mini-app="true"] #account-profile-title { margin:2px 0 0; color:#fff; font-size:clamp(31px,7.5vw,40px); line-height:1; letter-spacing:-.04em; }
+html[data-telegram-mini-app="true"] .account-profile-details { margin:12px 0 0; display:flex; flex-wrap:wrap; justify-content:center; gap:7px; }
+html[data-telegram-mini-app="true"] .account-profile-details > div { padding:7px 12px; border:1px solid rgba(255,255,255,.075); border-radius:999px; display:inline-flex; align-items:center; background:rgba(255,255,255,.045); }
+html[data-telegram-mini-app="true"] .account-profile-details dt { display:none; }
+html[data-telegram-mini-app="true"] .account-profile-details dd { margin:0; color:rgba(255,255,255,.75); font-size:14px; font-weight:650; white-space:nowrap; }
+html[data-telegram-mini-app="true"] .account-profile-details > div:nth-child(2) dd::before { content:"• "; color:rgba(255,255,255,.32); }
+html[data-telegram-mini-app="true"] .profile-email-row { display:none!important; }
+
+html[data-telegram-mini-app="true"] .profile-actions { margin-top:20px; padding:0; display:grid; gap:0; overflow:hidden; border:1px solid rgba(255,255,255,.075); border-radius:20px; background:rgba(255,255,255,.025); box-shadow:0 16px 44px rgba(0,0,0,.14); }
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button { position:relative; min-height:62px; padding:8px 46px 23px 62px; border:0; border-radius:0; display:flex; align-items:center; background-color:transparent; background-repeat:no-repeat,no-repeat; background-size:38px 38px,18px 18px; background-position:13px center,calc(100% - 15px) center; color:rgba(255,255,255,.94); font-size:15px; font-weight:600; line-height:1.2; text-align:left; }
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button + .profile-action-button { border-top:1px solid rgba(255,255,255,.07); }
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button:active { background-color:rgba(255,255,255,.05); }
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button::before { position:absolute; left:62px; bottom:9px; color:rgba(255,255,255,.42); font-size:12px; font-weight:500; line-height:1; }
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button::after { content:none!important; }
+
+html[data-telegram-mini-app="true"] [data-account-my-tracks] {
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Cpath d='M16 27V12l12-2v14M16 17l12-2' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='12.5' cy='27' r='3.5' fill='none' stroke='%23bd8dff' stroke-width='2'/%3E%3Ccircle cx='24.5' cy='24' r='3.5' fill='none' stroke='%23bd8dff' stroke-width='2'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html[data-telegram-mini-app="true"] [data-account-my-tracks]::before { content:"Релизы и управление"; }
+
+html[data-telegram-mini-app="true"] [data-account-artist-page] {
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Ccircle cx='19' cy='14' r='5' fill='none' stroke='%23bd8dff' stroke-width='2'/%3E%3Cpath d='M10 29c1-6 4-9 9-9s8 3 9 9' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html[data-telegram-mini-app="true"] [data-account-artist-page]::before { content:"Публичный профиль"; }
+
+html[data-telegram-mini-app="true"] [data-change-account-avatar] {
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Crect x='9' y='10' width='20' height='18' rx='3' fill='none' stroke='%23bd8dff' stroke-width='2'/%3E%3Ccircle cx='15' cy='16' r='2' fill='none' stroke='%23bd8dff' stroke-width='2'/%3E%3Cpath d='m11 26 6-6 4 4 3-3 4 4' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html[data-telegram-mini-app="true"] [data-change-account-avatar]::before { content:"Фото профиля"; }
+
+html[data-telegram-mini-app="true"] [data-open-feedback] {
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Cpath d='M10 11h18v13H18l-6 5v-5h-2z' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M15 17h.1M19 17h.1M23 17h.1' stroke='%23bd8dff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html[data-telegram-mini-app="true"] [data-open-feedback]::before { content:"Баги и идеи"; }
+html[data-telegram-mini-app="true"] .profile-form-message:empty { display:none; }
