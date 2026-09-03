@@ -1,0 +1,123 @@
+@media (max-width: 768px) {
+    .mobile-bottom-navigation {
+        position: fixed;
+        left: 16px;
+        right: 16px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+        z-index: 950;
+
+        width: auto;
+        min-height: 72px;
+        padding: 8px 12px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2px;
+
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 28px;
+        background: rgba(15, 15, 16, 0.92);
+        box-shadow:
+            0 14px 42px rgba(0, 0, 0, 0.34),
+            inset 0 1px 0 rgba(255, 255, 255, 0.025);
+        -webkit-backdrop-filter: blur(22px) saturate(1.1);
+        backdrop-filter: blur(22px) saturate(1.1);
+    }
+
+    .mobile-nav-button {
+        position: relative;
+        flex: 1 1 0;
+        min-width: 0;
+        height: 56px;
+        padding: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border: 0;
+        border-radius: 18px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.42);
+        box-shadow: none;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+
+        transition:
+            color 160ms ease,
+            opacity 160ms ease,
+            transform 120ms ease;
+    }
+
+    .mobile-nav-button[hidden] {
+        display: none !important;
+    }
+
+    .mobile-nav-button span {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+    }
+
+    .mobile-nav-button svg {
+        width: 27px;
+        height: 27px;
+        flex: 0 0 27px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 1;
+    }
+
+    .mobile-nav-button.is-active {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.98);
+        box-shadow: none;
+    }
+
+    .mobile-nav-button:active {
+        transform: scale(0.9);
+    }
+
+    .mobile-nav-button[data-mobile-tab="upload"] svg {
+        width: 31px;
+        height: 31px;
+        flex-basis: 31px;
+        stroke-width: 1.7;
+    }
+
+    .mobile-nav-button[data-mobile-tab="artist"] svg {
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
+    }
+
+    .mobile-nav-button:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.7);
+        outline-offset: -4px;
+    }
+
+    body:has(.mobile-bottom-navigation) {
+        padding-bottom: max(118px, calc(98px + env(safe-area-inset-bottom)));
+    }
+
+    body:has(.mini-player.active) .mobile-bottom-navigation {
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-bottom-navigation {
+        display: none !important;
+    }
+}
