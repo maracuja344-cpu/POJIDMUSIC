@@ -1,13 +1,13 @@
-const RELEASE_VERSION = "pwa-v44";
+const RELEASE_VERSION = "pwa-v45";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "44";
+const ENTRY_VERSION = "45";
 
 const CRITICAL_SHELL_ASSETS = [
-    "./index.html", "./style.css", "./telegram-profile.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-upload-wizard.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
+    "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-upload-wizard.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
     "./js/app-navigation.js", "./js/artist-onboarding.js", "./js/artist-media.js", "./js/artist-utils.js", "./js/artwork.js", "./js/audio-url-resolver.js", "./js/audio-url-resolver-core.js", "./js/auth.js", "./js/carousel.js", "./js/catalog-state.js", "./js/data-cache.js", "./js/data-repository.js", "./js/feedback.js", "./js/image-cropper.js", "./js/mobile.js", "./js/media-session.js", "./js/playback-context.js", "./js/mobile-shell.js", "./js/player.js", "./js/player-persistence.js", "./js/profile-routing.js", "./js/pull-to-refresh.js", "./js/queue-decisions.js", "./js/render.js", "./js/script.js", "./js/search.js", "./js/supabase/client.js", "./js/supabase/config.js", "./js/track-management.js", "./js/tracks-api.js", "./js/tracks-utils.js", "./js/track-upload.js", "./js/track-upload-wizard.js", "./js/track-upload-wizard-entry.js"
 ];
 const OPTIONAL_SHELL_ASSETS = ["./icons/favicon-16.png", "./icons/favicon-32.png", "./icons/favicon-48.png", "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png"];
@@ -22,9 +22,22 @@ self.addEventListener("install", (event) => { event.waitUntil((async () => { con
 self.addEventListener("activate", (event) => { event.waitUntil((async () => { const cacheNames = await caches.keys(); await Promise.all(cacheNames.filter((name) => name.startsWith(CACHE_PREFIX) && ![SHELL_CACHE, SDK_CACHE].includes(name)).map((name) => caches.delete(name))); await self.clients.claim(); })()); });
 self.addEventListener("message", (event) => { if (event.data?.type === "GET_RELEASE_VERSION") event.ports[0]?.postMessage({ releaseVersion: RELEASE_VERSION }); });
 async function getCachedShellResponse(canonicalUrl) { const cache = await caches.open(SHELL_CACHE); return await cache.match(canonicalUrl); }
-function versionNavigationHtml(html) { return html.replace(RELEASE_MARKER, SERVED_RELEASE_MARKER).replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`).replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`); }
+function versionNavigationHtml(html) {
+    let next = html.replace(RELEASE_MARKER, SERVED_RELEASE_MARKER).replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`).replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`);
+    if (!next.includes("telegram-profile-v45.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="telegram-profile-v45.css?v=${ENTRY_VERSION}">\n</head>`);
+    return next;
+}
 function htmlResponse(html, sourceResponse) { const headers = new Headers(sourceResponse?.headers || {}); headers.set("Content-Type", "text/html; charset=utf-8"); headers.set("Cache-Control", "no-store"); return new Response(html, { status: sourceResponse?.status || 200, statusText: sourceResponse?.statusText || "OK", headers }); }
 async function handleNavigation(request) { const cache = await caches.open(SHELL_CACHE); try { const response = await fetch(request, { cache: "no-store" }); if (response.ok) { const html = await response.clone().text(); if (html.includes(RELEASE_MARKER) || html.includes(SERVED_RELEASE_MARKER)) { const versioned = htmlResponse(versionNavigationHtml(html), response); await cache.put(indexUrl, versioned.clone()); return versioned; } } } catch {} const cached = await cache.match(indexUrl); if (!cached) return Response.error(); const html = await cached.text(); return htmlResponse(versionNavigationHtml(html), cached); }
-async function handleShellAsset(canonicalUrl) { return await getCachedShellResponse(canonicalUrl) || new Response("POJIDMUSIC app shell cache is incomplete.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }); }
+async function handleShellAsset(canonicalUrl, request) {
+    const url = new URL(request.url);
+    if (url.searchParams.has("v")) {
+        try {
+            const fresh = await fetch(request, { cache: "no-store" });
+            if (fresh.ok) return fresh;
+        } catch {}
+    }
+    return await getCachedShellResponse(canonicalUrl) || new Response("POJIDMUSIC app shell cache is incomplete.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+}
 async function handleSdkAsset(request) { const cache = await caches.open(SDK_CACHE); const cached = await cache.match(request); if (cached) return cached; try { return await fetch(request); } catch { return Response.error(); } }
-self.addEventListener("fetch", (event) => { const { request } = event; if (request.method !== "GET") return; const url = new URL(request.url); if (sdkUrls.has(url.href)) { event.respondWith(handleSdkAsset(request)); return; } if (url.origin !== self.location.origin) return; if (request.mode === "navigate" && [scopePath, indexPath].includes(url.pathname)) { event.respondWith(handleNavigation(request)); return; } const canonicalUrl = shellUrlByPath.get(url.pathname); if (canonicalUrl) event.respondWith(handleShellAsset(canonicalUrl)); });
+self.addEventListener("fetch", (event) => { const { request } = event; if (request.method !== "GET") return; const url = new URL(request.url); if (sdkUrls.has(url.href)) { event.respondWith(handleSdkAsset(request)); return; } if (url.origin !== self.location.origin) return; if (request.mode === "navigate" && [scopePath, indexPath].includes(url.pathname)) { event.respondWith(handleNavigation(request)); return; } const canonicalUrl = shellUrlByPath.get(url.pathname); if (canonicalUrl) event.respondWith(handleShellAsset(canonicalUrl, request)); });
