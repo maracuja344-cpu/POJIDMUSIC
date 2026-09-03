@@ -12,6 +12,14 @@ const TELEGRAM_AUTH_URL =
     `${SUPABASE_URL}/functions/v1/telegram-auth`;
 const TELEGRAM_AUTH_TIMEOUT_MS = 8000;
 
+const telegramProfileStyles = document.createElement("link");
+telegramProfileStyles.rel = "stylesheet";
+telegramProfileStyles.href = new URL(
+    "../../telegram-profile.css",
+    import.meta.url
+).href;
+document.head.append(telegramProfileStyles);
+
 
 /*
 Единственный клиент Supabase для модулей приложения.
