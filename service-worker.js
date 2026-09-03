@@ -1,4 +1,4 @@
-const RELEASE_VERSION = "pwa-v32";
+const RELEASE_VERSION = "pwa-v33";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
@@ -8,6 +8,7 @@ const CRITICAL_SHELL_ASSETS = [
     "./index.html",
     "./style.css",
     "./telegram-profile.css",
+    "./mobile-navigation.css",
     "./tracks.js",
     "./manifest.webmanifest",
     "./img/cover.jpg",
