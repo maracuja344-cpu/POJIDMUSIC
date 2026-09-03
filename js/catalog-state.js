@@ -1,11 +1,15 @@
 let catalogTracks = Object.freeze([]);
 
+function getRuntimeTracks(nextTracks) {
+    return nextTracks.filter((track) => track?.source !== "local");
+}
+
 export function setCatalogTracks(nextTracks) {
     if (!Array.isArray(nextTracks)) {
         throw new TypeError("Каталог треков должен быть массивом.");
     }
 
-    catalogTracks = Object.freeze([...nextTracks]);
+    catalogTracks = Object.freeze(getRuntimeTracks(nextTracks));
 }
 
 export function getCatalogTracks() {
@@ -19,6 +23,8 @@ export function getCatalogTrackById(catalogId) {
 }
 
 export function replaceCatalogTrack(nextTrack) {
+    if (nextTrack?.source === "local") return false;
+
     const trackIndex = catalogTracks.findIndex((track) => {
         return track.catalogId === nextTrack?.catalogId;
     });
