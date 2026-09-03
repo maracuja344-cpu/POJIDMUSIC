@@ -1,0 +1,108 @@
+/* Mobile artist page: compact release list instead of catalog tiles. */
+@media (max-width: 768px) {
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 6px !important;
+        width: 100%;
+        padding: 0 16px;
+        overflow: visible;
+        scroll-snap-type: none;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card {
+        position: relative;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 72px;
+        margin: 0 !important;
+        padding: 8px 44px 8px 8px;
+        display: grid !important;
+        grid-template-columns: 56px minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        border: 0;
+        border-radius: 14px;
+        background: transparent;
+        box-shadow: none;
+        text-align: left;
+        transform: none;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card:active {
+        background: rgba(255, 255, 255, 0.055);
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .cover-wrap,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artwork {
+        width: 56px !important;
+        height: 56px !important;
+        min-width: 56px;
+        margin: 0 !important;
+        border-radius: 9px;
+        overflow: hidden;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .cover {
+        width: 100% !important;
+        height: 100% !important;
+        aspect-ratio: 1;
+        display: block;
+        object-fit: cover;
+        border-radius: inherit;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-info,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-info {
+        min-width: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: grid;
+        gap: 4px;
+        align-content: center;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-title,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-title {
+        min-width: 0;
+        margin: 0 !important;
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.96);
+        font-size: 16px !important;
+        font-weight: 650;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .artist-name,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artist {
+        min-width: 0;
+        margin: 0 !important;
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px !important;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        margin: 0 !important;
+        transform: translateY(-50%);
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-skeleton {
+        grid-template-columns: 56px minmax(0, 1fr);
+        min-height: 72px;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-skeleton-cover {
+        width: 56px;
+        height: 56px;
+        border-radius: 9px;
+    }
+}
