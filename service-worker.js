@@ -1,10 +1,10 @@
-const RELEASE_VERSION = "pwa-v38";
+const RELEASE_VERSION = "pwa-v39";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "38";
+const ENTRY_VERSION = "39";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html",
@@ -152,8 +152,8 @@ function versionNavigationHtml(html) {
 
     if (!nextHtml.includes("js/track-upload-wizard.js")) {
         nextHtml = nextHtml.replace(
-            '<script\n        type="module"\n        src="js/script.js?v=' + ENTRY_VERSION + '"\n    ></script>',
-            `<script type="module" src="js/track-upload-wizard.js?v=${ENTRY_VERSION}"></script>\n\n    <script\n        type="module"\n        src="js/script.js?v=${ENTRY_VERSION}"\n    ></script>`
+            "</body>",
+            `    <script type="module" src="js/track-upload-wizard.js?v=${ENTRY_VERSION}"></script>\n</body>`
         );
     }
 
