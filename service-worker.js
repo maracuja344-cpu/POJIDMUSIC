@@ -1,8 +1,9 @@
-const RELEASE_VERSION = "pwa-v34";
+const RELEASE_VERSION = "pwa-v35";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
+const ENTRY_VERSION = "35";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html",
@@ -133,6 +134,23 @@ async function getCachedShellResponse(canonicalUrl) {
     return await cache.match(canonicalUrl);
 }
 
+function versionNavigationHtml(html) {
+    return html
+        .replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`)
+        .replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`);
+}
+
+function htmlResponse(html, sourceResponse) {
+    const headers = new Headers(sourceResponse?.headers || {});
+    headers.set("Content-Type", "text/html; charset=utf-8");
+    headers.set("Cache-Control", "no-store");
+    return new Response(html, {
+        status: sourceResponse?.status || 200,
+        statusText: sourceResponse?.statusText || "OK",
+        headers
+    });
+}
+
 async function handleNavigation(request) {
     const cache = await caches.open(SHELL_CACHE);
 
@@ -141,15 +159,19 @@ async function handleNavigation(request) {
         if (response.ok) {
             const html = await response.clone().text();
             if (html.includes(RELEASE_MARKER)) {
-                await cache.put(indexUrl, response.clone());
-                return response;
+                const versioned = htmlResponse(versionNavigationHtml(html), response);
+                await cache.put(indexUrl, versioned.clone());
+                return versioned;
             }
         }
     } catch {
         // Offline navigation falls through to the current complete shell generation.
     }
 
-    return await cache.match(indexUrl) || Response.error();
+    const cached = await cache.match(indexUrl);
+    if (!cached) return Response.error();
+    const html = await cached.text();
+    return htmlResponse(versionNavigationHtml(html), cached);
 }
 
 async function handleShellAsset(canonicalUrl) {
