@@ -1,14 +1,17 @@
-const cssHref = new URL("../album-upload.css?v=65", import.meta.url).href;
-
-if (!document.querySelector('link[data-album-upload-style]')) {
+function ensureStyle(marker, href) {
+    if (document.querySelector(`link[${marker}]`)) return;
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = cssHref;
-    link.dataset.albumUploadStyle = "true";
+    link.href = href;
+    link.setAttribute(marker, "true");
     document.head.append(link);
 }
 
-const albumModule = await import("./album-upload.js?v=65");
+ensureStyle("data-album-upload-style", new URL("../album-upload.css?v=66", import.meta.url).href);
+ensureStyle("data-album-upload-compact-style", new URL("../album-upload-mobile-compact.css?v=66", import.meta.url).href);
+
+await import("./album-upload-scroll-lock.js?v=66");
+const albumModule = await import("./album-upload.js?v=66");
 
 export const openAlbumUpload = albumModule.openAlbumUpload;
 export const closeAlbumUpload = albumModule.closeAlbumUpload;
