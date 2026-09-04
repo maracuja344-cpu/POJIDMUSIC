@@ -1,30 +1,7 @@
 body.album-upload-open { overflow: hidden; }
 
 .upload-mode-switch {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-    margin: 0 0 14px;
-    padding: 4px;
-    border: 1px solid rgba(255,255,255,.07);
-    border-radius: 14px;
-    background: rgba(255,255,255,.03);
-}
-
-.upload-mode-switch button {
-    min-height: 38px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    color: rgba(255,255,255,.58);
-    font: inherit;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.upload-mode-switch button.is-active {
-    background: rgba(255,255,255,.09);
-    color: #fff;
+    display: none !important;
 }
 
 .album-upload-modal {
@@ -40,6 +17,7 @@ body.album-upload-open { overflow: hidden; }
 }
 
 .album-upload-modal[hidden] { display: none !important; }
+.album-upload-modal.is-open { display: flex !important; }
 
 .album-upload-dialog {
     width: min(680px, 100%);
