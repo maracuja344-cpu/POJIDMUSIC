@@ -223,4 +223,14 @@ html.track-editor-scroll-locked body {
         min-height: 42px !important;
         padding: 8px 14px !important;
     }
+
+    html[data-telegram-mini-app="true"] .track-editor-modal {
+        top: var(--pojid-tg-editor-safe-top, 92px) !important;
+        bottom: 0 !important;
+        height: auto !important;
+    }
+
+    html[data-telegram-mini-app="true"] .track-editor-dialog {
+        max-height: calc(100dvh - var(--pojid-tg-editor-safe-top, 92px) - 8px) !important;
+    }
 }
