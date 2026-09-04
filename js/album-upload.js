@@ -1,5 +1,4 @@
 import { supabase } from "./supabase/client.js";
-import { getCurrentAuthState } from "./auth.js";
 
 const AUDIO_BUCKET = "track-audio";
 const COVER_BUCKET = "track-covers";
@@ -325,14 +324,12 @@ function resetAlbumRows(modal) {
 }
 
 export function openAlbumUpload() {
-    const auth = getCurrentAuthState();
-    if (!auth?.user?.id || !["artist", "admin"].includes(auth.profile?.role)) return;
     const modal = ensureModal();
     applyTelegramInset(modal);
     modal.hidden = false;
     document.body.classList.add("album-upload-open");
     setStatus("");
-    requestAnimationFrame(() => modal.querySelector("input[name='title']")?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => modal.querySelector("[data-close-album-upload]")?.focus({ preventScroll: true }));
 }
 
 export function closeAlbumUpload() {
