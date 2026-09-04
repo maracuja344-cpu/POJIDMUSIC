@@ -1,7 +1,6 @@
 let chooserOpen = false;
 let bypassChooser = false;
 let returnTrigger = null;
-let bypassTimer = null;
 
 const TRIGGER_SELECTOR = [
     '[data-mobile-tab="upload"]',
@@ -71,7 +70,7 @@ function ensureChooser() {
 
 function openChooser(trigger) {
     const modal = ensureChooser();
-    returnTrigger = trigger || null;
+    returnTrigger = trigger || document.querySelector('.track-upload-open-button') || null;
     chooserOpen = true;
     applyTelegramInset(modal);
     modal.hidden = false;
@@ -79,6 +78,10 @@ function openChooser(trigger) {
     requestAnimationFrame(() => {
         modal.querySelector('[data-release-choice="track"]')?.focus({ preventScroll: true });
     });
+}
+
+export function openReleaseUploadChooser(trigger = null) {
+    openChooser(trigger);
 }
 
 function closeChooser({ restoreFocus = true } = {}) {
@@ -89,33 +92,16 @@ function closeChooser({ restoreFocus = true } = {}) {
     if (restoreFocus) returnTrigger?.focus?.({ preventScroll: true });
 }
 
-function releaseTrackBypass() {
-    window.clearTimeout(bypassTimer);
-    bypassTimer = null;
-    bypassChooser = false;
-}
-
-function holdTrackBypassUntilOpen() {
-    releaseTrackBypass();
-    bypassChooser = true;
-    const modal = document.querySelector('.track-upload-modal');
-    if (modal) {
-        const observer = new MutationObserver(() => {
-            if (modal.hidden) return;
-            observer.disconnect();
-            releaseTrackBypass();
-        });
-        observer.observe(modal, { attributes: true, attributeFilter: ['hidden'] });
-    }
-    bypassTimer = window.setTimeout(releaseTrackBypass, 1800);
-}
-
 async function openTrackFlow() {
+    const trigger = returnTrigger || document.querySelector('.track-upload-open-button');
     closeChooser({ restoreFocus: false });
-    const uploadButton = document.querySelector('.profile-menu .track-upload-open-button') || document.querySelector('.track-upload-open-button');
-    if (!uploadButton) return;
-    holdTrackBypassUntilOpen();
-    uploadButton.click();
+    if (!trigger) return;
+    bypassChooser = true;
+    try {
+        trigger.click();
+    } finally {
+        queueMicrotask(() => { bypassChooser = false; });
+    }
 }
 
 async function openAlbumFlow() {
