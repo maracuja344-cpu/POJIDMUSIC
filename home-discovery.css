@@ -16,7 +16,7 @@
 #new.home-new-carousel .tracks-row::-webkit-scrollbar { display: none; }
 
 #new.home-new-carousel .release-card {
-    flex: 0 0 min(340px, calc(100vw - 56px));
+    flex: 0 0 min(320px, calc(100vw - 72px));
     scroll-snap-align: start;
 }
 
@@ -24,27 +24,28 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 14px;
 }
 
 .home-recommendations-refresh {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 8px 11px;
-    border: 0;
+    gap: 6px;
+    padding: 7px 10px;
+    border: 1px solid rgba(255,255,255,.055);
     border-radius: 999px;
-    background: rgba(255,255,255,.055);
-    color: rgba(255,255,255,.72);
+    background: rgba(255,255,255,.035);
+    color: rgba(255,255,255,.68);
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
+    line-height: 1;
     cursor: pointer;
 }
 
 .home-recommendations-refresh svg {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -63,18 +64,18 @@
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
 }
 
 #recommendations.home-recommendations-list .recommendation-card {
     width: 100%;
     min-width: 0;
     display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 58px minmax(0, 1fr);
     align-items: center;
-    gap: 12px;
-    padding: 8px;
-    border-radius: 15px;
+    gap: 10px;
+    padding: 7px;
+    border-radius: 14px;
 }
 
 #recommendations.home-recommendations-list .recommendation-card[data-clone="true"],
@@ -83,10 +84,10 @@
 }
 
 #recommendations.home-recommendations-list .recommendation-cover {
-    width: 64px;
-    height: 64px;
+    width: 58px;
+    height: 58px;
     aspect-ratio: 1;
-    border-radius: 10px;
+    border-radius: 9px;
 }
 
 #recommendations.home-recommendations-list .recommendation-info { padding: 0; min-width: 0; }
@@ -96,15 +97,24 @@
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-#recommendations.home-recommendations-list .recommendation-title { font-size: 16px; }
-#recommendations.home-recommendations-list .recommendation-artist { margin-top: 4px; font-size: 13px; }
+#recommendations.home-recommendations-list .recommendation-title { font-size: 15px; }
+#recommendations.home-recommendations-list .recommendation-artist { margin-top: 3px; font-size: 12px; }
 
 @media (max-width: 760px) {
     #new.home-new-carousel .section-title,
-    #recommendations.home-recommendations-list .section-title,
     #all-tracks .section-title {
         margin-top: 32px;
         margin-bottom: 14px;
+    }
+
+    #recommendations.home-recommendations-list .section-title {
+        margin-top: 28px;
+        margin-bottom: 12px;
+        padding: 0 16px;
+        font-size: 24px;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        text-align: left;
     }
 
     #new.home-new-carousel .tracks-row {
@@ -113,22 +123,36 @@
     }
 
     #new.home-new-carousel .release-card {
-        flex: 0 0 42vw;
-        max-width: 180px;
-        padding: 8px;
+        flex: 0 0 39vw;
+        max-width: 162px;
+        padding: 7px;
+        border-radius: 15px;
+    }
+
+    #new.home-new-carousel .release-card .cover {
+        border-radius: 12px;
+    }
+
+    #new.home-new-carousel .track-title {
+        font-size: 14px;
+    }
+
+    #new.home-new-carousel .artist-name {
+        font-size: 11px;
     }
 
     #recommendations.home-recommendations-list .recommendations-viewport { padding: 0 16px; }
-    #recommendations.home-recommendations-list .recommendations-track { grid-template-columns: 1fr; gap: 7px; }
+    #recommendations.home-recommendations-list .recommendations-track { grid-template-columns: 1fr; gap: 6px; }
     #recommendations.home-recommendations-list .recommendation-card {
-        grid-template-columns: 54px minmax(0, 1fr);
-        min-height: 70px;
-        padding: 8px;
-        border-color: rgba(255,255,255,.06);
-        background: rgba(255,255,255,.018);
+        grid-template-columns: 50px minmax(0, 1fr);
+        min-height: 62px;
+        padding: 6px;
+        border-color: rgba(255,255,255,.055);
+        background: rgba(255,255,255,.014);
+        border-radius: 13px;
     }
-    #recommendations.home-recommendations-list .recommendation-cover { width: 54px; height: 54px; }
-    #recommendations.home-recommendations-list .recommendation-title { font-size: 15px; }
-    #recommendations.home-recommendations-list .recommendation-artist { font-size: 12px; }
-    .home-recommendations-refresh { padding: 7px 9px; font-size: 12px; }
+    #recommendations.home-recommendations-list .recommendation-cover { width: 50px; height: 50px; border-radius: 9px; }
+    #recommendations.home-recommendations-list .recommendation-title { font-size: 14px; }
+    #recommendations.home-recommendations-list .recommendation-artist { font-size: 11px; }
+    .home-recommendations-refresh { padding: 6px 8px; font-size: 11px; }
 }
