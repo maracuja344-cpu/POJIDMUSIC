@@ -1,0 +1,81 @@
+/* Track management belongs to the private My Tracks workspace. */
+#artist-profile .track-manage-button,
+#artist-profile .track-manage-menu,
+#artist-profile .track-status-badge,
+#artist-profile .artist-profile-filters {
+    display: none !important;
+}
+
+#my-tracks .my-tracks-filters {
+    margin: 18px auto 22px;
+}
+
+.track-audio-editor {
+    margin-top: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 16px;
+    background: rgba(255,255,255,.025);
+}
+
+.track-audio-editor-copy {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.track-audio-editor-copy strong {
+    color: rgba(255,255,255,.94);
+    font-size: 14px;
+}
+
+.track-audio-editor-copy span {
+    max-width: 300px;
+    overflow: hidden;
+    color: rgba(255,255,255,.52);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-audio-editor [data-edit-audio] {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    background: rgba(255,255,255,.06);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+@media (max-width: 768px) {
+    #my-tracks .my-tracks-surface {
+        padding-bottom: 120px;
+    }
+
+    #my-tracks .my-tracks-filters {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    #my-tracks .my-tracks-filters::-webkit-scrollbar { display: none; }
+
+    .track-audio-editor {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .track-audio-editor [data-edit-audio] {
+        width: 100%;
+    }
+}
