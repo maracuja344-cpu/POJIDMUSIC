@@ -23,7 +23,7 @@ self.addEventListener("activate", (event) => { event.waitUntil((async () => { co
 self.addEventListener("message", (event) => { if (event.data?.type === "GET_RELEASE_VERSION") event.ports[0]?.postMessage({ releaseVersion: RELEASE_VERSION }); });
 async function getCachedShellResponse(canonicalUrl) { const cache = await caches.open(SHELL_CACHE); return await cache.match(canonicalUrl); }
 function versionNavigationHtml(html) {
-    let next = html.replace(/<meta name="pojidmusic-release" content="pwa-v\d+">/, SERVED_RELEASE_MARKER).replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`).replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}`);
+    let next = html.replace(/<meta name="pojidmusic-release" content="pwa-v\d+">/, SERVED_RELEASE_MARKER).replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`).replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`);
     if (!next.includes("telegram-profile-v45.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="telegram-profile-v45.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("track-management-surface.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="track-management-surface.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("home-discovery.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="home-discovery.css?v=${ENTRY_VERSION}">\n</head>`);
