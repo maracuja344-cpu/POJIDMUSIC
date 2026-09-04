@@ -15,6 +15,7 @@ html[data-telegram-mini-app="true"] .profile-email-row { display:none!important;
 
 html[data-telegram-mini-app="true"] .profile-actions { margin-top:20px; padding:0; display:grid; gap:0; overflow:hidden; border:1px solid rgba(255,255,255,.075); border-radius:20px; background:rgba(255,255,255,.025); box-shadow:0 16px 44px rgba(0,0,0,.14); }
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button { position:relative; min-height:62px; padding:8px 46px 23px 62px; border:0; border-radius:0; display:flex; align-items:center; background-color:transparent; background-repeat:no-repeat,no-repeat; background-size:38px 38px,18px 18px; background-position:13px center,calc(100% - 15px) center; color:rgba(255,255,255,.94); font-size:15px; font-weight:600; line-height:1.2; text-align:left; }
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button[hidden] { display:none!important; }
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button + .profile-action-button { border-top:1px solid rgba(255,255,255,.07); }
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button:active { background-color:rgba(255,255,255,.05); }
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button::before { position:absolute; left:62px; bottom:9px; color:rgba(255,255,255,.42); font-size:12px; font-weight:500; line-height:1; }
@@ -35,8 +36,14 @@ html[data-telegram-mini-app="true"] [data-change-account-avatar] {
 }
 html[data-telegram-mini-app="true"] [data-change-account-avatar]::before { content:"Фото профиля"; }
 
-html[data-telegram-mini-app="true"] [data-open-feedback] {
+/* Keep decorative Telegram settings styles inside the settings action list. The compact header menu also uses data-open-feedback. */
+html[data-telegram-mini-app="true"] .profile-actions [data-open-feedback] {
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Cpath d='M10 11h18v13H18l-6 5v-5h-2z' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M15 17h.1M19 17h.1M23 17h.1' stroke='%23bd8dff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
-html[data-telegram-mini-app="true"] [data-open-feedback]::before { content:"Баги и идеи"; }
+html[data-telegram-mini-app="true"] .profile-actions [data-open-feedback]::before { content:"Баги и идеи"; }
+
+html[data-telegram-mini-app="true"] .profile-actions [data-telegram-relink-open] {
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Cpath d='M16.5 21.5 21.5 16.5M13.3 23.7l-2 2a4 4 0 0 0 5.7 5.7l4.1-4.1a4 4 0 0 0 0-5.7M24.7 14.3l2-2a4 4 0 1 0-5.7-5.7l-4.1 4.1a4 4 0 0 0 0 5.7' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html[data-telegram-mini-app="true"] .profile-actions [data-telegram-relink-open]::before { content:"Войти по email и паролю"; }
 html[data-telegram-mini-app="true"] .profile-form-message:empty { display:none; }
