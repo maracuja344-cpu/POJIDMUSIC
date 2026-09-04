@@ -8,7 +8,9 @@ export interface TelegramAuthBackend {
   findByTelegramId(id: number): Promise<Mapping | null>;
   findByUserId(id: string): Promise<Mapping | null>;
   insertMapping(mapping: Mapping): Promise<"inserted" | "conflict">;
+  reassignMapping(identity: TelegramIdentity, userId: string): Promise<"reassigned" | "conflict">;
   updateTelegramProfile(identity: TelegramIdentity): Promise<void>;
+  syncProfile(identity: TelegramIdentity, userId: string): Promise<void>;
   getAuthUser(id: string): Promise<AuthUser | null>;
   verifyAccessToken(token: string): Promise<AuthUser | null>;
   createAuthUser(email: string, displayName: string | null): Promise<{ user: AuthUser | null; errorCode?: string }>;
@@ -31,11 +33,7 @@ async function sessionPayload(backend: TelegramAuthBackend, user: AuthUser) {
 }
 
 export class TelegramAuthService {
-  private readonly backend: TelegramAuthBackend;
-
-  constructor(backend: TelegramAuthBackend) {
-    this.backend = backend;
-  }
+  constructor(private readonly backend: TelegramAuthBackend) {}
 
   async bootstrap(identity: TelegramIdentity) {
     const mapping = await this.backend.findByTelegramId(identity.id);
@@ -43,28 +41,57 @@ export class TelegramAuthService {
     const user = await this.backend.getAuthUser(mapping.userId);
     if (!user) throw new InternalAuthError("Linked user is missing");
     await this.backend.updateTelegramProfile(identity);
+    await this.backend.syncProfile(identity, user.id);
     return sessionPayload(this.backend, user);
   }
 
   async link(identity: TelegramIdentity, accessToken: string | null) {
-    if (!accessToken) throw new UnauthorizedError("A valid Supabase access token is required");
+    if (!accessToken) throw new UnauthorizedError();
     const user = await this.backend.verifyAccessToken(accessToken);
-    if (!user) throw new UnauthorizedError("A valid Supabase access token is required");
+    if (!user) throw new UnauthorizedError();
 
     const byTelegram = await this.backend.findByTelegramId(identity.id);
     const byUser = await this.backend.findByUserId(user.id);
     if (byTelegram?.userId === user.id && byUser?.id === identity.id) {
       await this.backend.updateTelegramProfile(identity);
+      await this.backend.syncProfile(identity, user.id);
       return { status: "linked" } as const;
     }
-    if (byTelegram || byUser) throw new LinkConflictError("Account link already belongs to another user");
+    if (byTelegram || byUser) throw new LinkConflictError();
 
-    const inserted = await this.backend.insertMapping({ ...identity, userId: user.id });
-    if (inserted === "conflict") {
-      const winner = await this.backend.findByTelegramId(identity.id);
-      if (winner?.userId === user.id) return { status: "linked" } as const;
-      throw new LinkConflictError("Account link already belongs to another user");
+    if (await this.backend.insertMapping({ ...identity, userId: user.id }) === "conflict") {
+      throw new LinkConflictError();
     }
+    await this.backend.syncProfile(identity, user.id);
+    return { status: "linked" } as const;
+  }
+
+  async relink(identity: TelegramIdentity, accessToken: string | null) {
+    if (!accessToken) throw new UnauthorizedError();
+    const target = await this.backend.verifyAccessToken(accessToken);
+    if (!target) throw new UnauthorizedError();
+
+    const byTelegram = await this.backend.findByTelegramId(identity.id);
+    const byTargetUser = await this.backend.findByUserId(target.id);
+    if (byTargetUser && byTargetUser.id !== identity.id) throw new LinkConflictError();
+    if (!byTelegram) return this.link(identity, accessToken);
+
+    if (byTelegram.userId === target.id) {
+      await this.backend.updateTelegramProfile(identity);
+      await this.backend.syncProfile(identity, target.id);
+      return { status: "linked" } as const;
+    }
+
+    const source = await this.backend.getAuthUser(byTelegram.userId);
+    const profile = await this.backend.inspectProfile(byTelegram.userId);
+    if (!(source?.email === internalEmail(identity.id) && profile?.role === "listener" && profile.artistCount === 0)) {
+      throw new LinkConflictError();
+    }
+
+    if (await this.backend.reassignMapping(identity, target.id) === "conflict") {
+      throw new LinkConflictError();
+    }
+    await this.backend.syncProfile(identity, target.id);
     return { status: "linked" } as const;
   }
 
@@ -72,41 +99,29 @@ export class TelegramAuthService {
     const existing = await this.backend.findByTelegramId(identity.id);
     if (existing) {
       const user = await this.backend.getAuthUser(existing.userId);
-      if (!user) throw new InternalAuthError("Linked user is missing");
+      if (!user) throw new InternalAuthError();
+      await this.backend.syncProfile(identity, user.id);
       return sessionPayload(this.backend, user);
     }
 
-    const email = internalEmail(identity.id);
-    const created = await this.backend.createAuthUser(email, identity.displayName);
+    const created = await this.backend.createAuthUser(internalEmail(identity.id), identity.displayName);
     if (!created.user) {
-      if (created.errorCode === "email_exists") {
-        for (let attempt = 0; attempt < 4; attempt += 1) {
-          const winner = await this.backend.findByTelegramId(identity.id);
-          if (winner) {
-            const user = await this.backend.getAuthUser(winner.userId);
-            if (user) return sessionPayload(this.backend, user);
-          }
-          await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
-        }
-        throw new LinkConflictError("Registration is already in progress; retry safely");
-      }
-      throw new InternalAuthError("Could not create user");
+      if (created.errorCode === "email_exists") throw new LinkConflictError();
+      throw new InternalAuthError();
     }
 
-    const createdUser = created.user;
     try {
-      const profile = await this.backend.inspectProfile(createdUser.id);
+      const profile = await this.backend.inspectProfile(created.user.id);
       if (!profile || profile.role !== "listener" || profile.artistCount !== 0) {
-        throw new InternalAuthError("New user invariant failed");
+        throw new InternalAuthError();
       }
-      const inserted = await this.backend.insertMapping({ ...identity, userId: createdUser.id });
-      if (inserted === "conflict") {
-        const winner = await this.backend.findByTelegramId(identity.id);
-        if (winner?.userId !== createdUser.id) throw new LinkConflictError("Registration conflict");
+      if (await this.backend.insertMapping({ ...identity, userId: created.user.id }) === "conflict") {
+        throw new LinkConflictError();
       }
-      return await sessionPayload(this.backend, createdUser);
+      await this.backend.syncProfile(identity, created.user.id);
+      return await sessionPayload(this.backend, created.user);
     } catch (error) {
-      await this.backend.deleteAuthUser(createdUser.id).catch(() => undefined);
+      await this.backend.deleteAuthUser(created.user.id).catch(() => undefined);
       throw error;
     }
   }
