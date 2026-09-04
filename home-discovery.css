@@ -126,11 +126,14 @@
         padding-left: 0;
         padding-right: 0;
         box-sizing: border-box;
+        gap: 16px;
+        justify-content: flex-start;
     }
 
     #new.home-new-carousel .release-card {
-        flex-basis: 260px;
-        max-width: 260px;
+        flex: 0 0 320px;
+        width: 320px;
+        max-width: 320px;
     }
 
     #recommendations.home-recommendations-list .recommendations-viewport {
