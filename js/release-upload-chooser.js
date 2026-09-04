@@ -1,4 +1,4 @@
-import { openAlbumUpload } from './album-upload.js?v=64';
+import { openAlbumUpload } from './album-upload-entry.js?v=65';
 
 let chooserOpen = false;
 let bypassChooser = false;
