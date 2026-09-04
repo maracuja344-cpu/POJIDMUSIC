@@ -70,12 +70,147 @@
 
     #my-tracks .my-tracks-filters::-webkit-scrollbar { display: none; }
 
-    .track-audio-editor {
-        align-items: stretch;
-        flex-direction: column;
+    .track-editor-modal {
+        align-items: end !important;
+        padding: 0 !important;
+        background: rgba(5,5,7,.58) !important;
     }
 
+    .track-editor-dialog {
+        width: 100% !important;
+        max-height: min(82dvh, 720px) !important;
+        padding: 16px 16px calc(18px + env(safe-area-inset-bottom)) !important;
+        border-right: 0 !important;
+        border-bottom: 0 !important;
+        border-left: 0 !important;
+        border-radius: 22px 22px 0 0 !important;
+        overscroll-behavior: contain;
+    }
+
+    .track-editor-dialog .profile-editor-heading {
+        position: sticky;
+        top: -16px;
+        z-index: 5;
+        margin: -16px -16px 10px;
+        padding: 15px 16px 10px;
+        background: rgba(21,20,25,.96);
+        backdrop-filter: blur(14px);
+    }
+
+    .track-editor-dialog .profile-editor-heading h2 {
+        margin: 0 !important;
+        font-size: 22px;
+        line-height: 1.08;
+    }
+
+    .track-editor-dialog .profile-editor-heading button {
+        width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        border-radius: 999px !important;
+    }
+
+    .track-editor-dialog form {
+        gap: 11px !important;
+    }
+
+    .track-editor-dialog form > label {
+        gap: 5px !important;
+        font-size: 13px;
+        text-align: left;
+    }
+
+    .track-editor-dialog input {
+        min-height: 42px !important;
+        padding: 8px 11px !important;
+        font-size: 16px;
+    }
+
+    .track-editor-dialog fieldset {
+        gap: 7px !important;
+        margin: 0;
+        padding: 10px !important;
+        border-radius: 14px !important;
+    }
+
+    .track-editor-dialog fieldset legend {
+        padding: 0 6px;
+        font-size: 14px;
+    }
+
+    .track-editor-dialog fieldset > button {
+        min-height: 38px !important;
+        padding: 7px 12px !important;
+        font-size: 14px;
+    }
+
+    .edit-credit-row {
+        gap: 7px !important;
+    }
+
+    .edit-credit-row button {
+        width: 38px !important;
+        min-height: 38px !important;
+    }
+
+    .track-cover-editor {
+        grid-template-columns: 72px minmax(0, 1fr) !important;
+        gap: 11px !important;
+        padding: 10px !important;
+        border-radius: 14px !important;
+    }
+
+    .track-cover-editor img {
+        width: 72px !important;
+        border-radius: 10px !important;
+    }
+
+    .track-cover-editor-copy {
+        gap: 6px !important;
+    }
+
+    .track-cover-editor-copy [data-edit-cover] {
+        min-height: 38px !important;
+        padding: 7px 10px !important;
+        font-size: 13px;
+    }
+
+    .track-cover-editor-copy [data-edit-cover-status] {
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    .track-audio-editor {
+        margin-top: 0;
+        padding: 10px 11px;
+        align-items: center;
+        flex-direction: row;
+        gap: 10px;
+        border-radius: 14px;
+    }
+
+    .track-audio-editor-copy strong { font-size: 13px; }
+    .track-audio-editor-copy span { font-size: 11px; }
+
     .track-audio-editor [data-edit-audio] {
-        width: 100%;
+        width: auto;
+        min-height: 38px;
+        padding: 0 11px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .track-editor-dialog .profile-editor-actions {
+        position: sticky;
+        bottom: calc(-18px - env(safe-area-inset-bottom));
+        z-index: 4;
+        margin: 2px -16px calc(-18px - env(safe-area-inset-bottom));
+        padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+        background: linear-gradient(to top, #151419 72%, rgba(21,20,25,.92));
+    }
+
+    .track-editor-dialog .profile-editor-actions button {
+        min-height: 42px !important;
+        padding: 8px 14px !important;
     }
 }
