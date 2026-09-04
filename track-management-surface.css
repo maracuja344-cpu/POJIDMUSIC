@@ -10,6 +10,11 @@
     margin: 18px auto 22px;
 }
 
+html.track-editor-scroll-locked,
+html.track-editor-scroll-locked body {
+    overscroll-behavior: none;
+}
+
 .track-audio-editor {
     margin-top: 14px;
     padding: 14px 16px;
@@ -74,6 +79,8 @@
         align-items: end !important;
         padding: 0 !important;
         background: rgba(5,5,7,.58) !important;
+        overscroll-behavior: none;
+        touch-action: none;
     }
 
     .track-editor-dialog {
@@ -84,7 +91,10 @@
         border-bottom: 0 !important;
         border-left: 0 !important;
         border-radius: 22px 22px 0 0 !important;
+        overflow-y: auto;
         overscroll-behavior: contain;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
     }
 
     .track-editor-dialog .profile-editor-heading {
