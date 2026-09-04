@@ -158,6 +158,24 @@ function replaceLocationPreservingTelegram(search = "") {
     window.location.replace(`${window.location.pathname}${search}${hash}`);
 }
 
+function decorateTelegramRelinkButton(button) {
+    if (!button || button.dataset.profileDecorated === "true") return;
+    button.dataset.profileDecorated = "true";
+    button.innerHTML = `
+        <span class="profile-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d="M9.5 14.5l5-5"></path>
+                <path d="M7.4 16.6l-1.7 1.7a3.5 3.5 0 0 0 5 5l3.5-3.5a3.5 3.5 0 0 0 0-5"></path>
+                <path d="M16.6 7.4l1.7-1.7a3.5 3.5 0 1 0-5-5L9.8 4.2a3.5 3.5 0 0 0 0 5"></path>
+            </svg>
+        </span>
+        <span class="profile-action-copy">
+            <span class="profile-action-title">Привязать существующий аккаунт</span>
+            <span class="profile-action-subtitle">Войти по email и паролю</span>
+        </span>
+        <span class="profile-action-chevron" aria-hidden="true">›</span>`;
+}
+
 async function initializeTelegramRelinkUi() {
     const initData = getTelegramInitData();
     if (!initData) return;
@@ -171,9 +189,9 @@ async function initializeTelegramRelinkUi() {
             button.type = "button";
             button.className = "profile-action-button";
             button.dataset.telegramRelinkOpen = "true";
-            button.textContent = "Привязать существующий аккаунт";
             actions.prepend(button);
         }
+        decorateTelegramRelinkButton(button);
         const { data } = await supabase.auth.getSession();
         button.hidden = !TELEGRAM_INTERNAL_EMAIL.test(data.session?.user?.email || "");
     };
