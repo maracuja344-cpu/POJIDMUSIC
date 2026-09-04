@@ -1,10 +1,10 @@
-const RELEASE_VERSION = "pwa-v50";
+const RELEASE_VERSION = "pwa-v51";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v28">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "50";
+const ENTRY_VERSION = "51";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-management-surface.css", "./home-discovery.css", "./home-discovery.js", "./track-upload-wizard.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
@@ -19,7 +19,7 @@ const indexPath = new URL(indexUrl).pathname;
 const scopePath = new URL(self.registration.scope).pathname;
 async function cacheOptionalAssets(cache) { await Promise.allSettled(OPTIONAL_SHELL_ASSETS.map(async (asset) => { const request = new Request(asset, { cache: "reload" }); const response = await fetch(request); if (response.ok) await cache.put(request, response); })); }
 self.addEventListener("install", (event) => { event.waitUntil((async () => { const shellCache = await caches.open(SHELL_CACHE); const sdkCache = await caches.open(SDK_CACHE); await Promise.all([shellCache.addAll(CRITICAL_SHELL_ASSETS.map((asset) => new Request(asset, { cache: "reload" }))), sdkCache.addAll(SDK_ASSETS.map((asset) => new Request(asset, { cache: "reload" })))]); await cacheOptionalAssets(shellCache); await self.skipWaiting(); })()); });
-self.addEventListener("activate", (event) => { event.waitUntil((async () => { const cacheNames = await caches.keys(); await Promise.all(cacheNames.filter((name) => name.startsWith(CACHE_PREFIX) && ![SHELL_CACHE, SDK_CACHE].includes(name)).map((name) => caches.delete(name))); await self.clients.claim(); })()); });
+self.addEventListener("activate", (event) => { event.waitUntil((async () => { const cacheNames = await caches.keys(); await Promise.all(cacheNames.filter((name) => name.startsWith(CACHE_PREFIX) && ![SHELL_CACHE, SDK_CACHE].includes(name)).map((name) => caches.delete(name))); await self.clients.claim(); const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true }); await Promise.allSettled(windows.map((client) => client.navigate(client.url))); })()); });
 self.addEventListener("message", (event) => { if (event.data?.type === "GET_RELEASE_VERSION") event.ports[0]?.postMessage({ releaseVersion: RELEASE_VERSION }); });
 async function getCachedShellResponse(canonicalUrl) { const cache = await caches.open(SHELL_CACHE); return await cache.match(canonicalUrl); }
 function versionNavigationHtml(html) {
