@@ -1,4 +1,4 @@
-import './album-upload-bridge.js?v=63';
+import { openAlbumUpload } from './album-upload.js?v=64';
 
 let chooserOpen = false;
 let bypassChooser = false;
@@ -23,6 +23,10 @@ function applyTelegramInset(modal) {
     const inTelegram = document.documentElement.dataset.telegramMiniApp === 'true' || Boolean(window.Telegram?.WebApp);
     const top = inTelegram ? Math.max(getTelegramTopInset(), 64) : getTelegramTopInset();
     modal.style.setProperty('--release-chooser-top', `${top}px`);
+}
+
+function removeLegacyModeSwitch() {
+    document.querySelectorAll('[data-upload-mode-switch]').forEach((node) => node.remove());
 }
 
 function ensureChooser() {
@@ -62,6 +66,7 @@ function ensureChooser() {
         if (event.target === modal) closeChooser();
     });
     modal.querySelector('[data-release-choice="track"]').addEventListener('click', openTrackFlow);
+    modal.querySelector('[data-release-choice="album"]').addEventListener('click', openAlbumFlow);
 
     applyTelegramInset(modal);
     window.Telegram?.WebApp?.onEvent?.('safeAreaChanged', () => applyTelegramInset(modal));
@@ -73,6 +78,7 @@ function openChooser(trigger) {
     const modal = ensureChooser();
     returnTrigger = trigger || document.querySelector('.track-upload-open-button') || null;
     chooserOpen = true;
+    removeLegacyModeSwitch();
     applyTelegramInset(modal);
     modal.hidden = false;
     document.body.classList.add('release-upload-chooser-open');
@@ -105,10 +111,30 @@ async function openTrackFlow() {
             document.querySelector('.track-upload-open-button');
         if (!actualUploadButton) throw new Error('Не найдена кнопка загрузки трека.');
         actualUploadButton.click();
+        removeLegacyModeSwitch();
     } catch (error) {
         console.error('Не удалось открыть загрузку трека.', error);
     } finally {
         window.setTimeout(() => { bypassChooser = false; }, 0);
+    }
+}
+
+function openAlbumFlow() {
+    closeChooser({ restoreFocus: false });
+    try {
+        const trackModal = document.querySelector('.track-upload-modal');
+        if (trackModal && !trackModal.hidden) {
+            trackModal.hidden = true;
+            document.body.classList.remove('track-upload-modal-open');
+        }
+        openAlbumUpload();
+        const albumModal = document.querySelector('[data-album-upload-modal]');
+        if (!albumModal) throw new Error('Окно загрузки альбома не создано.');
+        albumModal.hidden = false;
+        document.body.classList.add('album-upload-open');
+    } catch (error) {
+        console.error('Не удалось открыть загрузку альбома.', error);
+        openChooser(returnTrigger);
     }
 }
 
@@ -125,3 +151,6 @@ window.addEventListener('click', (event) => {
 window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && chooserOpen) closeChooser();
 });
+
+new MutationObserver(removeLegacyModeSwitch).observe(document.documentElement, { childList: true, subtree: true });
+removeLegacyModeSwitch();
