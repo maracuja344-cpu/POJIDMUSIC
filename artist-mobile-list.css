@@ -1,5 +1,12 @@
-/* Mobile artist page: compact release list with subtle contouring. */
+/* Mobile artist page: compact public release list with subtle contouring. */
 @media (max-width: 768px) {
+    html.mobile-device #artist-profile .artist-profile-filters,
+    html.mobile-device #artist-profile .track-manage-button,
+    html.mobile-device #artist-profile .track-manage-menu,
+    html.mobile-device #artist-profile .track-status-badge {
+        display: none !important;
+    }
+
     html.mobile-device #artist-profile .artist-releases {
         padding-top: 4px;
     }
@@ -27,7 +34,7 @@
         min-width: 0 !important;
         min-height: 76px;
         margin: 0 !important;
-        padding: 9px 46px 9px 9px;
+        padding: 9px;
         display: grid !important;
         grid-template-columns: 58px minmax(0, 1fr);
         align-items: center;
@@ -108,35 +115,10 @@
         white-space: nowrap;
     }
 
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions {
-        position: absolute;
-        top: 50%;
-        right: 9px;
-        width: 34px;
-        height: 34px;
-        margin: 0 !important;
-        display: grid;
-        place-items: center;
-        transform: translateY(-50%);
-    }
-
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions button,
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions .track-action-button {
-        width: 34px !important;
-        height: 34px !important;
-        min-width: 34px !important;
-        min-height: 34px !important;
-        padding: 0 !important;
-        border-color: transparent !important;
-        border-radius: 10px !important;
-        background: transparent !important;
-        color: rgba(255, 255, 255, 0.68) !important;
-        box-shadow: none !important;
-    }
-
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions button:active,
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions .track-action-button:active {
-        background: rgba(255, 255, 255, 0.055) !important;
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-manage-button,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-manage-menu {
+        display: none !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-skeleton {
