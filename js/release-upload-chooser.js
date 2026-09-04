@@ -1,6 +1,7 @@
 let chooserOpen = false;
 let bypassChooser = false;
 let returnTrigger = null;
+let bypassTimer = null;
 
 const TRIGGER_SELECTOR = [
     '[data-mobile-tab="upload"]',
@@ -88,16 +89,33 @@ function closeChooser({ restoreFocus = true } = {}) {
     if (restoreFocus) returnTrigger?.focus?.({ preventScroll: true });
 }
 
-async function openTrackFlow() {
-    const trigger = returnTrigger;
-    closeChooser({ restoreFocus: false });
-    if (!trigger) return;
+function releaseTrackBypass() {
+    window.clearTimeout(bypassTimer);
+    bypassTimer = null;
+    bypassChooser = false;
+}
+
+function holdTrackBypassUntilOpen() {
+    releaseTrackBypass();
     bypassChooser = true;
-    try {
-        trigger.click();
-    } finally {
-        queueMicrotask(() => { bypassChooser = false; });
+    const modal = document.querySelector('.track-upload-modal');
+    if (modal) {
+        const observer = new MutationObserver(() => {
+            if (modal.hidden) return;
+            observer.disconnect();
+            releaseTrackBypass();
+        });
+        observer.observe(modal, { attributes: true, attributeFilter: ['hidden'] });
     }
+    bypassTimer = window.setTimeout(releaseTrackBypass, 1800);
+}
+
+async function openTrackFlow() {
+    closeChooser({ restoreFocus: false });
+    const uploadButton = document.querySelector('.profile-menu .track-upload-open-button') || document.querySelector('.track-upload-open-button');
+    if (!uploadButton) return;
+    holdTrackBypassUntilOpen();
+    uploadButton.click();
 }
 
 async function openAlbumFlow() {
