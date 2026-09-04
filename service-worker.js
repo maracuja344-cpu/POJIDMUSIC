@@ -1,14 +1,14 @@
-const RELEASE_VERSION = "pwa-v68";
+const RELEASE_VERSION = "pwa-v69";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
-const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v68">`;
+const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v69">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "68";
+const ENTRY_VERSION = "69";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-management-surface.css", "./home-discovery.css", "./home-discovery.js", "./artist-public-surface.js", "./track-editor-modal-guard.js", "./album-upload.css", "./album-upload-mobile-compact.css", "./release-upload-chooser.css", "./track-upload-wizard.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
-    "./js/app-navigation.js", "./js/artist-onboarding.js", "./js/artist-media.js", "./js/artist-utils.js", "./js/artwork.js", "./js/audio-url-resolver.js", "./js/audio-url-resolver-core.js", "./js/auth.js", "./js/carousel.js", "./js/catalog-state.js", "./js/data-cache.js", "./js/data-repository.js", "./js/feedback.js", "./js/image-cropper.js", "./js/mobile.js", "./js/media-session.js", "./js/playback-context.js", "./js/mobile-shell.js", "./js/player.js", "./js/player-persistence.js", "./js/profile-routing.js", "./js/pull-to-refresh.js", "./js/queue-decisions.js", "./js/render.js", "./js/script.js", "./js/search.js", "./js/supabase/client.js", "./js/supabase/config.js", "./js/track-management.js", "./js/tracks-api.js", "./js/tracks-utils.js", "./js/track-upload.js", "./js/track-upload-wizard.js", "./js/track-upload-wizard-entry.js", "./js/album-upload.js", "./js/album-upload-entry.js", "./js/album-upload-scroll-lock.js", "./js/album-upload-bridge.js", "./js/release-upload-chooser.js"
+    "./js/app-navigation.js", "./js/artist-onboarding.js", "./js/artist-media.js", "./js/artist-utils.js", "./js/artwork.js", "./js/audio-url-resolver.js", "./js/audio-url-resolver-core.js", "./js/auth.js", "./js/account-auth-guard.js", "./js/carousel.js", "./js/catalog-state.js", "./js/data-cache.js", "./js/data-repository.js", "./js/feedback.js", "./js/image-cropper.js", "./js/mobile.js", "./js/media-session.js", "./js/playback-context.js", "./js/mobile-shell.js", "./js/player.js", "./js/player-persistence.js", "./js/profile-routing.js", "./js/pull-to-refresh.js", "./js/queue-decisions.js", "./js/render.js", "./js/script.js", "./js/search.js", "./js/supabase/client.js", "./js/supabase/config.js", "./js/track-management.js", "./js/tracks-api.js", "./js/tracks-utils.js", "./js/track-upload.js", "./js/track-upload-wizard.js", "./js/track-upload-wizard-entry.js", "./js/album-upload.js", "./js/album-upload-entry.js", "./js/album-upload-scroll-lock.js", "./js/album-upload-bridge.js", "./js/release-upload-chooser.js"
 ];
 const OPTIONAL_SHELL_ASSETS = ["./icons/favicon-16.png", "./icons/favicon-32.png", "./icons/favicon-48.png", "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png"];
 const SDK_ASSETS = ["https://esm.sh/@supabase/supabase-js@2.112.2?bundle", "https://esm.sh/@supabase/supabase-js@2.112.2/es2022/supabase-js.bundle.mjs", "https://esm.sh/node/buffer.mjs", "https://esm.sh/node/process.mjs", "https://esm.sh/node/events.mjs", "https://esm.sh/node/tty.mjs", "https://esm.sh/node/async_hooks.mjs"];
@@ -23,7 +23,7 @@ self.addEventListener("activate", (event) => { event.waitUntil((async () => { co
 self.addEventListener("message", (event) => { if (event.data?.type === "GET_RELEASE_VERSION") event.ports[0]?.postMessage({ releaseVersion: RELEASE_VERSION }); });
 async function getCachedShellResponse(canonicalUrl) { const cache = await caches.open(SHELL_CACHE); return await cache.match(canonicalUrl); }
 function versionNavigationHtml(html) {
-    let next = html.replace(/<meta name="pojidmusic-release" content="pwa-v\d+">/, SERVED_RELEASE_MARKER).replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`).replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}"`);
+    let next = html.replace(/<meta name="pojidmusic-release" content="pwa-v\d+">/, SERVED_RELEASE_MARKER).replace('href="style.css"', `href="style.css?v=${ENTRY_VERSION}"`).replace('src="js/script.js"', `src="js/script.js?v=${ENTRY_VERSION}`);
     if (!next.includes("telegram-profile-v45.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="telegram-profile-v45.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("track-management-surface.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="track-management-surface.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("home-discovery.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="home-discovery.css?v=${ENTRY_VERSION}">\n</head>`);
