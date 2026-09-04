@@ -11,6 +11,7 @@ let navigationModulePromise = null;
 let authModulePromise = null;
 let uploadWizardPromise = null;
 let feedbackModulePromise = null;
+let releaseChooserPromise = null;
 let unsubscribeAuthState = null;
 let catalogLoadTimer = null;
 let catalogLoadDeadlineTimer = null;
@@ -26,6 +27,7 @@ function appendShellStyles(path, marker) {
 
 appendShellStyles("../mobile-navigation.css", "data-mobile-navigation-style");
 appendShellStyles("../artist-mobile-list.css", "data-artist-mobile-list-style");
+appendShellStyles("../release-upload-chooser.css", "data-release-upload-chooser-style");
 
 function loadNavigation() {
     navigationModulePromise ||= import("./app-navigation.js");
@@ -45,6 +47,11 @@ function loadUploadWizard() {
 function loadFeedback() {
     feedbackModulePromise ||= import("./feedback.js");
     return feedbackModulePromise;
+}
+
+function loadReleaseChooser() {
+    releaseChooserPromise ||= import("./release-upload-chooser.js");
+    return releaseChooserPromise;
 }
 
 function shouldShowCatalogLoadScreen() {
@@ -116,7 +123,7 @@ function renderNavigationMarkup() {
     navigation.innerHTML = `
         <button class="mobile-nav-button is-active" type="button" data-mobile-tab="home" aria-label="Главная" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5L12 3.5L20.5 10.5V20H14.5V14H9.5V20H3.5V10.5Z"></path></svg><span>Главная</span></button>
         <button class="mobile-nav-button" type="button" data-mobile-tab="search" aria-label="Поиск"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M15.5 15.5L21 21"></path></svg><span>Поиск</span></button>
-        <button class="mobile-nav-button" type="button" data-mobile-tab="upload" aria-label="Добавить трек" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V20"></path><path d="M4 12H20"></path></svg><span>Добавить трек</span></button>
+        <button class="mobile-nav-button" type="button" data-mobile-tab="upload" aria-label="Добавить релиз" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V20"></path><path d="M4 12H20"></path></svg><span>Добавить релиз</span></button>
         <button class="mobile-nav-button" type="button" data-mobile-tab="artist" aria-label="Страница артиста" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3.1"></circle><path d="M12 3.5V8.9"></path></svg><span>Страница артиста</span></button>
         <button class="mobile-nav-button" type="button" data-mobile-tab="profile" aria-label="Профиль и настройки"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21C5.2 16.8 7.7 14.5 12 14.5C16.3 14.5 18.8 16.8 19.5 21"></path></svg><span>Профиль</span></button>`;
 }
@@ -145,16 +152,14 @@ function syncTabFromView() {
 
 async function openHome() { exitMobileSearch({ clear: true }); clearActiveSearch(); const navigation = await loadNavigation(); navigation.openCatalogView(); setActiveTab("home"); }
 async function openSearch() { const navigation = await loadNavigation(); navigation.openCatalogView({ scroll: false }); enterMobileSearch(); setActiveTab("search"); }
-async function openUpload() {
+async function openUpload(trigger = null) {
     exitMobileSearch({ clear: true });
-    const uploadButton = document.querySelector(".profile-menu .track-upload-open-button") || document.querySelector(".track-upload-open-button");
-    if (!uploadButton) return;
     try {
-        await loadUploadWizard();
-        const module = await import("./track-upload.js");
-        module.initializeTrackUpload();
-        uploadButton.click();
-    } catch (error) { console.error("Не удалось открыть загрузку трека.", error); }
+        const chooser = await loadReleaseChooser();
+        chooser.openReleaseUploadChooser(trigger);
+    } catch (error) {
+        console.error("Не удалось открыть выбор типа релиза.", error);
+    }
 }
 async function openArtist() { exitMobileSearch({ clear: true }); const navigation = await loadNavigation(); const opened = await navigation.openCurrentProfile(); if (opened) setActiveTab("artist"); }
 async function openProfile() { exitMobileSearch({ clear: true }); const navigation = await loadNavigation(); const opened = await navigation.openSettings(); setActiveTab(opened ? "profile" : "home"); }
@@ -171,6 +176,7 @@ async function observeRole() {
 export function initializeMobileAppShell() {
     if (initialized) return;
     initialized = true;
+    void loadReleaseChooser().catch((error) => console.error("Не удалось инициализировать выбор типа релиза.", error));
     void loadUploadWizard().catch((error) => console.error("Не удалось инициализировать мастер загрузки.", error));
     void loadFeedback().catch((error) => console.error("Не удалось инициализировать фидбек.", error));
     initializeCatalogLoadScreen();
@@ -182,7 +188,7 @@ export function initializeMobileAppShell() {
         const tab = button.dataset.mobileTab;
         if (tab === "home") void openHome();
         if (tab === "search") void openSearch();
-        if (tab === "upload") void openUpload();
+        if (tab === "upload") void openUpload(button);
         if (tab === "artist") void openArtist();
         if (tab === "profile") void openProfile();
     });
