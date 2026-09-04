@@ -1,1 +1,1448 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="pojidmusic-release" content="pwa-v28">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    >
+
+    <meta
+        name="apple-mobile-web-app-capable"
+        content="yes"
+    >
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
+
+    <meta
+        name="apple-mobile-web-app-title"
+        content="POJIDMUSIC"
+    >
+
+    <title>POJIDMUSIC</title>
+
+    <meta name="theme-color" content="#111111">
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="48x48"
+        href="icons/favicon-48.png?v=3"
+    >
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="32x32"
+        href="icons/favicon-32.png?v=3"
+    >
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="16x16"
+        href="icons/favicon-16.png?v=3"
+    >
+    <link
+        rel="apple-touch-icon"
+        sizes="180x180"
+        href="icons/apple-touch-icon.png"
+    >
+    <link rel="manifest" href="manifest.webmanifest">
+
+    <script>
+        if (!new URLSearchParams(location.search).has("artist") &&
+            !new URLSearchParams(location.search).has("view")) {
+            document.documentElement.classList.add("cold-home-boot");
+        }
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app-boot-curtain" aria-hidden="true">
+        <span class="app-boot-curtain-wordmark">POJIDMUSIC</span>
+    </div>
+
+    <div
+        class="pull-to-refresh"
+        data-state="idle"
+        role="status"
+        aria-live="polite"
+        aria-hidden="true"
+    >
+        <span class="pull-to-refresh-spinner" aria-hidden="true"></span>
+        <span class="pull-to-refresh-label"></span>
+    </div>
+
+    <!-- Шапка сайта -->
+
+    <header class="header">
+        <div class="header-spacer" aria-hidden="true"></div>
+        <button
+            class="logo"
+            type="button"
+            data-nav-home
+            aria-label="На главную"
+        >POJIDMUSIC</button>
+
+        <div
+            class="auth-controls"
+            data-auth-ready="false"
+        >
+            <button
+                class="auth-open-button"
+                type="button"
+                aria-haspopup="dialog"
+                aria-controls="auth-modal"
+                aria-label="Войти"
+            >
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                >
+                    <path d="M10 17l5-5-5-5"></path>
+                    <path d="M15 12H3"></path>
+                    <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path>
+                </svg>
+                <span class="auth-open-label">Войти</span>
+            </button>
+
+            <div class="auth-user-controls" hidden>
+                <button
+                    class="auth-profile-button"
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="profile-menu"
+                    aria-label="Открыть меню профиля"
+                >
+                    <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                    >
+                        <path d="M20 21a8 8 0 0 0-16 0"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+
+                    <span class="auth-user-details">
+                        <span class="auth-user-identity"></span>
+                    </span>
+
+                    <svg
+                        class="auth-profile-chevron"
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                    >
+                        <path d="m7 10 5 5 5-5"></path>
+                    </svg>
+                </button>
+
+                <div
+                    id="profile-menu"
+                    class="profile-menu"
+                    role="menu"
+                    hidden
+                >
+                    <button
+                        class="profile-menu-item"
+                        type="button"
+                        role="menuitem"
+                        data-profile-action="profile"
+                    >
+                        Профиль
+                    </button>
+
+                    <button
+                        class="profile-menu-item"
+                        type="button"
+                        role="menuitem"
+                        data-profile-action="settings"
+                    >
+                        Настройки аккаунта
+                    </button>
+
+                    <button
+                        class="track-upload-open-button profile-menu-item"
+                        type="button"
+                        role="menuitem"
+                        aria-haspopup="dialog"
+                        aria-controls="track-upload-modal"
+                        hidden
+                    >
+                        Загрузить трек
+                    </button>
+
+                    <span
+                        class="auth-profile-note"
+                        role="status"
+                        hidden
+                    ></span>
+
+                    <div class="profile-menu-separator"></div>
+
+                    <button
+                        class="auth-sign-out-button profile-menu-item"
+                        type="button"
+                        role="menuitem"
+                    >
+                        Выйти
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div
+        id="auth-modal"
+        class="auth-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        hidden
+    >
+        <div class="auth-modal-backdrop" data-auth-close></div>
+
+        <div class="auth-dialog">
+            <div class="auth-dialog-header">
+                <h2 id="auth-modal-title">Аккаунт</h2>
+
+                <button
+                    class="auth-close-button"
+                    type="button"
+                    aria-label="Закрыть окно авторизации"
+                    data-auth-close
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M6 6L18 18M18 6L6 18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div
+                class="auth-tabs"
+                role="tablist"
+                aria-label="Режим авторизации"
+            >
+                <button
+                    id="auth-login-tab"
+                    class="auth-tab is-active"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="auth-login-panel"
+                    data-auth-mode="login"
+                >
+                    Вход
+                </button>
+
+                <button
+                    id="auth-signup-tab"
+                    class="auth-tab"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="auth-signup-panel"
+                    data-auth-mode="signup"
+                >
+                    Регистрация
+                </button>
+            </div>
+
+            <p
+                class="auth-message"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></p>
+
+            <div
+                id="auth-login-panel"
+                class="auth-panel"
+                role="tabpanel"
+                aria-labelledby="auth-login-tab"
+            >
+                <form class="auth-form auth-login-form">
+                    <label for="auth-login-email">Email</label>
+                    <input
+                        id="auth-login-email"
+                        name="email"
+                        type="email"
+                        autocomplete="email"
+                        required
+                    >
+
+                    <label for="auth-login-password">Пароль</label>
+                    <input
+                        id="auth-login-password"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <button
+                        class="auth-submit-button"
+                        type="submit"
+                    >
+                        Войти
+                    </button>
+                </form>
+            </div>
+
+            <div
+                id="auth-signup-panel"
+                class="auth-panel"
+                role="tabpanel"
+                aria-labelledby="auth-signup-tab"
+                hidden
+            >
+                <form class="auth-form auth-signup-form">
+                    <label for="auth-signup-name">Имя</label>
+                    <input
+                        id="auth-signup-name"
+                        name="display_name"
+                        type="text"
+                        autocomplete="name"
+                        required
+                    >
+
+                    <label for="auth-signup-email">Email</label>
+                    <input
+                        id="auth-signup-email"
+                        name="email"
+                        type="email"
+                        autocomplete="email"
+                        required
+                    >
+
+                    <label for="auth-signup-account-type">Тип аккаунта</label>
+                    <select
+                        id="auth-signup-account-type"
+                        name="account_type"
+                    >
+                        <option value="listener">Слушатель</option>
+                        <option value="artist">Артист</option>
+                    </select>
+
+                    <label for="auth-signup-password">
+                        Пароль
+                    </label>
+                    <input
+                        id="auth-signup-password"
+                        name="password"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="8"
+                        required
+                    >
+
+                    <label for="auth-signup-password-repeat">
+                        Повторите пароль
+                    </label>
+                    <input
+                        id="auth-signup-password-repeat"
+                        name="password_repeat"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="8"
+                        required
+                    >
+
+                    <button
+                        class="auth-submit-button"
+                        type="submit"
+                    >
+                        Зарегистрироваться
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div
+        id="track-upload-modal"
+        class="track-upload-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="track-upload-modal-title"
+        hidden
+    >
+        <div
+            class="track-upload-backdrop"
+            data-track-upload-close
+        ></div>
+
+        <div class="track-upload-dialog">
+            <div class="track-upload-dialog-header">
+                <div>
+                    <p class="track-upload-eyebrow">Новый релиз</p>
+                    <h2 id="track-upload-modal-title">
+                        Загрузить трек
+                    </h2>
+                </div>
+
+                <button
+                    class="track-upload-close-button"
+                    type="button"
+                    aria-label="Закрыть окно загрузки трека"
+                    data-track-upload-close
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M6 6L18 18M18 6L6 18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <p
+                class="track-upload-message"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></p>
+
+            <form class="track-upload-form">
+                <label for="track-upload-title">
+                    Название трека
+                </label>
+                <input
+                    id="track-upload-title"
+                    name="title"
+                    type="text"
+                    maxlength="200"
+                    autocomplete="off"
+                    required
+                >
+
+                <fieldset
+                    class="track-upload-credits"
+                    data-artist-picker="primary"
+                >
+                    <legend>Основные артисты</legend>
+                    <div
+                        class="track-upload-credit-list"
+                        data-artist-credit-list
+                    ></div>
+                    <div class="track-upload-artist-picker">
+                        <label for="track-upload-primary-artist">
+                            Добавить основного артиста
+                        </label>
+                        <input
+                            id="track-upload-primary-artist"
+                            type="search"
+                            maxlength="200"
+                            autocomplete="off"
+                            placeholder="Начните вводить имя или @handle"
+                            role="combobox"
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-controls="track-upload-primary-suggestions"
+                            data-artist-picker-input
+                        >
+                        <div
+                            id="track-upload-primary-suggestions"
+                            class="track-upload-artist-suggestions"
+                            role="listbox"
+                            data-artist-suggestions
+                            hidden
+                        ></div>
+                    </div>
+                </fieldset>
+
+                <fieldset
+                    class="track-upload-credits"
+                    data-artist-picker="featured"
+                >
+                    <legend>
+                        Фит / приглашённые
+                        <span class="track-upload-optional">
+                            необязательно
+                        </span>
+                    </legend>
+                    <div
+                        class="track-upload-credit-list"
+                        data-artist-credit-list
+                    ></div>
+                    <div class="track-upload-artist-picker">
+                        <label for="track-upload-featured-artist">
+                            Добавить приглашённого артиста
+                        </label>
+                        <input
+                            id="track-upload-featured-artist"
+                            type="search"
+                            maxlength="200"
+                            autocomplete="off"
+                            placeholder="Начните вводить имя или @handle"
+                            role="combobox"
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-controls="track-upload-featured-suggestions"
+                            data-artist-picker-input
+                        >
+                        <div
+                            id="track-upload-featured-suggestions"
+                            class="track-upload-artist-suggestions"
+                            role="listbox"
+                            data-artist-suggestions
+                            hidden
+                        ></div>
+                    </div>
+                </fieldset>
+
+                <label for="track-upload-description">
+                    Описание
+                    <span class="track-upload-optional">
+                        необязательно
+                    </span>
+                </label>
+                <textarea
+                    id="track-upload-description"
+                    name="description"
+                    maxlength="2000"
+                    rows="3"
+                ></textarea>
+
+                <label for="track-upload-release-type">
+                    Тип релиза
+                </label>
+                <select
+                    id="track-upload-release-type"
+                    name="release_type"
+                    required
+                >
+                    <option value="demo">Демо</option>
+                    <option value="single" selected>Сингл</option>
+                    <option value="album_track">Трек альбома</option>
+                </select>
+
+                <div class="track-upload-file-field">
+                    <label for="track-upload-audio">
+                        Аудиофайл
+                    </label>
+                    <input
+                        id="track-upload-audio"
+                        name="audio"
+                        type="file"
+                        accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/x-flac"
+                        required
+                    >
+                    <p
+                        class="track-upload-file-details"
+                        data-track-upload-audio-details
+                        aria-live="polite"
+                    >
+                        MP3, WAV или FLAC, не больше 50 MiB
+                    </p>
+                </div>
+
+                <div class="track-upload-file-field">
+                    <label for="track-upload-cover">
+                        Обложка
+                    </label>
+                    <input
+                        id="track-upload-cover"
+                        name="cover"
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                        required
+                    >
+                    <p
+                        class="track-upload-file-details"
+                        data-track-upload-cover-details
+                        aria-live="polite"
+                    >
+                        JPG, PNG или WebP, не больше 5 MiB
+                    </p>
+
+                    <div
+                        class="track-upload-cover-preview"
+                        hidden
+                    >
+                        <img
+                            alt="Предпросмотр выбранной обложки"
+                        >
+                    </div>
+                </div>
+
+                <button
+                    class="track-upload-submit-button"
+                    type="submit"
+                >
+                    Загрузить трек
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <main
+        id="account-profile"
+        class="app-profile-view account-profile-view"
+        hidden
+    >
+        <section class="profile-surface" aria-labelledby="account-profile-title">
+            <div class="account-profile-heading">
+                <div class="profile-avatar" data-account-avatar aria-hidden="true"></div>
+                <div>
+                    <p class="profile-kicker">Настройки аккаунта</p>
+                    <h1 id="account-profile-title" data-account-name>Аккаунт</h1>
+                    <p class="profile-meta" data-account-meta></p>
+                </div>
+            </div>
+
+            <dl class="account-profile-details">
+                <div>
+                    <dt>Имя пользователя</dt>
+                    <dd data-account-username>—</dd>
+                </div>
+                <div>
+                    <dt>Роль</dt>
+                    <dd data-account-role>—</dd>
+                </div>
+                <div class="profile-email-row">
+                    <dt>Email</dt>
+                    <dd data-account-email>—</dd>
+                </div>
+            </dl>
+
+            <div class="profile-actions" data-account-actions hidden>
+                <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-account-avatar-input
+                    hidden
+                >
+                <button class="profile-action-button" type="button" data-account-my-tracks hidden>
+                    Мои треки
+                </button>
+                <button class="profile-action-button" type="button" data-account-artist-page hidden>
+                    Страница артиста
+                </button>
+                <button class="profile-action-button" type="button" data-change-account-avatar>
+                    Изменить аватар
+                </button>
+            </div>
+            <p class="profile-form-message" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+
+    <main
+        id="my-tracks"
+        class="app-profile-view my-tracks-view"
+        hidden
+    >
+        <section class="my-tracks-surface" aria-labelledby="my-tracks-title">
+            <p class="profile-kicker">Личный раздел</p>
+            <h1 id="my-tracks-title">Мои треки</h1>
+            <p class="my-tracks-description" data-my-tracks-description></p>
+            <div class="tracks-row" data-my-tracks-list></div>
+            <p class="artist-empty" data-my-tracks-empty hidden>
+                У тебя пока нет опубликованных треков.
+            </p>
+        </section>
+    </main>
+
+    <main
+        id="artist-profile"
+        class="app-profile-view artist-profile-view"
+        hidden
+    >
+        <section class="artist-hero" aria-labelledby="artist-profile-title">
+            <div class="artist-banner" data-artist-banner>
+                <button class="artist-media-edit artist-banner-edit" type="button" data-change-artist-banner hidden aria-label="Изменить баннер">✎</button>
+            </div>
+            <div class="artist-hero-content">
+                <div class="artist-profile-summary">
+                    <div class="profile-avatar artist-avatar" data-artist-avatar>
+                        <button class="artist-media-edit artist-avatar-edit" type="button" data-change-artist-avatar hidden aria-label="Изменить аватар">✎</button>
+                    </div>
+                    <div class="artist-identity">
+                        <h1 id="artist-profile-title" data-artist-name>Артист</h1>
+                        <p class="artist-release-count" data-artist-release-count></p>
+                    </div>
+                </div>
+                <div class="artist-owner-actions" data-artist-owner-actions hidden>
+                    <button class="artist-quick-upload" type="button" data-profile-quick-upload>Загрузить трек</button>
+                    <button class="artist-settings-button" type="button" data-open-account-settings aria-label="Настройки аккаунта">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+                    </button>
+                    <div class="artist-owner-menu">
+                        <button
+                            class="artist-owner-menu-toggle"
+                            type="button"
+                            data-toggle-artist-owner-menu
+                            aria-label="Открыть меню управления профилем"
+                            aria-haspopup="menu"
+                            aria-expanded="false"
+                            aria-controls="artist-owner-menu-popover"
+                        ><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+                        <div
+                            id="artist-owner-menu-popover"
+                            class="artist-owner-menu-popover"
+                            role="menu"
+                            hidden
+                        >
+                            <button type="button" role="menuitem" data-change-artist-banner>
+                                Изменить баннер
+                            </button>
+                            <button type="button" role="menuitem" data-profile-quick-upload>
+                                Загрузить трек
+                            </button>
+                            <button type="button" role="menuitem" data-open-artist-profile-editor>
+                                Редактировать профиль артиста
+                            </button>
+                            <button type="button" role="menuitem" data-open-account-settings>
+                                Настройки аккаунта
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="artist-media-controls" data-artist-media-controls hidden>
+                <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-artist-avatar-input
+                    hidden
+                >
+                <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-artist-banner-input
+                    hidden
+                >
+                <p class="artist-media-status" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <section class="artist-releases" aria-labelledby="artist-releases-title">
+            <h2 id="artist-releases-title" class="section-title">РЕЛИЗЫ</h2>
+            <div class="tracks-row" data-artist-tracks></div>
+            <p class="artist-empty" data-artist-empty hidden>
+                У артиста пока нет опубликованных релизов.
+            </p>
+        </section>
+    </main>
+
+    <div class="profile-editor-modal" data-profile-editor-modal hidden>
+        <div class="profile-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-editor-title">
+            <div class="profile-editor-heading">
+                <h2 id="profile-editor-title">Настройки профиля</h2>
+                <button type="button" data-close-profile-editor aria-label="Закрыть">×</button>
+            </div>
+            <form data-profile-editor-form>
+                <label>Имя артиста<input name="display_name" maxlength="200" required></label>
+                <label data-profile-username-field>Никнейм<input name="handle" readonly></label>
+                <label>Email<input name="email" type="email" readonly></label>
+                <label>Роль<input name="role" readonly></label>
+                <p data-profile-editor-status role="status" aria-live="polite"></p>
+                <div class="profile-editor-actions">
+                    <button type="button" data-close-profile-editor>Отмена</button>
+                    <button class="profile-editor-save" type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="crop-modal" data-crop-modal hidden>
+        <div class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="crop-title">
+            <h2 id="crop-title" data-crop-title>Кадрирование</h2>
+            <canvas class="crop-canvas" data-crop-canvas aria-label="Перетащите изображение для выбора кадра"></canvas>
+            <label class="crop-zoom-label">Масштаб
+                <input data-crop-zoom type="range" min="1" max="4" step="0.01" value="1">
+            </label>
+            <input
+                data-crop-replace-input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                hidden
+            >
+            <div class="crop-actions">
+                <button type="button" data-crop-replace>Заменить изображение</button>
+                <button type="button" data-crop-cancel>Отмена</button>
+                <button type="button" data-crop-save>Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="track-editor-modal" data-track-editor-modal hidden>
+        <div class="track-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="track-editor-title">
+            <div class="profile-editor-heading">
+                <h2 id="track-editor-title">Редактировать трек</h2>
+                <button type="button" data-close-track-editor aria-label="Закрыть">×</button>
+            </div>
+            <form data-track-editor-form>
+                <label>Название<input name="title" maxlength="200" required></label>
+                <fieldset><legend>Основные артисты</legend><div data-edit-primary-artists></div><button type="button" data-add-edit-primary>+ артист</button></fieldset>
+                <fieldset><legend>При участии</legend><div data-edit-featured-artists></div><button type="button" data-add-edit-featured>+ артист</button></fieldset>
+                <div class="track-cover-editor">
+                    <img data-edit-cover-preview alt="Предпросмотр обложки трека">
+                    <div class="track-cover-editor-copy">
+                        <button type="button" data-edit-cover>Изменить обложку</button>
+                        <span data-edit-cover-status aria-live="polite"></span>
+                    </div>
+                </div>
+                <p data-track-editor-status role="status" aria-live="polite"></p>
+                <div class="track-editor-actions">
+                    <button type="button" data-close-track-editor>Отмена</button>
+                    <button class="profile-editor-save" type="submit">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main id="catalog-view">
+    <!-- Поиск -->
+
+    <div class="search-wrap">
+        <input
+            class="search-input"
+            type="search"
+            placeholder="Найти трек или артиста..."
+            aria-label="Поиск по трекам и артистам"
+        >
+        <button
+            class="search-clear-button"
+            type="button"
+            aria-label="Очистить поиск"
+            hidden
+            disabled
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6L18 18M18 6L6 18"></path>
+            </svg>
+        </button>
+        <button
+            class="search-cancel-button"
+            type="button"
+        >Отмена</button>
+    </div>
+
+
+    <!-- Результаты поиска -->
+
+    <section
+        id="search-results"
+        class="search-results"
+    >
+        <h2 class="section-title">
+            РЕЗУЛЬТАТЫ ПОИСКА
+        </h2>
+
+        <div class="search-artists" hidden>
+            <h3 class="search-group-title">Артисты</h3>
+            <div class="search-artists-list"></div>
+        </div>
+
+        <h3 class="search-group-title search-tracks-title" hidden>Треки</h3>
+
+        <div class="tracks-row search-results-list"></div>
+
+        <p class="search-empty">
+            Ничего не найдено
+        </p>
+    </section>
+
+
+    <!-- Новинки -->
+
+    <section
+        id="new"
+        class="name"
+    >
+        <h2 class="section-title">
+            НОВИНКИ
+        </h2>
+
+        <div class="tracks-row"></div>
+    </section>
+
+
+    <!-- Все треки -->
+
+    <section
+        id="all-tracks"
+        class="name"
+    >
+        <h2 class="section-title">
+            ВСЕ ТРЕКИ
+        </h2>
+
+        <div class="tracks-row"></div>
+    </section>
+
+
+    <!-- Рекомендации -->
+
+    <section
+        id="recommendations"
+        class="recommendations-section reveal-section"
+    >
+        <h2 class="section-title">
+            РЕКОМЕНДУЕМ
+        </h2>
+
+        <div class="recommendations-viewport">
+            <div class="recommendations-track"></div>
+        </div>
+    </section>
+    </main>
+
+
+    <!-- Мини-плеер -->
+
+    <div class="mini-player">
+
+        <!-- Мини-плеер:Полоса прогресса -->
+        <div class="player-progress">
+            <div class="player-progress-track">
+                <div class="player-progress-preview"></div>
+                <div class="player-progress-fill"></div>
+                <div class="player-progress-thumb"></div>
+            </div>
+        </div>
+
+
+        <!-- Мини-плеер:Информация о треке -->
+
+        <div class="player-main">
+            <img
+                class="player-cover"
+                src=""
+                alt="Обложка трека"
+                tabindex="0"
+                role="button"
+                aria-label="Открыть полноэкранный плеер"
+            >
+
+            <div class="player-info">
+                <div class="player-title">
+                    Название
+                </div>
+
+                <div class="player-artist">
+                    Артист
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Мини-плеер:Кнопки управления -->
+
+        <div class="player-controls">
+
+            <button
+                class="player-mode-button player-shuffle"
+                type="button"
+                data-player-mode="shuffle"
+                aria-label="Включить перемешивание"
+                aria-pressed="false"
+                title="Перемешивание выключено"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M4 7H7.5C9 7 10.2 7.7 11.1 9L15.9 16C16.8 17.3 18 18 19.5 18H21M18 15L21 18L18 21M4 18H7.5C9 18 10.2 17.3 11.1 16L15.9 9C16.8 7.7 18 7 19.5 7H21M18 4L21 7L18 10"
+                    ></path>
+                </svg>
+            </button>
+
+
+            <button
+                class="player-prev"
+                aria-label="Предыдущий трек"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M6 5v14M18 6l-9 6 9 6V6z"/>
+                </svg>
+            </button>
+
+
+            <button
+                class="player-toggle"
+                aria-label="Воспроизведение"
+            ></button>
+
+
+            <button
+                class="player-next"
+                aria-label="Следующий трек"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M18 5v14M6 6l9 6-9 6V6z"/>
+                </svg>
+            </button>
+
+
+            <button
+                class="player-mode-button player-repeat"
+                type="button"
+                data-player-mode="repeat"
+                aria-label="Повтор выключен"
+                aria-pressed="false"
+                title="Повтор выключен"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M17 2L21 6L17 10M3 11V9C3 7.3 4.3 6 6 6H21M7 22L3 18L7 14M21 13V15C21 16.7 19.7 18 18 18H3"
+                    ></path>
+                </svg>
+
+                <span
+                    class="repeat-one-indicator"
+                    aria-hidden="true"
+                >1</span>
+            </button>
+
+        </div>
+
+
+        <!-- Мини-плеер:Громкость и время -->
+
+        <div class="volume-control">
+
+            <button
+                class="volume-button"
+                aria-label="Громкость"
+                aria-expanded="false"
+            >
+                <svg
+                    class="volume-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+
+                    <path
+                        class="volume-wave"
+                        d="M16 8.5c1.3 1.1 1.3 5.9 0 7"
+                    />
+
+                    <path
+                        class="volume-wave"
+                        d="M18.5 6c3.3 3.3 3.3 8.7 0 12"
+                    />
+                </svg>
+            </button>
+
+
+            <div class="volume-slider-wrapper">
+                <input
+                    class="volume-slider"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.1"
+                    aria-label="Уровень громкости"
+                >
+            </div>
+
+
+            <div class="player-time">
+                <span class="current-time">0:00</span>
+                <span class="time-separator">/</span>
+                <span class="duration-time">0:00</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <nav
+        class="mobile-bottom-navigation"
+        aria-label="Основные разделы"
+    >
+        <button
+            class="mobile-nav-button is-active"
+            type="button"
+            data-mobile-tab="home"
+            aria-current="page"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.5 10.5L12 3.5L20.5 10.5V20H14.5V14H9.5V20H3.5V10.5Z"></path>
+            </svg>
+            <span>Home</span>
+        </button>
+        <button
+            class="mobile-nav-button"
+            type="button"
+            data-mobile-tab="search"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <path d="M15.5 15.5L21 21"></path>
+            </svg>
+            <span>Search</span>
+        </button>
+        <button
+            class="mobile-nav-button"
+            type="button"
+            data-mobile-tab="profile"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4.5 21C5.2 16.8 7.7 14.5 12 14.5C16.3 14.5 18.8 16.8 19.5 21"></path>
+            </svg>
+            <span>Profile</span>
+        </button>
+    </nav>
+
+<!-- =====================================================
+     ПОЛНОЭКРАННЫЙ ПЛЕЕР
+     ===================================================== -->
+
+<!--
+Этот экран будет открываться при нажатии
+на обложку трека в нижнем мини-плеере.
+
+Сейчас он скрыт через CSS.
+Позже player.js будет добавлять ему класс open.
+-->
+<section
+    class="fullscreen-player"
+    aria-hidden="true"
+    aria-busy="false"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Полноэкранный плеер"
+
+
+    
+>
+    <!--
+    Затемнённый фон.
+
+    Позже мы сможем использовать на нём
+    размытую обложку текущего трека.
+    -->
+    <div class="fullscreen-player-background"></div>
+
+
+    <!-- =====================================================
+     СВЕТОВЫЕ ЧАСТИЦЫ ФОНА
+     ===================================================== -->
+
+<div class="fullscreen-particles">
+    <span class="fullscreen-particle particle-1"></span>
+    <span class="fullscreen-particle particle-2"></span>
+    <span class="fullscreen-particle particle-3"></span>
+    <span class="fullscreen-particle particle-4"></span>
+    <span class="fullscreen-particle particle-5"></span>
+</div>
+
+
+    <!-- Player and desktop queue share one responsive layout. -->
+    <div class="fullscreen-player-layout">
+    <div class="fullscreen-player-content">
+
+        <div class="fullscreen-player-drag-handle" aria-hidden="true"></div>
+
+        <div class="fullscreen-player-desktop-actions">
+            <button
+                class="fullscreen-player-desktop-collapse"
+                type="button"
+                aria-label="Свернуть полноэкранный плеер"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M6 9L12 15L18 9"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Центральная часть -->
+        <div class="fullscreen-player-cover-float">
+            <div class="fullscreen-player-cover-interaction">
+                <div class="fullscreen-player-cover-wrap">
+
+                    <img
+                        class="fullscreen-player-cover"
+                        src="img/cover.jpg"
+                        alt=""
+                    >
+
+                    <img
+                        class="fullscreen-player-cover-next"
+                        src="img/cover.jpg"
+                        alt=""
+                        aria-hidden="true"
+                    >
+
+                </div>
+            </div>
+        </div>
+
+
+            <!-- Название и исполнитель -->
+            <div class="fullscreen-player-info">
+
+                <h2 class="fullscreen-player-title">
+                    Название трека
+                </h2>
+
+                <p class="fullscreen-player-artist">
+                    Исполнитель
+                </p>
+
+            </div>
+
+
+            <!-- Прогресс трека -->
+            <div class="fullscreen-player-progress-area">
+
+                <!-- Кликабельная полоса прогресса -->
+                <div
+                    class="fullscreen-player-progress"
+                    tabindex="0"
+                    role="slider"
+                    aria-label="Позиция воспроизведения"
+                    aria-valuemin="0"
+                    aria-valuemax="0"
+                    aria-valuenow="0"
+                    aria-valuetext="0:00 из 0:00"
+                >
+                    <div class="fullscreen-player-progress-track">
+                        <div class="fullscreen-player-progress-preview" aria-hidden="true"></div>
+                        <!-- Заполненная часть полосы -->
+                        <div
+                            class="fullscreen-player-progress-fill"
+                        ></div>
+
+                        <div
+                            class="fullscreen-player-progress-thumb"
+                            aria-hidden="true"
+                        ></div>
+                    </div>
+                </div>
+
+
+                <!-- Текущее время и длительность -->
+                <div class="fullscreen-player-time">
+
+                    <span
+                        class="fullscreen-current-time"
+                    >
+                        0:00
+                    </span>
+
+                    <span
+                        class="fullscreen-duration-time"
+                    >
+                        0:00
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Кнопки управления -->
+            <div class="fullscreen-player-controls">
+                <div class="fullscreen-player-primary-controls">
+                <!-- Предыдущий трек -->
+                <button
+                    class="fullscreen-player-prev"
+                    type="button"
+                    aria-label="Предыдущий трек"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M17.5 5.5L7.5 12L17.5 18.5V5.5Z"
+                        ></path>
+                    </svg>
+                </button>
+
+                <!-- Play / Pause -->
+                <button
+                    class="fullscreen-player-toggle"
+                    type="button"
+                    aria-label="Воспроизвести или поставить на паузу"
+                >
+                    <svg
+                        class="fullscreen-play-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M8 5V19L19 12L8 5Z"></path>
+                    </svg>
+                    <svg
+                        class="fullscreen-pause-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M7 5H10V19H7V5ZM14 5H17V19H14V5Z"></path>
+                    </svg>
+                </button>
+
+                <!-- Следующий трек -->
+                <button
+                    class="fullscreen-player-next"
+                    type="button"
+                    aria-label="Следующий трек"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M6.5 5.5L16.5 12L6.5 18.5V5.5Z"
+                        ></path>
+                    </svg>
+                </button>
+                </div>
+
+                <div class="fullscreen-player-secondary-controls">
+                <button
+                    class="player-mode-button fullscreen-player-shuffle"
+                    type="button"
+                    data-player-mode="shuffle"
+                    aria-label="Включить перемешивание"
+                    aria-pressed="false"
+                    title="Перемешивание выключено"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M4 7H7.5C9 7 10.2 7.7 11.1 9L15.9 16C16.8 17.3 18 18 19.5 18H21M18 15L21 18L18 21M4 18H7.5C9 18 10.2 17.3 11.1 16L15.9 9C16.8 7.7 18 7 19.5 7H21M18 4L21 7L18 10"
+                        ></path>
+                    </svg>
+                    <span class="fullscreen-control-label">Shuffle</span>
+                </button>
+
+
+                <button
+                    class="player-mode-button fullscreen-player-repeat"
+                    type="button"
+                    data-player-mode="repeat"
+                    aria-label="Повтор выключен"
+                    aria-pressed="false"
+                    title="Повтор выключен"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M17 2L21 6L17 10M3 11V9C3 7.3 4.3 6 6 6H21M7 22L3 18L7 14M21 13V15C21 16.7 19.7 18 18 18H3"
+                        ></path>
+                    </svg>
+
+                    <span
+                        class="repeat-one-indicator"
+                        aria-hidden="true"
+                    >1</span>
+
+                    <span class="fullscreen-control-label">Repeat</span>
+                </button>
+
+                <button
+                    class="fullscreen-queue-button"
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-controls="player-queue-sheet"
+                    aria-expanded="false"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6H16M4 12H16M4 18H12"></path>
+                        <path d="M18 15V21L22 18L18 15Z"></path>
+                    </svg>
+                    <span>Queue</span>
+                </button>
+                </div>
+
+                <div class="fullscreen-volume-control">
+                    <input
+                        class="volume-slider fullscreen-volume-slider"
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value="0.1"
+                        aria-label="Громкость fullscreen-плеера"
+                    >
+                </div>
+
+            </div>
+        <div
+            class="fullscreen-player-artist-identity"
+            hidden
+        ></div>
+        </div>
+
+        <div
+            id="player-queue-sheet"
+            class="player-queue-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Очередь воспроизведения"
+            hidden
+        >
+            <button
+                class="player-queue-backdrop"
+                type="button"
+                aria-label="Закрыть очередь"
+                data-close-player-queue
+            ></button>
+            <div class="player-queue-panel">
+                <div class="player-queue-heading">
+                    <div>
+                        <p>Фактический порядок</p>
+                        <h2>Очередь</h2>
+                    </div>
+                    <button type="button" data-close-player-queue aria-label="Свернуть очередь">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 9L12 15L18 9"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="player-queue-list"></div>
+            </div>
+        </div>
+        </div>
+</section>
+
+
+    <!-- Данные треков -->
+
+    <script src="tracks.js"></script>
+
+    <!-- Запуск приложения -->
+
+    <script
+        type="module"
+        src="js/script.js"
+    ></script>
+
+</body>
+</html>
