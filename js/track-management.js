@@ -26,6 +26,7 @@ let suggestionRows = [];
 let myTracksRenderToken = 0;
 let myTracksFilter = "published";
 let viewObserver = null;
+let editorLockedScrollY = 0;
 
 const modal = () => document.querySelector("[data-track-editor-modal]");
 const form = () => document.querySelector("[data-track-editor-form]");
@@ -148,14 +149,35 @@ function syncDraftFromForm() {
     editDraft.featuredArtists = getCredits("featured");
 }
 
+function lockEditorBackground() {
+    editorLockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.classList.add("track-editor-scroll-locked");
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${editorLockedScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+}
+
+function unlockEditorBackground() {
+    document.documentElement.classList.remove("track-editor-scroll-locked");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, editorLockedScrollY);
+}
+
 function closeEditor({ restoreFocus = true } = {}) {
     const element = modal();
     if (element) element.hidden = true;
     document.body.classList.remove("track-editor-open");
+    unlockEditorBackground();
     revokePendingCoverPreview();
     editDraft = null;
     resetAudioEditor();
-    if (restoreFocus) editorReturnFocus?.focus?.();
+    if (restoreFocus) editorReturnFocus?.focus?.({ preventScroll: true });
     editorReturnFocus = null;
 }
 
@@ -187,9 +209,10 @@ function openEditor(track, returnFocus) {
     renderCoverDraft();
     resetAudioEditor();
     setStatus("");
+    lockEditorBackground();
     element.hidden = false;
     document.body.classList.add("track-editor-open");
-    editor.elements.title.focus();
+    element.querySelector("[data-close-track-editor]")?.focus?.({ preventScroll: true });
 }
 
 async function chooseCover() {
