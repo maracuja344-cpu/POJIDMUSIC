@@ -1,0 +1,129 @@
+/* POJIDMUSIC home discovery: one carousel only. */
+#new.home-new-carousel .tracks-row {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    gap: 14px;
+    margin: 0;
+    padding: 0 20px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+#new.home-new-carousel .tracks-row::-webkit-scrollbar { display: none; }
+
+#new.home-new-carousel .release-card {
+    flex: 0 0 min(340px, calc(100vw - 56px));
+    scroll-snap-align: start;
+}
+
+#recommendations.home-recommendations-list .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.home-recommendations-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255,255,255,.055);
+    color: rgba(255,255,255,.72);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.home-recommendations-refresh svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#recommendations.home-recommendations-list .recommendations-viewport {
+    overflow: visible;
+    padding: 0 20px;
+}
+
+#recommendations.home-recommendations-list .recommendations-track {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#recommendations.home-recommendations-list .recommendation-card {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 15px;
+}
+
+#recommendations.home-recommendations-list .recommendation-cover {
+    width: 64px;
+    height: 64px;
+    aspect-ratio: 1;
+    border-radius: 10px;
+}
+
+#recommendations.home-recommendations-list .recommendation-info { padding: 0; min-width: 0; }
+#recommendations.home-recommendations-list .recommendation-title,
+#recommendations.home-recommendations-list .recommendation-artist {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+#recommendations.home-recommendations-list .recommendation-title { font-size: 16px; }
+#recommendations.home-recommendations-list .recommendation-artist { margin-top: 4px; font-size: 13px; }
+
+@media (max-width: 760px) {
+    #new.home-new-carousel .section-title,
+    #recommendations.home-recommendations-list .section-title,
+    #all-tracks .section-title {
+        margin-top: 32px;
+        margin-bottom: 14px;
+    }
+
+    #new.home-new-carousel .tracks-row {
+        gap: 10px;
+        padding: 0 16px 8px;
+    }
+
+    #new.home-new-carousel .release-card {
+        flex: 0 0 42vw;
+        max-width: 180px;
+        padding: 8px;
+    }
+
+    #recommendations.home-recommendations-list .recommendations-viewport { padding: 0 16px; }
+    #recommendations.home-recommendations-list .recommendations-track { grid-template-columns: 1fr; gap: 7px; }
+    #recommendations.home-recommendations-list .recommendation-card {
+        grid-template-columns: 54px minmax(0, 1fr);
+        min-height: 70px;
+        padding: 8px;
+        border-color: rgba(255,255,255,.06);
+        background: rgba(255,255,255,.018);
+    }
+    #recommendations.home-recommendations-list .recommendation-cover { width: 54px; height: 54px; }
+    #recommendations.home-recommendations-list .recommendation-title { font-size: 15px; }
+    #recommendations.home-recommendations-list .recommendation-artist { font-size: 12px; }
+    .home-recommendations-refresh { padding: 7px 9px; font-size: 12px; }
+}
