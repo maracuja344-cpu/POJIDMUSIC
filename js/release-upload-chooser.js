@@ -93,24 +93,57 @@ function closeChooser({ restoreFocus = true } = {}) {
 }
 
 async function openTrackFlow() {
-    const trigger = returnTrigger || document.querySelector('.track-upload-open-button');
     closeChooser({ restoreFocus: false });
-    if (!trigger) return;
     bypassChooser = true;
     try {
-        trigger.click();
+        await import('./track-upload-wizard-entry.js');
+        const uploadModule = await import('./track-upload.js');
+        uploadModule.initializeTrackUpload();
+        const actualUploadButton =
+            document.querySelector('.profile-menu .track-upload-open-button') ||
+            document.querySelector('.track-upload-open-button');
+        if (!actualUploadButton) throw new Error('Не найдена кнопка загрузки трека.');
+        actualUploadButton.click();
+    } catch (error) {
+        console.error('Не удалось открыть загрузку трека.', error);
     } finally {
-        queueMicrotask(() => { bypassChooser = false; });
+        window.setTimeout(() => { bypassChooser = false; }, 0);
     }
+}
+
+function albumModalIsOpen() {
+    const modal = document.querySelector('[data-album-upload-modal]');
+    return Boolean(modal && !modal.hidden);
+}
+
+async function waitForAlbumAuth(timeoutMs = 2500) {
+    const { getCurrentAuthState } = await import('./auth.js');
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+        const state = getCurrentAuthState();
+        if (state?.user?.id && ['artist', 'admin'].includes(state.profile?.role)) return true;
+        await new Promise((resolve) => window.setTimeout(resolve, 50));
+    }
+    return false;
 }
 
 async function openAlbumFlow() {
     closeChooser({ restoreFocus: false });
     try {
-        const { openAlbumUpload } = await import('./album-upload.js');
+        const [{ openAlbumUpload }, authReady] = await Promise.all([
+            import('./album-upload.js'),
+            waitForAlbumAuth()
+        ]);
+        if (!authReady) throw new Error('Профиль артиста ещё не готов.');
         openAlbumUpload();
+        if (!albumModalIsOpen()) {
+            await new Promise((resolve) => window.setTimeout(resolve, 100));
+            openAlbumUpload();
+        }
+        if (!albumModalIsOpen()) throw new Error('Окно загрузки альбома не открылось.');
     } catch (error) {
         console.error('Не удалось открыть загрузку альбома.', error);
+        openChooser(returnTrigger);
     }
 }
 
