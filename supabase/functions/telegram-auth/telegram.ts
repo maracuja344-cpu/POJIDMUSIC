@@ -8,6 +8,7 @@ export type TelegramIdentity = {
   id: number;
   username: string | null;
   displayName: string | null;
+  photoUrl: string | null;
 };
 
 export class TelegramAuthError extends Error {}
@@ -51,8 +52,18 @@ export async function telegramHash(initDataWithoutHash: URLSearchParams, botToke
 function optionalText(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  if (!trimmed) return null;
-  return trimmed.slice(0, maxLength);
+  return trimmed ? trimmed.slice(0, maxLength) : null;
+}
+
+function optionalHttpsUrl(value: unknown): string | null {
+  const text = optionalText(value, 2048);
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    return url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function verifyTelegramInitData(
@@ -108,5 +119,6 @@ export async function verifyTelegramInitData(
     id: user.id,
     username: optionalText(user.username, 64),
     displayName: [firstName, lastName].filter(Boolean).join(" ").slice(0, 256) || null,
+    photoUrl: optionalHttpsUrl(user.photo_url),
   };
 }
