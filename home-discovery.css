@@ -100,6 +100,62 @@
 #recommendations.home-recommendations-list .recommendation-title { font-size: 15px; }
 #recommendations.home-recommendations-list .recommendation-artist { margin-top: 3px; font-size: 12px; }
 
+@media (min-width: 761px) {
+    #new.home-new-carousel,
+    #recommendations.home-recommendations-list,
+    #all-tracks {
+        width: min(1120px, calc(100% - 64px));
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #new.home-new-carousel .section-title,
+    #recommendations.home-recommendations-list .section-title,
+    #all-tracks .section-title {
+        width: 100%;
+        max-width: none;
+        margin-left: auto;
+        margin-right: auto;
+        box-sizing: border-box;
+    }
+
+    #new.home-new-carousel .tracks-row {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        padding-left: 0;
+        padding-right: 0;
+        box-sizing: border-box;
+    }
+
+    #new.home-new-carousel .release-card {
+        flex-basis: 260px;
+        max-width: 260px;
+    }
+
+    #recommendations.home-recommendations-list .recommendations-viewport {
+        width: 100%;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    #recommendations.home-recommendations-list .recommendations-track {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    #all-tracks .tracks-row {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        box-sizing: border-box;
+    }
+}
+
 @media (max-width: 760px) {
     #new.home-new-carousel .section-title,
     #all-tracks .section-title {
