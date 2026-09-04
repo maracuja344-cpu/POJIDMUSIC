@@ -1,3 +1,8 @@
+import {
+    initializeAccountAuthGuard
+} from "./account-auth-guard.js";
+
+
 const coarsePointerQuery = window.matchMedia(
     "(pointer: coarse)"
 );
@@ -137,6 +142,7 @@ function preventMobileGestureZoom() {
 
 
 export function initializeMobileEnvironment() {
+    initializeAccountAuthGuard();
     updateDeviceClasses();
 
     listenForQueryChange(
