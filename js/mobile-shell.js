@@ -28,6 +28,7 @@ function appendShellStyles(path, marker) {
 appendShellStyles("../mobile-navigation.css", "data-mobile-navigation-style");
 appendShellStyles("../artist-mobile-list.css", "data-artist-mobile-list-style");
 appendShellStyles("../release-upload-chooser.css", "data-release-upload-chooser-style");
+appendShellStyles("../mobile-polish.css", "data-mobile-polish-style");
 
 function loadNavigation() {
     navigationModulePromise ||= import("./app-navigation.js");
