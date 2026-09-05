@@ -126,20 +126,14 @@ function makeBackend(): TelegramAuthBackend {
         .select("username,display_name,avatar_url")
         .eq("id", userId)
         .maybeSingle();
-      if (profileError || !profile) {
-        throw profileError || new Error("Profile is missing");
-      }
+      if (profileError || !profile) throw profileError || new Error("Profile is missing");
 
       const patch: Record<string, string> = {};
       const candidateUsername = typeof identity.username === "string"
         ? identity.username.trim().toLowerCase()
         : "";
 
-      if (
-        !profile.username &&
-        candidateUsername &&
-        /^[a-z0-9_.]+$/.test(candidateUsername)
-      ) {
+      if (!profile.username && candidateUsername && /^[a-z0-9_.]+$/.test(candidateUsername)) {
         const { data: owner, error: lookupError } = await client
           .from("profiles")
           .select("id")
@@ -149,13 +143,8 @@ function makeBackend(): TelegramAuthBackend {
         if (lookupError) throw lookupError;
         if (!owner) patch.username = candidateUsername;
       }
-
-      if (!profile.display_name && identity.displayName) {
-        patch.display_name = identity.displayName;
-      }
-      if (!profile.avatar_url && identity.photoUrl) {
-        patch.avatar_url = identity.photoUrl;
-      }
+      if (!profile.display_name && identity.displayName) patch.display_name = identity.displayName;
+      if (!profile.avatar_url && identity.photoUrl) patch.avatar_url = identity.photoUrl;
       if (!Object.keys(patch).length) return;
 
       const { error } = await client.from("profiles").update(patch).eq("id", userId);
@@ -207,9 +196,7 @@ function makeBackend(): TelegramAuthBackend {
 
 Deno.serve(async (request) => {
   const origin = request.headers.get("Origin");
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders(origin) });
-  }
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, origin);
   if (origin && !allowedOrigins.has(origin)) return json({ error: "Origin not allowed" }, 401, origin);
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
@@ -225,9 +212,25 @@ Deno.serve(async (request) => {
       return json({ error: "Malformed request" }, 400, origin);
     }
     const body = JSON.parse(raw);
+    if (!body || typeof body !== "object") return json({ error: "Malformed request" }, 400, origin);
+
+    const backend = makeBackend();
+    const token = bearerToken(request.headers.get("Authorization"));
+
+    if (body.action === "status") {
+      if (!token) throw new UnauthorizedError();
+      const user = await backend.verifyAccessToken(token);
+      if (!user) throw new UnauthorizedError();
+      const mapping = await backend.findByUserId(user.id);
+      return json({
+        linked: Boolean(mapping),
+        telegram: mapping
+          ? { username: mapping.username, display_name: mapping.displayName }
+          : null,
+      }, 200, origin);
+    }
+
     if (
-      !body ||
-      typeof body !== "object" ||
       !["bootstrap", "link", "register", "relink"].includes(body.action) ||
       typeof body.initData !== "string"
     ) {
@@ -236,10 +239,8 @@ Deno.serve(async (request) => {
 
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     if (!botToken) throw new Error("Telegram secret is unavailable");
-
     const identity = await verifyTelegramInitData(body.initData, botToken);
-    const service = new TelegramAuthService(makeBackend());
-    const token = bearerToken(request.headers.get("Authorization"));
+    const service = new TelegramAuthService(backend);
     const result = body.action === "bootstrap"
       ? await service.bootstrap(identity)
       : body.action === "link"
@@ -253,9 +254,7 @@ Deno.serve(async (request) => {
     if (error instanceof TelegramAuthError || error instanceof UnauthorizedError) {
       return json({ error: "Authentication failed" }, 401, origin);
     }
-    if (error instanceof LinkConflictError) {
-      return json({ error: "Account link conflict" }, 409, origin);
-    }
+    if (error instanceof LinkConflictError) return json({ error: "Account link conflict" }, 409, origin);
     if (error instanceof SyntaxError) return json({ error: "Malformed request" }, 400, origin);
     console.error(
       "telegram-auth request failed",
