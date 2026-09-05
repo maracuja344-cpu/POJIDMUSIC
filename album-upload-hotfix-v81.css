@@ -1,0 +1,21 @@
+/* v81: Telegram WebView album uploader visibility guard */
+.album-upload-modal:not([hidden]) {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.album-upload-modal:not([hidden]) .album-upload-dialog {
+  position: relative;
+  z-index: 1;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+html[data-telegram-mini-app="true"] .album-upload-modal:not([hidden]) {
+  padding-top: var(--album-tg-top, max(64px, env(safe-area-inset-top))) !important;
+}
