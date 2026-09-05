@@ -20,7 +20,7 @@ export function getProfileDestination({ user, profile, artist }) {
     if (!user?.id) return { name: "auth" };
 
     if (
-        profile?.role === "artist" &&
+        ["artist", "admin"].includes(profile?.role) &&
         hasStableArtistIdentity(artist) &&
         artist.linkedProfileId === user.id
     ) {
