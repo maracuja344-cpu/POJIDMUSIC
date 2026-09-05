@@ -28,30 +28,49 @@
 }
 
 .home-recommendations-refresh {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 10px;
-    border: 1px solid rgba(255,255,255,.055);
-    border-radius: 999px;
-    background: rgba(255,255,255,.035);
-    color: rgba(255,255,255,.68);
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 42px;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 15px;
+    background: rgba(255,255,255,.025);
+    color: rgba(255,255,255,.62);
     font: inherit;
-    font-size: 12px;
-    font-weight: 600;
     line-height: 1;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.home-recommendations-refresh span {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0,0,0,0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
 .home-recommendations-refresh svg {
-    width: 14px;
-    height: 14px;
+    width: 19px;
+    height: 19px;
+    display: block;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transform-origin: center;
 }
+
+.home-recommendations-refresh:active svg { transform: rotate(18deg); }
 
 #recommendations.home-recommendations-list .recommendations-viewport {
     overflow: visible;
@@ -90,15 +109,29 @@
     border-radius: 9px;
 }
 
-#recommendations.home-recommendations-list .recommendation-info { padding: 0; min-width: 0; }
+#recommendations.home-recommendations-list .recommendation-info {
+    min-width: 0;
+    min-height: 58px;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 5px;
+}
+
 #recommendations.home-recommendations-list .recommendation-title,
 #recommendations.home-recommendations-list .recommendation-artist {
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    line-height: 1.15;
 }
 #recommendations.home-recommendations-list .recommendation-title { font-size: 15px; }
-#recommendations.home-recommendations-list .recommendation-artist { margin-top: 3px; font-size: 12px; }
+#recommendations.home-recommendations-list .recommendation-artist { font-size: 12px; }
 
 @media (min-width: 761px) {
     #new.home-new-carousel,
@@ -188,17 +221,9 @@
         border-radius: 15px;
     }
 
-    #new.home-new-carousel .release-card .cover {
-        border-radius: 12px;
-    }
-
-    #new.home-new-carousel .track-title {
-        font-size: 14px;
-    }
-
-    #new.home-new-carousel .artist-name {
-        font-size: 11px;
-    }
+    #new.home-new-carousel .release-card .cover { border-radius: 12px; }
+    #new.home-new-carousel .track-title { font-size: 14px; }
+    #new.home-new-carousel .artist-name { font-size: 11px; }
 
     #recommendations.home-recommendations-list .recommendations-viewport { padding: 0 16px; }
     #recommendations.home-recommendations-list .recommendations-track { grid-template-columns: 1fr; gap: 6px; }
@@ -211,7 +236,16 @@
         border-radius: 13px;
     }
     #recommendations.home-recommendations-list .recommendation-cover { width: 50px; height: 50px; border-radius: 9px; }
+    #recommendations.home-recommendations-list .recommendation-info { min-height: 50px; gap: 4px; }
     #recommendations.home-recommendations-list .recommendation-title { font-size: 14px; }
     #recommendations.home-recommendations-list .recommendation-artist { font-size: 11px; }
-    .home-recommendations-refresh { padding: 6px 8px; font-size: 11px; }
+    .home-recommendations-refresh {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        min-height: 38px;
+        flex-basis: 38px;
+        border-radius: 14px;
+    }
+    .home-recommendations-refresh svg { width: 18px; height: 18px; }
 }
