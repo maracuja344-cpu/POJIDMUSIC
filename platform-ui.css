@@ -1,5 +1,12 @@
 /* Cross-platform guardrails for surfaces shared by desktop and Telegram. */
 
+/* Artist access is granted only through a request/admin approval now. Hide the
+   legacy selector even if an older cached index.html reaches the browser. */
+.auth-signup-form label[for="auth-signup-account-type"],
+#auth-signup-account-type {
+    display: none !important;
+}
+
 /* Header dropdown must stay a compact desktop menu even inside Telegram WebView. */
 .profile-menu [data-open-feedback] {
     position: relative;
