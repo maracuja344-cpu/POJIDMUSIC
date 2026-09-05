@@ -30,6 +30,7 @@ appendShellStyles("../artist-mobile-list.css", "data-artist-mobile-list-style");
 appendShellStyles("../release-upload-chooser.css", "data-release-upload-chooser-style");
 appendShellStyles("../mobile-polish.css", "data-mobile-polish-style");
 appendShellStyles("../player-mobile-polish.css", "data-player-mobile-polish-style");
+appendShellStyles("../mobile-polish-final.css", "data-mobile-polish-final-style");
 
 function loadNavigation() {
     navigationModulePromise ||= import("./app-navigation.js");
