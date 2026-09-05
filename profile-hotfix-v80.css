@@ -1,19 +1,144 @@
-/* Telegram settings action hotfix.
-   Keep the compact settings-list layout even when action buttons are decorated
-   by newer JS modules. */
+/* Telegram profile baseline: keep the compact profile screen used by the current Mini App UI. */
+html[data-telegram-mini-app="true"] .account-profile-view {
+    padding: 8px 18px 178px !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-view .profile-surface {
+    width: min(100%, 560px) !important;
+    margin: 0 auto !important;
+    padding: 10px 0 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-heading {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 11px !important;
+    text-align: center !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-heading > div:last-child {
+    display: contents !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-heading .profile-kicker,
+html[data-telegram-mini-app="true"] .account-profile-heading .profile-meta {
+    display: none !important;
+}
+
+html[data-telegram-mini-app="true"] [data-account-avatar] {
+    width: 100px !important;
+    height: 100px !important;
+    flex: 0 0 100px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.14), 0 14px 38px rgba(0,0,0,.25) !important;
+}
+
+html[data-telegram-mini-app="true"] #account-profile-title {
+    margin: 2px 0 0 !important;
+    color: #fff !important;
+    font-size: clamp(31px, 7.5vw, 40px) !important;
+    font-weight: 750 !important;
+    line-height: 1 !important;
+    letter-spacing: -.04em !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-details {
+    margin: 12px 0 0 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 7px !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-details > div {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 7px 12px !important;
+    border: 1px solid rgba(255,255,255,.075) !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    background: rgba(255,255,255,.045) !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-details dt {
+    display: none !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-details dd {
+    margin: 0 !important;
+    color: rgba(255,255,255,.75) !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+}
+
+html[data-telegram-mini-app="true"] .account-profile-details > div:nth-child(2) dd::before {
+    content: "• " !important;
+    color: rgba(255,255,255,.32) !important;
+}
+
+html[data-telegram-mini-app="true"] .profile-email-row,
+html[data-telegram-mini-app="true"] [data-account-telegram] {
+    display: none !important;
+}
+
+html[data-telegram-mini-app="true"] .profile-actions {
+    margin-top: 20px !important;
+    padding: 0 !important;
+    display: grid !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255,255,255,.075) !important;
+    border-radius: 20px !important;
+    background: rgba(255,255,255,.025) !important;
+    box-shadow: 0 16px 44px rgba(0,0,0,.14) !important;
+}
+
+html[data-telegram-mini-app="true"] .profile-actions[hidden] {
+    display: none !important;
+}
+
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button {
+    position: relative !important;
+    width: 100% !important;
     min-height: 62px !important;
+    margin: 0 !important;
     padding: 8px 46px 8px 62px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 0 !important;
     overflow: hidden !important;
+    background-color: transparent !important;
+    background-repeat: no-repeat, no-repeat !important;
+    background-size: 38px 38px, 18px 18px !important;
+    background-position: 13px center, calc(100% - 15px) center !important;
+    color: rgba(255,255,255,.94) !important;
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    line-height: 1.15 !important;
     text-align: left !important;
 }
 
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button[hidden] {
     display: none !important;
+}
+
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button + .profile-action-button {
+    border-top: 1px solid rgba(255,255,255,.07) !important;
+}
+
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-button:active {
+    background-color: rgba(255,255,255,.05) !important;
 }
 
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-icon,
@@ -29,10 +154,10 @@ html[data-telegram-mini-app="true"] .profile-actions .profile-action-copy {
     align-items: flex-start !important;
     justify-content: center !important;
     gap: 3px !important;
-    line-height: 1.15 !important;
 }
 
-html[data-telegram-mini-app="true"] .profile-actions .profile-action-title {
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-title,
+html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-label {
     display: block !important;
     max-width: 100% !important;
     overflow: hidden !important;
@@ -44,8 +169,10 @@ html[data-telegram-mini-app="true"] .profile-actions .profile-action-title {
     white-space: nowrap !important;
 }
 
-html[data-telegram-mini-app="true"] .profile-actions .profile-action-subtitle {
+html[data-telegram-mini-app="true"] .profile-actions .profile-action-subtitle,
+html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-subtitle {
     display: block !important;
+    position: static !important;
     max-width: 100% !important;
     overflow: hidden !important;
     color: rgba(255,255,255,.42) !important;
@@ -56,37 +183,17 @@ html[data-telegram-mini-app="true"] .profile-actions .profile-action-subtitle {
     white-space: nowrap !important;
 }
 
-/* When JS provides its own title/subtitle, do not render the old pseudo subtitle too. */
 html[data-telegram-mini-app="true"] .profile-actions .profile-action-button:has(.profile-action-copy)::before {
     content: none !important;
 }
 
-/* Telegram link action uses the same compact visual language. */
-html[data-telegram-mini-app="true"] .profile-actions [data-telegram-link-action] {
-    background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Cpath d='M29 10 11 17c-1 .4-.9 1 .1 1.3l4.6 1.5 1.8 5.5c.2.6.5.7 1 .3l2.6-2.4 4.8 3.6c.8.5 1.4.2 1.6-.8L30 11.3c.2-1-.2-1.6-1-1.3Z' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E"),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat,no-repeat !important;
-    background-size: 38px 38px,18px 18px !important;
-    background-position: 13px center,calc(100% - 15px) center !important;
-}
-
-/* Admin bridge already supplies label/subtitle, keep it compact too. */
 html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-action {
-    min-height: 62px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 3px !important;
 }
 
-html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-label {
-    display: block !important;
-    overflow: hidden !important;
-    font-size: 15px !important;
-    font-weight: 650 !important;
-    line-height: 1.15 !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-}
-
-/* Never let the fixed bottom navigation cover the final settings item. */
-html[data-telegram-mini-app="true"] .account-profile-view {
-    padding-bottom: 178px !important;
+html[data-telegram-mini-app="true"] .profile-form-message:empty {
+    display: none !important;
 }
