@@ -7,13 +7,13 @@ function ensureStyle(marker, href) {
     document.head.append(link);
 }
 
-ensureStyle("data-album-upload-style", new URL("../album-upload.css?v=90", import.meta.url).href);
-ensureStyle("data-album-upload-compact-style", new URL("../album-upload-mobile-compact.css?v=90", import.meta.url).href);
-ensureStyle("data-album-upload-wizard-style", new URL("../album-upload-wizard.css?v=90", import.meta.url).href);
+ensureStyle("data-album-upload-style", new URL("../album-upload.css?v=91", import.meta.url).href);
+ensureStyle("data-album-upload-compact-style", new URL("../album-upload-mobile-compact.css?v=91", import.meta.url).href);
+ensureStyle("data-album-upload-wizard-style", new URL("../album-upload-wizard.css?v=91", import.meta.url).href);
 
-await import("./album-upload-scroll-lock.js?v=90");
-const albumModule = await import("./album-upload.js?v=90");
-const { enhanceAlbumUploadWizard } = await import("./album-upload-wizard.js?v=90");
+await import("./album-upload-scroll-lock.js?v=91");
+const albumModule = await import("./album-upload.js?v=91");
+const { enhanceAlbumUploadWizard } = await import("./album-upload-wizard.js?v=91");
 
 export function openAlbumUpload() {
     albumModule.openAlbumUpload();
