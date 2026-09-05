@@ -168,7 +168,7 @@ async function observeRole() {
     const auth = await loadAuth();
     unsubscribeAuthState?.();
     unsubscribeAuthState = auth.subscribeToAuthState((state) => {
-        setArtistActionsVisible(state.profile?.role === "artist");
+        setArtistActionsVisible(["artist", "admin"].includes(state.profile?.role));
         syncTabFromView();
     });
 }
