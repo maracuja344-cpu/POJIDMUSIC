@@ -1,4 +1,4 @@
-/* v84: small scoped fixes only. Keep the restored v83 mobile shell intact. */
+/* v85: small scoped mobile fixes on top of the restored v83 shell. */
 
 /* Active-track accent should hug the card instead of washing across the row. */
 html[data-telegram-mini-app="true"] .release-card.current,
@@ -6,8 +6,188 @@ html[data-telegram-mini-app="true"] .recommendation-card.current,
 html.mobile-device .release-card.current,
 html.mobile-device .recommendation-card.current {
     box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--player-accent) 42%, rgba(255,255,255,.08)),
-        0 8px 24px color-mix(in srgb, var(--player-accent) 18%, transparent) !important;
+        0 0 0 1px color-mix(in srgb, var(--player-accent) 34%, rgba(255,255,255,.075)),
+        0 6px 18px color-mix(in srgb, var(--player-accent) 12%, transparent) !important;
+}
+
+/* Recommendations do not contain the regular .play-state element.
+   Draw the same compact pause state directly on the playing recommendation. */
+html.mobile-device .recommendation-card {
+    position: relative;
+}
+html.mobile-device .recommendation-card.playing::after {
+    content: "";
+    position: absolute;
+    left: 48px;
+    top: 50%;
+    width: 22px;
+    height: 26px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    background:
+        linear-gradient(90deg,
+            transparent 0 3px,
+            rgba(255,255,255,.96) 3px 9px,
+            transparent 9px 13px,
+            rgba(255,255,255,.96) 13px 19px,
+            transparent 19px 22px);
+    filter: drop-shadow(0 2px 7px rgba(0,0,0,.45));
+    z-index: 3;
+}
+
+/* The playing icon on compact Artist Page rows must never inherit the huge
+   desktop artwork overlay. */
+html.mobile-device #artist-profile [data-artist-tracks] .cover-wrap {
+    position: relative !important;
+}
+html.mobile-device #artist-profile [data-artist-tracks] .play-state {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: none !important;
+    place-items: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #fff !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    letter-spacing: -3px !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.55) !important;
+    pointer-events: none !important;
+    z-index: 3 !important;
+}
+html.mobile-device #artist-profile [data-artist-tracks] .release-card.playing .play-state {
+    display: grid !important;
+}
+
+/* Lighter mobile Artist Page. Keep it inside the existing POJIDMUSIC language
+   instead of making the artist route feel like a separate app. */
+@media (max-width: 768px) {
+    html.mobile-device #artist-profile {
+        padding-bottom: 150px;
+    }
+
+    html.mobile-device #artist-profile .artist-hero {
+        width: calc(100% - 24px);
+        margin: 8px auto 0;
+        border: 1px solid rgba(255,255,255,.07);
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(255,255,255,.018);
+        box-shadow: 0 14px 38px rgba(0,0,0,.14);
+    }
+
+    html.mobile-device #artist-profile .artist-banner {
+        min-height: 0 !important;
+        height: 178px !important;
+        border-radius: 0 !important;
+    }
+
+    html.mobile-device #artist-profile .artist-hero-content {
+        position: relative !important;
+        margin-top: -72px !important;
+        padding: 30px 18px 16px !important;
+        background: linear-gradient(180deg, transparent, rgba(10,10,10,.82) 42%, rgba(17,17,17,.97) 100%);
+    }
+
+    html.mobile-device #artist-profile .artist-profile-summary {
+        min-width: 0;
+        display: flex !important;
+        align-items: flex-end !important;
+        justify-content: flex-start !important;
+        gap: 0 !important;
+        text-align: left !important;
+    }
+
+    html.mobile-device #artist-profile .artist-avatar {
+        display: none !important;
+    }
+
+    html.mobile-device #artist-profile .artist-identity {
+        min-width: 0;
+        width: 100%;
+        text-align: left !important;
+    }
+
+    html.mobile-device #artist-profile #artist-profile-title {
+        margin: 0 !important;
+        max-width: 100%;
+        overflow: hidden;
+        color: #fff !important;
+        font-size: clamp(30px, 8vw, 38px) !important;
+        line-height: .98 !important;
+        letter-spacing: -.045em !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    html.mobile-device #artist-profile .artist-release-count {
+        margin: 7px 0 0 !important;
+        color: rgba(255,255,255,.58) !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+    }
+
+    html.mobile-device #artist-profile .artist-owner-actions {
+        margin-top: 12px !important;
+        justify-content: flex-start !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases {
+        margin-top: 30px !important;
+        padding-top: 0 !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases .section-title {
+        margin: 0 16px 14px !important;
+        color: rgba(255,255,255,.94) !important;
+        font-size: 26px !important;
+        font-weight: 730 !important;
+        line-height: 1 !important;
+        letter-spacing: -.035em !important;
+        text-align: left !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] {
+        gap: 7px !important;
+        padding: 0 16px !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card {
+        min-height: 70px !important;
+        grid-template-columns: 54px minmax(0,1fr) !important;
+        gap: 11px !important;
+        padding: 8px !important;
+        border-radius: 14px !important;
+        border-color: rgba(255,255,255,.055) !important;
+        background: rgba(255,255,255,.018) !important;
+        box-shadow: none !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .cover-wrap,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artwork {
+        width: 54px !important;
+        height: 54px !important;
+        min-width: 54px !important;
+        border-radius: 10px !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-title,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-title {
+        font-size: 15px !important;
+        font-weight: 650 !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .artist-name,
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artist {
+        font-size: 12px !important;
+        color: rgba(255,255,255,.43) !important;
+    }
 }
 
 /* Admin is one more row in the existing compact profile list, not a new surface. */
