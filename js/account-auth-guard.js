@@ -11,9 +11,7 @@ let authStateSubscription = null;
 
 function getTelegramInitData() {
     const sdkValue = window.Telegram?.WebApp?.initData;
-    if (typeof sdkValue === "string" && sdkValue.trim()) {
-        return sdkValue.trim();
-    }
+    if (typeof sdkValue === "string" && sdkValue.trim()) return sdkValue.trim();
 
     const hash = window.location.hash.startsWith("#")
         ? window.location.hash.slice(1)
@@ -26,126 +24,41 @@ function isTelegramMiniApp() {
     return Boolean(getTelegramInitData());
 }
 
+function markTelegramEnvironment() {
+    const root = document.documentElement;
+    root.classList.add("telegram-mini-app");
+    root.dataset.telegramMiniApp = "true";
+}
+
 function setAuthMessage(text, type = "") {
     const message = document.querySelector(".auth-message");
     if (!message) return;
-
     message.textContent = text;
     message.classList.toggle("is-error", type === "error");
     message.classList.toggle("is-success", type === "success");
     message.hidden = !text;
 }
 
-function removeRoleChoice() {
-    const select = document.querySelector(
-        ".auth-signup-form [name='account_type']"
-    );
+/* Old markup can survive in an installed PWA cache. Registration itself is
+   listener-only in auth.js; this only prevents a stale Artist selector flash. */
+function removeLegacyRoleChoice() {
+    const select = document.querySelector(".auth-signup-form [name='account_type']");
     if (!select) return;
-
-    const label = select.id
-        ? document.querySelector(`label[for='${select.id}']`)
-        : null;
+    const label = select.id ? document.querySelector(`label[for='${select.id}']`) : null;
     label?.remove();
     select.remove();
 }
 
-function setSignupPending(form, pending) {
-    form.dataset.listenerGuardPending = pending ? "true" : "false";
-    form.querySelectorAll("input, button").forEach((control) => {
-        control.disabled = pending;
-    });
-}
-
-async function handleListenerOnlySignup(event) {
-    const form = event.target.closest?.(".auth-signup-form");
-    if (!form) return;
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    if (form.dataset.listenerGuardPending === "true") return;
-    if (!form.reportValidity()) return;
-
-    const formData = new FormData(form);
-    const displayName = String(formData.get("display_name") || "").trim();
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
-    const passwordRepeat = String(formData.get("password_repeat") || "");
-
-    if (!displayName || !email) return;
-    if (password.length < 8) {
-        setAuthMessage("Пароль должен содержать минимум 8 символов.", "error");
-        return;
-    }
-    if (password !== passwordRepeat) {
-        setAuthMessage("Пароли не совпадают.", "error");
-        return;
-    }
-
-    setAuthMessage("");
-    setSignupPending(form, true);
-
-    try {
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    display_name: displayName
-                }
-            }
-        });
-
-        if (error || !data.user) {
-            const message = String(error?.message || "").toLowerCase();
-            setAuthMessage(
-                message.includes("already")
-                    ? "Аккаунт с таким email уже существует."
-                    : "Не удалось зарегистрироваться. Проверьте данные и попробуйте ещё раз.",
-                "error"
-            );
-            return;
-        }
-
-        form.reset();
-        if (data.session) {
-            setAuthMessage(
-                "Регистрация завершена. Аккаунт создан как слушатель.",
-                "success"
-            );
-        } else {
-            const loginTab = document.querySelector("[data-auth-mode='login']");
-            loginTab?.click();
-            setAuthMessage(
-                "Аккаунт создан как слушатель. Подтвердите email и войдите.",
-                "success"
-            );
-        }
-    } catch {
-        setAuthMessage("Не удалось зарегистрироваться. Проверьте соединение.", "error");
-    } finally {
-        setSignupPending(form, false);
-    }
-}
-
 async function callTelegramAuth(action, accessToken = "") {
-    const headers = {
-        "Content-Type": "application/json"
-    };
-    if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-    }
+    const headers = { "Content-Type": "application/json" };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
     const response = await fetch(TELEGRAM_AUTH_URL, {
         method: "POST",
         headers,
         cache: "no-store",
-        body: JSON.stringify({
-            action,
-            initData: telegramInitData
-        })
+        body: JSON.stringify({ action, initData: telegramInitData })
     });
-
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
         const error = new Error(payload?.error || "Telegram auth failed");
@@ -157,29 +70,17 @@ async function callTelegramAuth(action, accessToken = "") {
 
 async function consumeTelegramSession(payload) {
     if (!payload?.token_hash) return false;
-
     const { data, error } = await supabase.auth.verifyOtp({
         token_hash: payload.token_hash,
         type: payload.otp_type || "email"
     });
-
-    if (error || !data.session) {
-        throw error || new Error("Telegram session was not created");
-    }
-
+    if (error || !data.session) throw error || new Error("Telegram session was not created");
     telegramAccountLinked = true;
     return true;
 }
 
 async function linkCurrentSession(session) {
-    if (
-        telegramAccountLinked ||
-        telegramLinkPending ||
-        !session?.access_token
-    ) {
-        return false;
-    }
-
+    if (telegramAccountLinked || telegramLinkPending || !session?.access_token) return false;
     telegramLinkPending = true;
     try {
         await callTelegramAuth("link", session.access_token);
@@ -188,10 +89,7 @@ async function linkCurrentSession(session) {
         return true;
     } catch (error) {
         if (error?.status === 409) {
-            setAuthMessage(
-                "Этот Telegram уже привязан к другому аккаунту POJIDMUSIC.",
-                "error"
-            );
+            setAuthMessage("Этот Telegram уже привязан к другому аккаунту POJIDMUSIC.", "error");
         }
         return false;
     } finally {
@@ -203,19 +101,18 @@ function ensureTelegramChoiceButton() {
     const loginForm = document.querySelector(".auth-login-form");
     if (!loginForm || document.querySelector("[data-telegram-register]")) return;
 
-    const separator = document.createElement("div");
-    separator.className = "telegram-auth-choice";
-    separator.dataset.telegramAuthChoice = "true";
+    const choice = document.createElement("div");
+    choice.className = "telegram-auth-choice";
+    choice.dataset.telegramAuthChoice = "true";
 
     const hint = document.createElement("p");
-    hint.textContent = "Есть аккаунт? Войдите выше один раз, и Telegram привяжется автоматически.";
+    hint.textContent = "Есть аккаунт? Войдите выше. После входа этот Telegram привяжется к нему.";
 
     const button = document.createElement("button");
     button.type = "button";
     button.className = "auth-submit-button";
     button.dataset.telegramRegister = "true";
-    button.textContent = "Создать новый аккаунт через Telegram";
-
+    button.textContent = "Создать аккаунт через Telegram";
     button.addEventListener("click", async () => {
         if (button.disabled) return;
         button.disabled = true;
@@ -228,7 +125,7 @@ function ensureTelegramChoiceButton() {
         } catch (error) {
             setAuthMessage(
                 error?.status === 409
-                    ? "Не удалось завершить привязку. Попробуйте войти в существующий аккаунт."
+                    ? "Этот Telegram уже связан с аккаунтом. Попробуйте войти в существующий аккаунт."
                     : "Не удалось войти через Telegram. Попробуйте ещё раз.",
                 "error"
             );
@@ -237,8 +134,8 @@ function ensureTelegramChoiceButton() {
         }
     });
 
-    separator.append(hint, button);
-    loginForm.append(separator);
+    choice.append(hint, button);
+    loginForm.append(choice);
 }
 
 function showTelegramLinkChoice() {
@@ -246,10 +143,9 @@ function showTelegramLinkChoice() {
         const controls = document.querySelector(".auth-controls");
         const openButton = document.querySelector(".auth-open-button");
         if (!controls || !openButton || controls.dataset.authReady !== "true") {
-            window.setTimeout(reveal, 120);
+            setTimeout(reveal, 120);
             return;
         }
-
         ensureTelegramChoiceButton();
         if (!openButton.hidden) {
             openButton.click();
@@ -259,15 +155,13 @@ function showTelegramLinkChoice() {
             );
         }
     };
-
     reveal();
 }
 
 async function initializeTelegramAuth() {
     telegramInitData = getTelegramInitData();
     if (!telegramInitData) return;
-
-    document.documentElement.classList.add("telegram-mini-app");
+    markTelegramEnvironment();
 
     try {
         const bootstrap = await callTelegramAuth("bootstrap");
@@ -281,7 +175,6 @@ async function initializeTelegramAuth() {
             await linkCurrentSession(data.session);
             return;
         }
-
         showTelegramLinkChoice();
     } catch (error) {
         console.warn("Telegram auth bootstrap failed", error);
@@ -289,9 +182,7 @@ async function initializeTelegramAuth() {
     }
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session && !telegramAccountLinked) {
-            void linkCurrentSession(session);
-        }
+        if (session && !telegramAccountLinked) void linkCurrentSession(session);
     });
     authStateSubscription = data.subscription;
 }
@@ -299,13 +190,9 @@ async function initializeTelegramAuth() {
 export function initializeAccountAuthGuard() {
     if (initialized) return;
     initialized = true;
+    removeLegacyRoleChoice();
 
-    removeRoleChoice();
-    document.addEventListener("submit", handleListenerOnlySignup, true);
-
-    if (isTelegramMiniApp()) {
-        void initializeTelegramAuth();
-    }
+    if (isTelegramMiniApp()) void initializeTelegramAuth();
 
     window.addEventListener("pagehide", () => {
         authStateSubscription?.unsubscribe();
