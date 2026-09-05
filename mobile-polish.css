@@ -1,0 +1,312 @@
+/* POJIDMUSIC unified mobile polish
+   Visual-only layer. Keeps player/data/navigation behavior untouched. */
+
+@media (max-width: 932px) {
+    :root {
+        --pm-bg: #0b0b0c;
+        --pm-surface-1: rgba(22, 22, 24, .86);
+        --pm-surface-2: rgba(30, 30, 33, .88);
+        --pm-border: rgba(255, 255, 255, .105);
+        --pm-border-soft: rgba(255, 255, 255, .07);
+        --pm-text: rgba(255, 255, 255, .97);
+        --pm-muted: rgba(255, 255, 255, .55);
+        --pm-faint: rgba(255, 255, 255, .36);
+        --pm-product-accent: #b784e8;
+        --pm-radius-xs: 10px;
+        --pm-radius-sm: 14px;
+        --pm-radius-md: 20px;
+        --pm-radius-lg: 28px;
+        --pm-radius-xl: 36px;
+        --pm-section-gap: 34px;
+        --pm-side: 16px;
+        --mobile-nav-height: 66px;
+        --mobile-nav-bottom: calc(7px + env(safe-area-inset-bottom));
+        --mobile-player-bottom: calc(var(--mobile-nav-height) + 13px + env(safe-area-inset-bottom));
+    }
+
+    html.mobile-device body {
+        background: var(--pm-bg);
+        color: var(--pm-text);
+    }
+
+    /* Header: quiet chrome, content gets the attention. */
+    html.mobile-device .header {
+        min-height: 56px;
+        padding: calc(9px + env(safe-area-inset-top)) var(--pm-side) 7px;
+        background: linear-gradient(180deg, rgba(11,11,12,.96), rgba(11,11,12,.72));
+        border-bottom-color: transparent;
+        -webkit-backdrop-filter: blur(18px);
+        backdrop-filter: blur(18px);
+    }
+
+    html.mobile-device .logo {
+        font-size: 17px;
+        font-weight: 750;
+        letter-spacing: .12em;
+    }
+
+    /* One section scale across Home and Artist. */
+    html.mobile-device .section-title {
+        margin: var(--pm-section-gap) var(--pm-side) 16px;
+        font-size: clamp(27px, 8vw, 32px);
+        line-height: 1.02;
+        letter-spacing: -.035em;
+        text-align: left;
+    }
+
+    html.mobile-device #new .section-title { margin-top: 28px; }
+    html.mobile-device #all-tracks .section-title,
+    html.mobile-device #recommendations .section-title { margin-top: 38px; }
+
+    /* Cards use the same radius family everywhere. */
+    html.mobile-device .release-card {
+        padding: 8px;
+        gap: 9px;
+        border-color: var(--pm-border-soft);
+        border-radius: var(--pm-radius-md);
+        background: rgba(255,255,255,.018);
+        box-shadow: none;
+    }
+
+    html.mobile-device .release-card .cover,
+    html.mobile-device .release-card .cover-wrap {
+        border-radius: var(--pm-radius-sm);
+    }
+
+    html.mobile-device .release-info h2,
+    html.mobile-device .track-title {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -.015em;
+    }
+
+    html.mobile-device .artist-name {
+        color: var(--pm-muted);
+        opacity: 1;
+        font-size: 12px;
+    }
+
+    /* Recommendations are intentionally lighter than release cards. */
+    html.mobile-device .recommendations-section { margin-top: 0; }
+    html.mobile-device .recommendations-viewport { padding: 0 var(--pm-side) 8px; }
+    html.mobile-device .recommendations-track { gap: 8px; }
+    html.mobile-device .recommendation-card {
+        width: min(82vw, 360px);
+        min-height: 66px;
+        padding: 8px 10px;
+        display: grid;
+        grid-template-columns: 50px minmax(0, 1fr);
+        align-items: center;
+        gap: 11px;
+        border-color: var(--pm-border-soft);
+        border-radius: var(--pm-radius-md);
+        background: rgba(255,255,255,.018);
+    }
+    html.mobile-device .recommendation-cover {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+    }
+    html.mobile-device .recommendation-info { padding: 0; min-width: 0; }
+    html.mobile-device .recommendation-title { font-size: 15px; }
+    html.mobile-device .recommendation-artist { margin-top: 3px; font-size: 12px; color: var(--pm-muted); opacity: 1; }
+
+    /* Search results read as people, not filter pills. */
+    html.mobile-device body.mobile-search-active .search-wrap {
+        margin: 10px var(--pm-side) 22px;
+    }
+    html.mobile-device body.mobile-search-active .search-input {
+        min-height: 50px;
+        border-color: var(--pm-border);
+        border-radius: var(--pm-md, 20px);
+        background: var(--pm-surface-1);
+    }
+    html.mobile-device .search-group-title {
+        margin-bottom: 12px;
+        color: var(--pm-muted);
+        font-size: 12px;
+        letter-spacing: .1em;
+    }
+    html.mobile-device .search-artists-list {
+        display: grid;
+        gap: 8px;
+        overflow: visible;
+    }
+    html.mobile-device .search-artist-result {
+        width: 100%;
+        min-height: 58px;
+        padding: 0 16px;
+        justify-content: flex-start;
+        border: 1px solid var(--pm-border-soft);
+        border-radius: var(--pm-radius-md);
+        background: rgba(255,255,255,.025);
+        font-size: 15px;
+        font-weight: 650;
+        text-align: left;
+    }
+    html.mobile-device body.mobile-search-active #search-results { padding-inline: var(--pm-side); }
+    html.mobile-device body.mobile-search-active #search-results .search-results-list { padding: 0; gap: 8px; }
+    html.mobile-device body.mobile-search-active #search-results .release-card {
+        min-height: 82px;
+        padding: 8px;
+        border-radius: var(--pm-radius-md);
+        background: rgba(255,255,255,.018);
+    }
+    html.mobile-device body.mobile-search-active #search-results .cover-wrap,
+    html.mobile-device body.mobile-search-active #search-results .cover {
+        width: 66px;
+        height: 66px;
+        flex-basis: 66px;
+        border-radius: var(--pm-radius-sm);
+    }
+
+    /* Artist page: keep the cinematic hero, reveal music sooner. */
+    html.mobile-device .artist-profile-view { padding-inline: var(--pm-side); }
+    html.mobile-device .artist-hero {
+        width: 100%;
+        max-width: 680px;
+        margin: 16px auto 0;
+        border-radius: var(--pm-radius-lg);
+        overflow: hidden;
+    }
+    html.mobile-device .artist-banner {
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 1 / .86;
+        border-radius: inherit;
+    }
+    html.mobile-device .artist-hero-content { padding: 18px 18px 20px; }
+    html.mobile-device .artist-identity h1 {
+        font-size: clamp(34px, 10vw, 48px);
+        line-height: .98;
+        letter-spacing: -.045em;
+    }
+    html.mobile-device .artist-release-count { font-size: 14px; }
+    html.mobile-device .artist-releases { margin-top: 0; }
+    html.mobile-device .artist-releases .section-title { margin-left: 0; margin-right: 0; }
+    html.mobile-device [data-artist-tracks] { padding-inline: 0; }
+
+    /* Account/Profile: compact identity block, one coherent surface. */
+    html.mobile-device .account-profile-view {
+        padding: 24px var(--pm-side) calc(150px + env(safe-area-inset-bottom));
+    }
+    html.mobile-device .profile-surface {
+        width: min(100%, 560px);
+        margin: 0 auto;
+        padding: 18px 0 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    html.mobile-device .account-profile-heading {
+        display: grid;
+        justify-items: center;
+        gap: 12px;
+        text-align: center;
+    }
+    html.mobile-device .account-profile-heading .profile-avatar {
+        width: 104px;
+        height: 104px;
+        border-radius: 50%;
+        border: 1px solid var(--pm-border);
+        box-shadow: 0 16px 42px rgba(0,0,0,.28);
+    }
+    html.mobile-device .account-profile-heading .profile-kicker { display: none; }
+    html.mobile-device .account-profile-heading h1 {
+        margin: 2px 0 0;
+        font-size: 38px;
+        line-height: 1;
+        letter-spacing: -.045em;
+    }
+    html.mobile-device .account-profile-heading .profile-meta {
+        margin: 0;
+        color: var(--pm-muted);
+        font-size: 13px;
+    }
+    html.mobile-device .account-profile-details {
+        margin: 20px 0 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+    }
+    html.mobile-device .account-profile-details > div {
+        min-width: 0;
+        padding: 9px 14px;
+        border: 1px solid var(--pm-border-soft);
+        border-radius: 999px;
+        background: rgba(255,255,255,.035);
+    }
+    html.mobile-device .account-profile-details dt { display: none; }
+    html.mobile-device .account-profile-details dd {
+        margin: 0;
+        color: rgba(255,255,255,.72);
+        font-size: 13px;
+        font-weight: 650;
+        white-space: nowrap;
+    }
+    html.mobile-device .account-profile-details .profile-email-row { display: none; }
+    html.mobile-device .profile-actions {
+        margin-top: 28px;
+        padding: 0;
+        display: grid;
+        overflow: hidden;
+        border: 1px solid var(--pm-border-soft);
+        border-radius: var(--pm-radius-lg);
+        background: rgba(255,255,255,.022);
+    }
+    html.mobile-device .profile-action-button {
+        min-height: 64px;
+        margin: 0;
+        padding: 0 20px;
+        border: 0;
+        border-bottom: 1px solid var(--pm-border-soft);
+        border-radius: 0;
+        background: transparent;
+        color: var(--pm-text);
+        font-size: 16px;
+        font-weight: 680;
+        text-align: left;
+    }
+    html.mobile-device .profile-action-button:last-of-type { border-bottom: 0; }
+
+    /* Bottom chrome: slightly less vertical tax. */
+    html.mobile-device .mobile-bottom-navigation {
+        height: var(--mobile-nav-height);
+        padding: 4px 8px;
+        border-radius: 24px;
+        border-color: var(--pm-border);
+        background: rgba(15,15,17,.84);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 16px 40px rgba(0,0,0,.34);
+    }
+    html.mobile-device .mobile-nav-button { min-height: 56px; border-radius: 18px; }
+    html.mobile-device .mobile-nav-button.is-active { background: rgba(255,255,255,.035); }
+
+    html.mobile-device .mini-player {
+        height: 62px;
+        padding: 6px 7px;
+        grid-template-columns: minmax(0, 1fr) 50px;
+        border-radius: var(--pm-radius-md);
+        border-color: rgba(255,255,255,.12);
+    }
+    html.mobile-device .mini-player .player-cover { width: 48px; height: 48px; border-radius: 13px; }
+    html.mobile-device .mini-player .player-toggle { width: 48px; height: 48px; border-radius: 15px; }
+
+    /* Queue sheet belongs to the same surface family. */
+    html.mobile-device .player-queue-sheet-content,
+    html.mobile-device .player-queue-sheet-panel,
+    html.mobile-device .player-queue-sheet-inner {
+        border-radius: var(--pm-radius-lg) var(--pm-radius-lg) 0 0;
+    }
+
+    /* Product accent is for product actions/focus, artwork accent remains player-only. */
+    html.mobile-device :where(input, textarea, select):focus-visible {
+        outline-color: var(--pm-product-accent);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html.mobile-device * { scroll-behavior: auto !important; }
+    }
+}
