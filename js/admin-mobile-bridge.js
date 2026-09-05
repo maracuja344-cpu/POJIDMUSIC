@@ -58,6 +58,15 @@ function sync(authState) {
     if (activeRole === "admin") void refreshUnreadCount();
 }
 
+function closeAdminPanelForNavigation() {
+    const panel = document.getElementById("pojidmusic-admin-panel");
+    if (!panel || panel.hidden) return;
+
+    panel.hidden = true;
+    document.documentElement.classList.remove("admin-overlay-open");
+    document.body.classList.remove("admin-overlay-open");
+}
+
 export function initializeAdminMobileBridge() {
     if (initialized) return;
     initialized = true;
@@ -71,8 +80,16 @@ export function initializeAdminMobileBridge() {
 
     document.addEventListener("click", (event) => {
         const target = event.target instanceof Element ? event.target : null;
-        if (!target?.closest("[data-admin-mark-read]")) return;
-        window.setTimeout(refreshUnreadCount, 250);
+        if (!target) return;
+
+        if (target.closest(".mobile-bottom-navigation [data-mobile-tab]")) {
+            closeAdminPanelForNavigation();
+            return;
+        }
+
+        if (target.closest("[data-admin-mark-read]")) {
+            window.setTimeout(refreshUnreadCount, 250);
+        }
     });
 }
 
