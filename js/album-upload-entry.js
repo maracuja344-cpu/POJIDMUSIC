@@ -1,4 +1,4 @@
-await import("./album-upload-scroll-lock.js");
+await import("./album-upload-scroll-lock.js?v=81");
 const albumModule = await import("./album-upload.js");
 
 export const openAlbumUpload = albumModule.openAlbumUpload;
