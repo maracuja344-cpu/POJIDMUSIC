@@ -1,5 +1,14 @@
 import { renderRecommendations } from "./js/render.js";
 
+function ensureRecommendationHotfixStyle() {
+    if (document.querySelector('link[data-recommendations-hotfix-v93]')) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = new URL("./recommendations-hotfix-v93.css?v=93", import.meta.url).href;
+    link.setAttribute("data-recommendations-hotfix-v93", "true");
+    document.head.append(link);
+}
+
 function moveRecommendationsBeforeAllTracks() {
     const recommendations = document.querySelector("#recommendations");
     const allTracks = document.querySelector("#all-tracks");
@@ -39,6 +48,7 @@ function decorateRecommendations() {
 }
 
 function applyHomeDiscoveryLayout() {
+    ensureRecommendationHotfixStyle();
     moveRecommendationsBeforeAllTracks();
     decorateNewSection();
     decorateRecommendations();
