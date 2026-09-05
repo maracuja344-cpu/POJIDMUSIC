@@ -2,7 +2,12 @@
    Small presentation overrides only. */
 
 @media (max-width: 932px) {
-    /* Home hierarchy: recommendations stay useful, but visually secondary. */
+    /* Home: keep the carousel important without letting it swallow the page. */
+    html.mobile-device .home-section-title,
+    html.mobile-device #new-releases .section-title {
+        letter-spacing: -.035em;
+    }
+
     html.mobile-device #recommendations.home-recommendations-list .section-title {
         padding-inline: var(--pm-side, 16px);
         font-size: 26px;
@@ -21,13 +26,10 @@
         background: rgba(255,255,255,.028);
     }
 
-    html.mobile-device .home-recommendations-refresh svg {
-        width: 16px;
-        height: 16px;
-    }
+    html.mobile-device .home-recommendations-refresh svg { width: 16px; height: 16px; }
 
     html.mobile-device #recommendations.home-recommendations-list .recommendation-card {
-        min-height: 66px;
+        min-height: 62px;
         border-radius: var(--pm-radius-sm, 14px);
         transition: transform 120ms ease, background-color 160ms ease;
     }
@@ -37,9 +39,15 @@
         background: rgba(255,255,255,.032);
     }
 
+    html.mobile-device .all-tracks-section,
+    html.mobile-device #all-tracks {
+        padding-bottom: calc(150px + env(safe-area-inset-bottom));
+    }
+
     /* Search artist result reads like navigation, not a filter chip. */
     html.mobile-device .search-artist-result {
         position: relative;
+        min-height: 66px;
         padding-right: 46px;
     }
 
@@ -55,14 +63,17 @@
         line-height: 1;
     }
 
-    /* Profile becomes one coherent settings list with useful secondary copy. */
-    html.mobile-device .profile-actions {
-        gap: 0;
+    /* Profile: pull the useful controls into the first viewport. */
+    html.mobile-device .profile-view,
+    html.mobile-device .account-profile-view {
+        padding-top: max(8px, env(safe-area-inset-top));
     }
+
+    html.mobile-device .profile-actions { gap: 0; }
 
     html.mobile-device .profile-action-button {
         position: relative;
-        min-height: 72px;
+        min-height: 70px;
         padding: 12px 54px 12px 20px;
         display: grid;
         align-content: center;
@@ -90,65 +101,47 @@
         line-height: 1;
     }
 
-    html.mobile-device .profile-action-button[data-account-my-tracks]::before {
-        content: "Релизы и управление";
+    html.mobile-device .profile-action-button[data-account-my-tracks]::before { content: "Релизы и управление"; }
+    html.mobile-device .profile-action-button[data-account-artist-page]::before { content: "Публичный профиль"; }
+    html.mobile-device .profile-action-button[data-change-account-avatar]::before { content: "Фото профиля"; }
+    html.mobile-device .profile-action-button:active { background: rgba(255,255,255,.035); }
+
+    html.mobile-device .profile-action-icon {
+        filter: saturate(.78);
+        opacity: .9;
     }
 
-    html.mobile-device .profile-action-button[data-account-artist-page]::before {
-        content: "Публичный профиль";
-    }
-
-    html.mobile-device .profile-action-button[data-change-account-avatar]::before {
-        content: "Фото профиля";
-    }
-
-    html.mobile-device .profile-action-button:active {
-        background: rgba(255,255,255,.035);
-    }
-
-    /* Artist page: slightly tighter transition from hero to releases. */
+    /* Artist: keep the hero cinematic, but let releases arrive sooner. */
     html.mobile-device .artist-hero {
         box-shadow: 0 22px 58px rgba(0,0,0,.28);
     }
 
-    html.mobile-device .artist-releases {
-        padding-bottom: 4px;
+    html.mobile-device .artist-hero-content {
+        padding-bottom: 24px;
     }
 
+    html.mobile-device .artist-releases { padding-bottom: 4px; }
+
     html.mobile-device .artist-releases .section-title {
-        margin-top: 30px;
+        margin-top: 24px;
         margin-bottom: 14px;
         font-size: 30px;
     }
 
-    html.mobile-device .artist-profile-filters {
-        margin-bottom: 14px;
-    }
+    html.mobile-device .artist-profile-filters { margin-bottom: 14px; }
 
     /* Keep the bottom chrome from visually swallowing content. */
     html.mobile-device .mobile-bottom-navigation {
-        box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.055),
-            0 14px 34px rgba(0,0,0,.32);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 14px 34px rgba(0,0,0,.32);
     }
 
     html.mobile-device .mini-player {
-        box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.065),
-            0 14px 32px rgba(0,0,0,.31);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.065), 0 14px 32px rgba(0,0,0,.31);
     }
 
-    html.mobile-device .mini-player .player-title {
-        letter-spacing: -.012em;
-    }
+    html.mobile-device .mini-player .player-title { letter-spacing: -.012em; }
 
-    /* Consistent tactile feedback without changing behavior. */
-    html.mobile-device :where(
-        .mobile-nav-button,
-        .search-artist-result,
-        .profile-action-button,
-        .home-recommendations-refresh
-    ) {
+    html.mobile-device :where(.mobile-nav-button,.search-artist-result,.profile-action-button,.home-recommendations-refresh) {
         -webkit-tap-highlight-color: transparent;
     }
 }
