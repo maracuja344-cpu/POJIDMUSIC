@@ -1,0 +1,43 @@
+/* Cross-platform guardrails for surfaces shared by desktop and Telegram. */
+
+/* Header dropdown must stay a compact desktop menu even inside Telegram WebView. */
+.profile-menu [data-open-feedback] {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+    background-image: none !important;
+}
+
+.profile-menu [data-open-feedback] > .profile-action-icon,
+.profile-menu [data-open-feedback] > .profile-action-copy,
+.profile-menu [data-open-feedback] > .profile-action-chevron {
+    display: none !important;
+}
+
+@media (min-width: 769px) {
+    html[data-telegram-mini-app="true"] .profile-menu [data-open-feedback] {
+        padding-right: 94px;
+    }
+
+    /* Intentional tiny "bug / feature / idea" echo. It should read as a detail,
+       never as another control or as duplicated content. */
+    html[data-telegram-mini-app="true"] .profile-menu [data-open-feedback]::after {
+        content: "баги · фичи · идеи";
+        position: absolute;
+        right: 11px;
+        top: 50%;
+        max-width: 78px;
+        overflow: hidden;
+        transform: translateY(calc(-50% + 1px));
+        color: rgba(189, 141, 255, 0.32);
+        font-size: 8px;
+        font-weight: 650;
+        line-height: 1;
+        letter-spacing: 0.025em;
+        white-space: nowrap;
+        pointer-events: none;
+        text-shadow: 1px 0 rgba(112, 82, 150, 0.16);
+    }
+}
