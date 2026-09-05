@@ -28,7 +28,8 @@ function decorateRecommendations() {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "home-recommendations-refresh";
-        button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.3"></path><path d="M20 4v7h-7"></path></svg><span>Обновить</span>';
+        button.setAttribute("aria-label", "Обновить рекомендации");
+        button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M4 17v-5h5"></path><path d="M6.1 8.2A7 7 0 0 1 18.7 10"></path><path d="M17.9 15.8A7 7 0 0 1 5.3 14"></path></svg><span>Обновить</span>';
         button.addEventListener("click", () => {
             renderRecommendations();
             removeCarouselClones();
