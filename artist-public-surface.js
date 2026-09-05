@@ -1,10 +1,13 @@
 /* Artist Page is always a public storefront. Track management lives only in My Tracks. */
 
-if (!document.querySelector('link[data-artist-hero-v92]')) {
+if (!document.querySelector('link[data-artist-hero-v95]')) {
+    const oldLink = document.querySelector('link[data-artist-hero-v92]');
+    oldLink?.remove();
+
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'artist-hero-v92.css?v=92';
-    link.setAttribute('data-artist-hero-v92', 'true');
+    link.href = 'artist-hero-v92.css?v=95';
+    link.setAttribute('data-artist-hero-v95', 'true');
     document.head.append(link);
 }
 
