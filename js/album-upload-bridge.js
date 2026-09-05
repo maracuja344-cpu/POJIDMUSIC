@@ -21,8 +21,6 @@ function forceAlbumModalVisible(modal) {
     if (!(modal instanceof HTMLElement)) return false;
     modal.hidden = false;
     modal.classList.add('is-open');
-    modal.style.setProperty('position', 'fixed', 'important');
-    modal.style.setProperty('inset', '0', 'important');
     modal.style.setProperty('display', 'flex', 'important');
     modal.style.setProperty('visibility', 'visible', 'important');
     modal.style.setProperty('opacity', '1', 'important');
@@ -38,11 +36,14 @@ async function openAlbumDirectly() {
     try {
         closeReleaseChooser();
         closeTrackUploader();
-        const album = await import('./album-upload.js?v=83');
+        const album = await import('./album-upload.js');
         album.openAlbumUpload?.();
-        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const modal = document.querySelector('[data-album-upload-modal]');
-        if (!forceAlbumModalVisible(modal)) throw new Error('Album uploader modal was not created.');
+        if (!forceAlbumModalVisible(modal)) {
+            console.error('Album uploader modal was not created.');
+            return;
+        }
         modal.querySelector('[data-close-album-upload]')?.focus?.({ preventScroll: true });
     } catch (error) {
         console.error('Не удалось открыть загрузку альбома.', error);
@@ -67,6 +68,10 @@ window.addEventListener('click', (event) => {
     requestAnimationFrame(() => {
         if (!modal.hidden) return;
         modal.classList.remove('is-open');
-        ['position','inset','display','visibility','opacity','pointer-events','z-index'].forEach((name) => modal.style.removeProperty(name));
+        modal.style.removeProperty('display');
+        modal.style.removeProperty('visibility');
+        modal.style.removeProperty('opacity');
+        modal.style.removeProperty('pointer-events');
+        modal.style.removeProperty('z-index');
     });
 });
