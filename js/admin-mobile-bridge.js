@@ -5,12 +5,42 @@ let initialized = false;
 let activeUserId = null;
 let activeRole = null;
 let profileObserver = null;
+let roleResolvePromise = null;
 
 const ADMIN_ICON = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' rx='11' fill='%23271c36'/%3E%3Cpath d='M19 8.5 28 12v6.6c0 5.4-3.3 9.1-9 11.4-5.7-2.3-9-6-9-11.4V12z' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='m15.5 19 2.3 2.4 4.9-5.1' fill='none' stroke='%23bd8dff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
 const CHEVRON_ICON = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m6 3 6 6-6 6' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
 
 function resolvedRole() {
     return activeRole || document.body.dataset.currentProfileRole || null;
+}
+
+async function resolveRoleFromDatabase() {
+    if (resolvedRole() === "admin") return "admin";
+    if (roleResolvePromise) return roleResolvePromise;
+
+    roleResolvePromise = (async () => {
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData?.session?.user?.id || activeUserId;
+            if (!userId) return null;
+            activeUserId = userId;
+
+            const { data: profile, error } = await supabase
+                .from("profiles")
+                .select("role")
+                .eq("id", userId)
+                .maybeSingle();
+            if (error || !profile?.role) return null;
+
+            activeRole = profile.role;
+            document.body.dataset.currentProfileRole = profile.role;
+            return profile.role;
+        } finally {
+            roleResolvePromise = null;
+        }
+    })();
+
+    return roleResolvePromise;
 }
 
 function ensureMobileAdminButton() {
@@ -70,16 +100,15 @@ function ensureMobileAdminButton() {
     }
 
     const feedback = actions.querySelector("[data-open-feedback]");
-    if (feedback && button.nextElementSibling !== feedback) {
-        actions.insertBefore(button, feedback);
-    }
-
+    if (feedback && button.nextElementSibling !== feedback) actions.insertBefore(button, feedback);
     return button;
 }
 
-function applyVisibility() {
+async function applyVisibility() {
+    if (!resolvedRole()) await resolveRoleFromDatabase();
     const button = ensureMobileAdminButton();
     if (!button) return;
+
     const isAdmin = resolvedRole() === "admin";
     button.hidden = !isAdmin;
     if (isAdmin) void refreshUnreadCount();
@@ -109,13 +138,14 @@ async function refreshUnreadCount() {
 
 function sync(authState) {
     activeUserId = authState?.user?.id || activeUserId || null;
-    activeRole = authState?.profile?.role || document.body.dataset.currentProfileRole || null;
-    applyVisibility();
+    activeRole = authState?.profile?.role || document.body.dataset.currentProfileRole || activeRole || null;
+    void applyVisibility();
+    if (!activeRole) void resolveRoleFromDatabase().then(() => applyVisibility());
 }
 
 function observeProfileSurface() {
     profileObserver?.disconnect();
-    profileObserver = new MutationObserver(() => applyVisibility());
+    profileObserver = new MutationObserver(() => void applyVisibility());
     profileObserver.observe(document.body, {
         childList: true,
         subtree: true,
@@ -127,7 +157,6 @@ function observeProfileSurface() {
 function closeAdminPanelForNavigation() {
     const panel = document.getElementById("pojidmusic-admin-panel");
     if (!panel || panel.hidden) return;
-
     panel.hidden = true;
     document.documentElement.classList.remove("admin-overlay-open");
     document.body.classList.remove("admin-overlay-open");
@@ -140,9 +169,9 @@ export function initializeAdminMobileBridge() {
     subscribeToAuthState(sync);
     sync(getCurrentAuthState());
     observeProfileSurface();
-    requestAnimationFrame(applyVisibility);
-    window.setTimeout(applyVisibility, 250);
-    window.setTimeout(applyVisibility, 900);
+    requestAnimationFrame(() => void applyVisibility());
+    window.setTimeout(() => void applyVisibility(), 250);
+    window.setTimeout(() => void applyVisibility(), 900);
 
     window.addEventListener("managedtrackchange", () => {
         if (resolvedRole() === "admin") window.setTimeout(refreshUnreadCount, 180);
@@ -151,15 +180,11 @@ export function initializeAdminMobileBridge() {
     document.addEventListener("click", (event) => {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
-
         if (target.closest(".mobile-bottom-navigation [data-mobile-tab]")) {
             closeAdminPanelForNavigation();
             return;
         }
-
-        if (target.closest("[data-admin-mark-read]")) {
-            window.setTimeout(refreshUnreadCount, 250);
-        }
+        if (target.closest("[data-admin-mark-read]")) window.setTimeout(refreshUnreadCount, 250);
     });
 }
 
