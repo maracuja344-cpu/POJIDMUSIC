@@ -1,199 +1,226 @@
-/* POJIDMUSIC artist page v92: full-bleed cinematic hero inspired by the approved concept. */
+/* POJIDMUSIC artist page v96: cinematic full-bleed mobile artist hero. */
 @media (max-width: 768px) {
-    html.mobile-device #artist-profile.artist-profile-view {
+    #artist-profile.artist-profile-view {
         padding-inline: 0 !important;
-        overflow: hidden;
+        overflow-x: hidden !important;
+        background: #09090a !important;
     }
 
-    html.mobile-device #artist-profile .artist-hero {
-        position: relative;
+    #artist-profile .artist-hero {
+        position: relative !important;
         width: 100% !important;
         max-width: none !important;
+        min-height: 565px !important;
         margin: 0 !important;
-        min-height: 590px;
+        padding: 0 !important;
         border: 0 !important;
         border-radius: 0 !important;
-        background: #09090a;
+        background: #09090a !important;
         box-shadow: none !important;
-        overflow: hidden;
+        overflow: hidden !important;
     }
 
-    html.mobile-device #artist-profile .artist-banner {
+    #artist-profile .artist-banner {
         position: absolute !important;
-        inset: 0 0 auto 0;
-        width: 100%;
-        height: 500px !important;
-        min-height: 500px !important;
+        inset: 0 0 auto 0 !important;
+        width: 100% !important;
+        height: 478px !important;
+        min-height: 478px !important;
         aspect-ratio: auto !important;
+        margin: 0 !important;
+        border: 0 !important;
         border-radius: 0 !important;
         background-position: center 34% !important;
         background-size: cover !important;
-        transform: scale(1.012);
+        box-shadow: none !important;
+        transform: none !important;
+        overflow: hidden !important;
     }
 
-    html.mobile-device #artist-profile .artist-banner::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
+    #artist-profile .artist-banner::after {
+        content: "" !important;
+        position: absolute !important;
+        inset: 0 !important;
+        pointer-events: none !important;
         background:
-            linear-gradient(180deg, rgba(8,8,9,.10) 0%, rgba(8,8,9,.02) 42%, rgba(8,8,9,.48) 70%, #09090a 95%, #09090a 100%),
-            linear-gradient(90deg, rgba(8,8,9,.16), transparent 28%, transparent 72%, rgba(8,8,9,.14));
+            linear-gradient(180deg, rgba(8,8,9,.06) 0%, rgba(8,8,9,.02) 42%, rgba(8,8,9,.42) 70%, #09090a 96%, #09090a 100%),
+            linear-gradient(90deg, rgba(8,8,9,.12), transparent 28%, transparent 72%, rgba(8,8,9,.12)) !important;
     }
 
-    html.mobile-device #artist-profile .artist-banner-edit {
-        top: 82px !important;
+    #artist-profile .artist-banner-edit {
+        top: 18px !important;
         right: 18px !important;
+        z-index: 5 !important;
     }
 
-    html.mobile-device #artist-profile .artist-hero-content {
-        position: relative;
-        z-index: 2;
-        min-height: 590px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        align-items: stretch;
-        padding: 0 20px 22px !important;
+    #artist-profile .artist-hero-content {
+        position: relative !important;
+        z-index: 2 !important;
+        min-height: 565px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-end !important;
+        align-items: stretch !important;
+        box-sizing: border-box !important;
+        padding: 0 20px 20px !important;
         background: transparent !important;
     }
 
-    html.mobile-device #artist-profile .artist-profile-summary {
+    #artist-profile .artist-profile-summary {
         display: block !important;
+        width: 100% !important;
         margin: 0 0 14px !important;
         padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
     }
 
-    html.mobile-device #artist-profile .artist-avatar {
+    #artist-profile .artist-avatar {
         display: none !important;
     }
 
-    html.mobile-device #artist-profile .artist-identity {
-        min-width: 0;
+    #artist-profile .artist-identity {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
         text-align: left !important;
     }
 
-    html.mobile-device #artist-profile .artist-identity h1 {
+    #artist-profile .artist-identity h1,
+    #artist-profile [data-artist-name] {
         margin: 0 !important;
-        max-width: min(86vw, 520px);
-        color: #fff;
+        padding: 0 !important;
+        max-width: min(86vw, 520px) !important;
+        color: #fff !important;
         font-size: clamp(40px, 11.5vw, 54px) !important;
         font-weight: 780 !important;
         line-height: .94 !important;
         letter-spacing: -.052em !important;
-        text-shadow: 0 3px 18px rgba(0,0,0,.45);
+        text-align: left !important;
+        text-shadow: 0 3px 18px rgba(0,0,0,.45) !important;
     }
 
-    html.mobile-device #artist-profile .artist-release-count {
+    #artist-profile .artist-release-count,
+    #artist-profile [data-artist-release-count] {
         margin: 7px 0 0 !important;
+        padding: 0 !important;
         color: rgba(255,255,255,.78) !important;
         font-size: 14px !important;
-        font-weight: 600;
-        line-height: 1.2;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
         text-align: left !important;
-        text-shadow: 0 2px 12px rgba(0,0,0,.45);
+        text-shadow: 0 2px 12px rgba(0,0,0,.45) !important;
     }
 
-    html.mobile-device #artist-profile .artist-owner-actions {
-        position: absolute;
-        top: 80px;
-        right: 16px;
-        z-index: 4;
+    #artist-profile .artist-owner-actions {
+        position: absolute !important;
+        top: 18px !important;
+        right: 18px !important;
+        z-index: 6 !important;
     }
 
-    html.mobile-device #artist-profile .artist-quick-upload,
-    html.mobile-device #artist-profile .artist-settings-button {
+    #artist-profile .artist-quick-upload,
+    #artist-profile .artist-settings-button {
         display: none !important;
     }
 
-    html.mobile-device #artist-profile .artist-owner-menu-toggle {
-        width: 46px;
-        height: 46px;
-        border-radius: 16px;
-        border: 1px solid rgba(255,255,255,.10);
-        background: rgba(18,18,20,.34);
-        color: rgba(255,255,255,.82);
-        -webkit-backdrop-filter: blur(18px) saturate(110%);
-        backdrop-filter: blur(18px) saturate(110%);
+    #artist-profile .artist-owner-menu-toggle {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+        padding: 0 !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(255,255,255,.10) !important;
+        background: rgba(18,18,20,.34) !important;
+        color: rgba(255,255,255,.82) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(110%) !important;
+        backdrop-filter: blur(18px) saturate(110%) !important;
+        box-shadow: none !important;
     }
 
-    html.mobile-device #artist-profile .artist-public-actions {
-        display: grid;
-        grid-template-columns: minmax(0, 1.45fr) 56px 56px;
-        gap: 10px;
-        width: min(100%, 430px);
+    #artist-profile .artist-public-actions {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 52px 52px !important;
+        gap: 10px !important;
+        width: min(100%, 430px) !important;
+        margin: 0 !important;
     }
 
-    html.mobile-device #artist-profile .artist-public-actions button {
-        min-width: 0;
-        height: 54px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 9px;
-        padding: 0 16px;
-        border: 1px solid rgba(255,255,255,.09);
-        border-radius: 18px;
-        background: rgba(28,28,31,.72);
-        color: #fff;
-        font: inherit;
-        font-size: 14px;
-        font-weight: 720;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-        -webkit-backdrop-filter: blur(16px) saturate(110%);
-        backdrop-filter: blur(16px) saturate(110%);
-        -webkit-tap-highlight-color: transparent;
+    #artist-profile .artist-public-actions button {
+        min-width: 0 !important;
+        height: 52px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 9px !important;
+        padding: 0 16px !important;
+        border: 1px solid rgba(255,255,255,.09) !important;
+        border-radius: 17px !important;
+        background: rgba(28,28,31,.72) !important;
+        color: #fff !important;
+        font: inherit !important;
+        font-size: 14px !important;
+        font-weight: 720 !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(110%) !important;
+        backdrop-filter: blur(16px) saturate(110%) !important;
+        -webkit-tap-highlight-color: transparent !important;
     }
 
-    html.mobile-device #artist-profile .artist-public-actions button:active {
-        transform: scale(.975);
-        background: rgba(38,38,42,.84);
+    #artist-profile .artist-public-actions button:active {
+        transform: scale(.975) !important;
+        background: rgba(38,38,42,.84) !important;
     }
 
-    html.mobile-device #artist-profile .artist-public-actions svg {
-        width: 20px;
-        height: 20px;
-        flex: 0 0 20px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
+    #artist-profile .artist-public-actions svg {
+        width: 20px !important;
+        height: 20px !important;
+        flex: 0 0 20px !important;
+        fill: none !important;
+        stroke: currentColor !important;
+        stroke-width: 1.8 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
     }
 
-    html.mobile-device #artist-profile .artist-public-play svg {
-        fill: currentColor;
-        stroke: none;
+    #artist-profile .artist-public-play svg {
+        fill: currentColor !important;
+        stroke: none !important;
     }
 
-    html.mobile-device #artist-profile .artist-public-shuffle,
-    html.mobile-device #artist-profile .artist-public-more {
-        padding: 0;
+    #artist-profile .artist-public-shuffle,
+    #artist-profile .artist-public-more {
+        padding: 0 !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases {
-        position: relative;
-        z-index: 3;
-        margin-top: 0 !important;
-        padding: 2px 20px calc(160px + env(safe-area-inset-bottom)) !important;
-        background: #09090a;
+    #artist-profile .artist-releases {
+        position: relative !important;
+        z-index: 3 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 4px 20px calc(160px + env(safe-area-inset-bottom)) !important;
+        box-sizing: border-box !important;
+        background: #09090a !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases .section-title {
+    #artist-profile .artist-releases .section-title {
         margin: 0 0 16px !important;
         padding: 0 !important;
-        color: #fff;
+        color: #fff !important;
         font-size: 28px !important;
-        font-weight: 790;
+        font-weight: 790 !important;
         line-height: 1 !important;
         letter-spacing: -.04em !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] {
+    #artist-profile .artist-releases [data-artist-tracks] {
         gap: 14px 10px !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card {
+    #artist-profile .artist-releases [data-artist-tracks] .release-card {
         padding: 0 0 7px !important;
         border: 0 !important;
         border-radius: 14px !important;
@@ -201,41 +228,20 @@
         box-shadow: none !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .cover-wrap,
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artwork {
+    #artist-profile .artist-releases [data-artist-tracks] .cover-wrap,
+    #artist-profile .artist-releases [data-artist-tracks] .track-card-artwork {
         margin-bottom: 8px !important;
         border-radius: 14px !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-title,
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-title {
+    #artist-profile .artist-releases [data-artist-tracks] .track-title,
+    #artist-profile .artist-releases [data-artist-tracks] .track-card-title {
         font-size: 15px !important;
     }
 
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .artist-name,
-    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artist {
+    #artist-profile .artist-releases [data-artist-tracks] .artist-name,
+    #artist-profile .artist-releases [data-artist-tracks] .track-card-artist {
         font-size: 12px !important;
         color: rgba(255,255,255,.50) !important;
-    }
-}
-
-@media (max-width: 430px) {
-    html.mobile-device #artist-profile .artist-hero,
-    html.mobile-device #artist-profile .artist-hero-content {
-        min-height: 565px;
-    }
-
-    html.mobile-device #artist-profile .artist-banner {
-        height: 478px !important;
-        min-height: 478px !important;
-    }
-
-    html.mobile-device #artist-profile .artist-public-actions {
-        grid-template-columns: minmax(0, 1fr) 52px 52px;
-    }
-
-    html.mobile-device #artist-profile .artist-public-actions button {
-        height: 52px;
-        border-radius: 17px;
     }
 }
