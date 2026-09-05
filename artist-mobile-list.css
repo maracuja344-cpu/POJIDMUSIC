@@ -1,4 +1,4 @@
-/* Mobile artist page: compact public release list with subtle contouring. */
+/* Mobile artist page: same visual language as the Home card grid. */
 @media (max-width: 768px) {
     html.mobile-device #artist-profile .artist-profile-filters,
     html.mobile-device #artist-profile .track-manage-button,
@@ -8,86 +8,85 @@
     }
 
     html.mobile-device #artist-profile .artist-releases {
-        padding-top: 4px;
+        padding: 8px 14px 150px !important;
     }
 
     html.mobile-device #artist-profile .artist-releases .section-title {
-        margin-bottom: 22px !important;
-        font-size: clamp(34px, 9vw, 46px) !important;
-        line-height: 1;
-        letter-spacing: -0.035em;
+        margin: 0 0 16px !important;
+        padding: 0 2px;
+        font-size: clamp(28px, 8vw, 38px) !important;
+        line-height: 1 !important;
+        letter-spacing: -0.035em !important;
+        text-align: left !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] {
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: 8px !important;
-        width: 100%;
-        padding: 0 16px;
-        overflow: visible;
-        scroll-snap-type: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 12px 10px !important;
+        width: 100% !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        scroll-snap-type: none !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card {
         position: relative;
         width: 100% !important;
         min-width: 0 !important;
-        min-height: 76px;
+        min-height: 0 !important;
         margin: 0 !important;
-        padding: 9px;
-        display: grid !important;
-        grid-template-columns: 58px minmax(0, 1fr);
-        align-items: center;
-        gap: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.065);
-        border-radius: 15px;
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.012));
-        box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.018),
-            0 8px 22px rgba(0, 0, 0, 0.08);
-        text-align: left;
+        padding: 8px 8px 10px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        border-radius: 16px !important;
+        background: rgba(18, 18, 18, 0.72) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.018) !important;
+        text-align: left !important;
         transform: none;
-        transition:
-            background-color 140ms ease,
-            border-color 140ms ease,
-            transform 120ms ease;
+        overflow: hidden;
+        transition: border-color 140ms ease, background-color 140ms ease, transform 120ms ease;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card:active {
-        border-color: rgba(255, 255, 255, 0.105);
-        background: rgba(255, 255, 255, 0.045);
-        transform: scale(0.992);
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        background: rgba(255, 255, 255, 0.035) !important;
+        transform: scale(0.988);
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .cover-wrap,
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-artwork {
-        width: 58px !important;
-        height: 58px !important;
-        min-width: 58px;
-        margin: 0 !important;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.045);
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        min-width: 0 !important;
+        aspect-ratio: 1 / 1 !important;
+        margin: 0 0 8px !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        box-shadow: none !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .cover {
         width: 100% !important;
         height: 100% !important;
-        aspect-ratio: 1;
-        display: block;
-        object-fit: cover;
-        border-radius: inherit;
+        aspect-ratio: 1 / 1 !important;
+        display: block !important;
+        object-fit: cover !important;
+        border-radius: inherit !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-info,
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-info {
-        min-width: 0;
+        min-width: 0 !important;
         margin: 0 !important;
-        padding: 0 !important;
-        display: grid;
-        gap: 4px;
-        align-content: center;
+        padding: 0 1px !important;
+        display: grid !important;
+        gap: 3px !important;
+        align-content: start !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-title,
@@ -95,10 +94,10 @@
         min-width: 0;
         margin: 0 !important;
         overflow: hidden;
-        color: rgba(255, 255, 255, 0.96);
-        font-size: 16px !important;
-        font-weight: 620;
-        line-height: 1.2;
+        color: rgba(255, 255, 255, 0.97);
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        line-height: 1.2 !important;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -108,11 +107,40 @@
         min-width: 0;
         margin: 0 !important;
         overflow: hidden;
-        color: rgba(255, 255, 255, 0.44);
+        color: rgba(255, 255, 255, 0.58) !important;
         font-size: 13px !important;
-        line-height: 1.25;
+        line-height: 1.25 !important;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .play-state {
+        position: absolute !important;
+        inset: 50% auto auto 50% !important;
+        width: 42px !important;
+        height: 42px !important;
+        display: grid !important;
+        place-items: center !important;
+        border-radius: 14px !important;
+        background: rgba(0, 0, 0, 0.42) !important;
+        color: #fff !important;
+        font-size: 20px !important;
+        line-height: 1 !important;
+        transform: translate(-50%, -50%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card.playing .play-state {
+        opacity: 1 !important;
+    }
+
+    html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .release-card.current {
+        box-shadow:
+            0 0 0 1px color-mix(in srgb, var(--player-accent) 34%, rgba(255,255,255,.07)),
+            0 8px 20px color-mix(in srgb, var(--player-accent) 10%, transparent) !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-card-actions,
@@ -122,16 +150,19 @@
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-skeleton {
-        grid-template-columns: 58px minmax(0, 1fr);
-        min-height: 76px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 15px;
-        background: rgba(255, 255, 255, 0.018);
+        min-height: 0 !important;
+        padding: 8px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 16px !important;
+        background: rgba(255, 255, 255, 0.018) !important;
     }
 
     html.mobile-device #artist-profile .artist-releases [data-artist-tracks] .track-skeleton-cover {
-        width: 58px;
-        height: 58px;
-        border-radius: 10px;
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1 !important;
+        border-radius: 12px !important;
     }
 }
