@@ -1,26 +1,29 @@
 /* Artist Page is always a public storefront. Track management lives only in My Tracks. */
 
-function ensureArtistHeroStyles() {
-    document.querySelectorAll('link[data-artist-hero]').forEach((node) => node.remove());
-    const legacyLinks = document.querySelectorAll('link[data-artist-hero-v92], link[data-artist-hero-v95]');
-    legacyLinks.forEach((node) => node.remove());
+const ARTIST_HERO_VERSION = "97";
 
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'artist-hero-v92.css?v=96';
-    link.setAttribute('data-artist-hero', '96');
+function ensureArtistHeroStyles() {
+    const existing = document.querySelector(`link[data-artist-hero="${ARTIST_HERO_VERSION}"]`);
+    if (existing) return;
+
+    document.querySelectorAll(
+        'link[data-artist-hero], link[data-artist-hero-v92], link[data-artist-hero-v95]'
+    ).forEach((node) => node.remove());
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `artist-hero-v92.css?v=${ARTIST_HERO_VERSION}`;
+    link.setAttribute("data-artist-hero", ARTIST_HERO_VERSION);
     document.head.append(link);
 }
 
 function ensureArtistHeroActions(view) {
-    const heroContent = view.querySelector('.artist-hero-content');
-    if (!heroContent) return;
+    const heroContent = view.querySelector(".artist-hero-content");
+    if (!heroContent || heroContent.querySelector(".artist-public-actions")) return;
 
-    heroContent.querySelector('.artist-public-actions')?.remove();
-
-    const actions = document.createElement('div');
-    actions.className = 'artist-public-actions';
-    actions.setAttribute('aria-label', 'Действия артиста');
+    const actions = document.createElement("div");
+    actions.className = "artist-public-actions";
+    actions.setAttribute("aria-label", "Действия артиста");
     actions.innerHTML = `
         <button class="artist-public-play" type="button" data-artist-public-play>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
@@ -34,44 +37,45 @@ function ensureArtistHeroActions(view) {
         </button>
     `;
 
-    actions.querySelector('[data-artist-public-play]')?.addEventListener('click', () => {
-        view.querySelector('[data-artist-tracks] .release-card')?.click();
+    actions.querySelector("[data-artist-public-play]")?.addEventListener("click", () => {
+        view.querySelector("[data-artist-tracks] .release-card")?.click();
     });
 
-    actions.querySelector('[data-artist-public-shuffle]')?.addEventListener('click', () => {
-        const cards = Array.from(view.querySelectorAll('[data-artist-tracks] .release-card'));
+    actions.querySelector("[data-artist-public-shuffle]")?.addEventListener("click", () => {
+        const cards = Array.from(view.querySelectorAll("[data-artist-tracks] .release-card"));
         if (!cards.length) return;
         cards[Math.floor(Math.random() * cards.length)]?.click();
     });
 
-    actions.querySelector('[data-artist-public-more]')?.addEventListener('click', () => {
-        const ownerToggle = view.querySelector('[data-toggle-artist-owner-menu]');
-        if (ownerToggle instanceof HTMLElement && !ownerToggle.closest('[hidden]')) {
-            ownerToggle.click();
-        }
+    actions.querySelector("[data-artist-public-more]")?.addEventListener("click", () => {
+        const ownerToggle = view.querySelector("[data-toggle-artist-owner-menu]");
+        if (ownerToggle instanceof HTMLElement) ownerToggle.click();
     });
 
     heroContent.append(actions);
 }
 
-function enforcePublicArtistSurface() {
-    const view = document.querySelector('#artist-profile');
-    if (!view || view.hidden) return;
-
-    ensureArtistHeroStyles();
-    view.classList.add('artist-cinematic-v96');
-    view.querySelector('.artist-profile-filters')?.remove();
-    ensureArtistHeroActions(view);
-
-    view.querySelectorAll('.release-card').forEach((card) => {
-        const statusBadge = card.querySelector('.track-status-badge');
+function cleanArtistTrackCards(view) {
+    view.querySelectorAll(".release-card").forEach((card) => {
+        const statusBadge = card.querySelector(".track-status-badge");
         if (statusBadge) {
             card.remove();
             return;
         }
-        card.querySelectorAll('.track-manage-button, .track-manage-menu').forEach((element) => element.remove());
-        card.classList.remove('owner-track-card');
+        card.querySelectorAll(".track-manage-button, .track-manage-menu")
+            .forEach((element) => element.remove());
+        card.classList.remove("owner-track-card");
     });
+}
+
+function enforcePublicArtistSurface() {
+    const view = document.querySelector("#artist-profile");
+    if (!view || view.hidden) return;
+
+    view.classList.add("artist-cinematic-v97");
+    view.querySelector(".artist-profile-filters")?.remove();
+    ensureArtistHeroActions(view);
+    cleanArtistTrackCards(view);
 }
 
 let scheduled = false;
@@ -84,16 +88,29 @@ function scheduleEnforce() {
     });
 }
 
-const observer = new MutationObserver(scheduleEnforce);
-observer.observe(document.documentElement, {
-    subtree: true,
-    childList: true,
-    attributes: true,
-    attributeFilter: ['hidden', 'data-app-view']
-});
-
-window.addEventListener('managedtrackchange', scheduleEnforce);
-window.addEventListener('pageshow', scheduleEnforce);
-window.addEventListener('popstate', scheduleEnforce);
 ensureArtistHeroStyles();
+
+const view = document.querySelector("#artist-profile");
+const tracks = view?.querySelector("[data-artist-tracks]");
+
+const routeObserver = new MutationObserver(scheduleEnforce);
+routeObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ["data-app-view"]
+});
+if (view) {
+    routeObserver.observe(view, {
+        attributes: true,
+        attributeFilter: ["hidden"]
+    });
+}
+if (tracks) {
+    routeObserver.observe(tracks, {
+        childList: true
+    });
+}
+
+window.addEventListener("managedtrackchange", scheduleEnforce);
+window.addEventListener("pageshow", scheduleEnforce);
+window.addEventListener("popstate", scheduleEnforce);
 scheduleEnforce();
