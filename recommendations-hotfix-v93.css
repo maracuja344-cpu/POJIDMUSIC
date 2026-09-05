@@ -24,7 +24,7 @@
     transform: none !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 50px !important;
+    min-height: 0 !important;
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -33,7 +33,7 @@
     justify-content: center !important;
     align-items: flex-start !important;
     align-self: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
   }
 
   html.mobile-device #recommendations.home-recommendations-list .recommendation-title,
@@ -44,6 +44,7 @@
     inset: auto !important;
     transform: none !important;
     float: none !important;
+    display: block !important;
     width: 100% !important;
     min-height: 0 !important;
     height: auto !important;
@@ -59,8 +60,17 @@
   }
 
   html.mobile-device #recommendations.home-recommendations-list .recommendation-artist {
-    margin-top: 0 !important;
     font-size: 12px !important;
     color: rgba(255,255,255,.55) !important;
+  }
+
+  html.mobile-device #recommendations.home-recommendations-list .recommendation-artist .artist-link,
+  html.mobile-device #recommendations.home-recommendations-list .recommendation-artist.artist-name .artist-link {
+    display: inline !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: inherit !important;
   }
 }
