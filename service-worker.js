@@ -1,10 +1,10 @@
-const RELEASE_VERSION = "pwa-v74";
+const RELEASE_VERSION = "pwa-v75";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
-const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v74">`;
+const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v75">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "74";
+const ENTRY_VERSION = "75";
 
 const CRITICAL_SHELL_ASSETS = [
     "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-management-surface.css", "./home-discovery.css", "./home-discovery.js", "./artist-public-surface.js", "./track-editor-modal-guard.js", "./album-upload.css", "./album-upload-mobile-compact.css", "./release-upload-chooser.css", "./track-upload-wizard.css", "./admin-panel.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
