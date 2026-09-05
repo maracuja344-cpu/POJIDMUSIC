@@ -7,9 +7,8 @@ let initialized = false;
 let telegramInitData = "";
 let telegramLinkPending = false;
 let telegramAccountLinked = false;
-let authStateSubscription = null;
 
-function getTelegramInitData() {
+export function getTelegramInitData() {
     const sdkValue = window.Telegram?.WebApp?.initData;
     if (typeof sdkValue === "string" && sdkValue.trim()) return sdkValue.trim();
 
@@ -20,7 +19,7 @@ function getTelegramInitData() {
     return String(launchParams.get("tgWebAppData") || "").trim();
 }
 
-function isTelegramMiniApp() {
+export function isTelegramMiniApp() {
     return Boolean(getTelegramInitData());
 }
 
@@ -50,6 +49,7 @@ function removeLegacyRoleChoice() {
 }
 
 async function callTelegramAuth(action, accessToken = "") {
+    telegramInitData ||= getTelegramInitData();
     const headers = { "Content-Type": "application/json" };
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
@@ -79,19 +79,27 @@ async function consumeTelegramSession(payload) {
     return true;
 }
 
-async function linkCurrentSession(session) {
-    if (telegramAccountLinked || telegramLinkPending || !session?.access_token) return false;
+export async function linkCurrentTelegramAccount() {
+    if (!isTelegramMiniApp() || telegramLinkPending) return false;
+    const { data, error } = await supabase.auth.getSession();
+    const session = data?.session;
+    if (error || !session?.access_token) return false;
+
     telegramLinkPending = true;
     try {
         await callTelegramAuth("link", session.access_token);
         telegramAccountLinked = true;
-        setAuthMessage("Telegram привязан к этому аккаунту.", "success");
+        window.dispatchEvent(new CustomEvent("pojidmusic:telegram-link-changed", {
+            detail: { linked: true }
+        }));
         return true;
     } catch (error) {
         if (error?.status === 409) {
-            setAuthMessage("Этот Telegram уже привязан к другому аккаунту POJIDMUSIC.", "error");
+            const conflict = new Error("Этот Telegram уже привязан к другому аккаунту POJIDMUSIC.");
+            conflict.code = "link_conflict";
+            throw conflict;
         }
-        return false;
+        throw error;
     } finally {
         telegramLinkPending = false;
     }
@@ -106,7 +114,7 @@ function ensureTelegramChoiceButton() {
     choice.dataset.telegramAuthChoice = "true";
 
     const hint = document.createElement("p");
-    hint.textContent = "Есть аккаунт? Войдите выше. После входа этот Telegram привяжется к нему.";
+    hint.textContent = "Есть аккаунт? Войди выше. После входа Telegram можно привязать в профиле.";
 
     const button = document.createElement("button");
     button.type = "button";
@@ -150,7 +158,7 @@ function showTelegramLinkChoice() {
         if (!openButton.hidden) {
             openButton.click();
             setAuthMessage(
-                "Этот Telegram ещё не связан с POJIDMUSIC. Войдите в существующий аккаунт или создайте новый.",
+                "Этот Telegram ещё не связан с POJIDMUSIC. Войди в существующий аккаунт или создай новый.",
                 ""
             );
         }
@@ -171,31 +179,18 @@ async function initializeTelegramAuth() {
         }
 
         const { data } = await supabase.auth.getSession();
-        if (data.session) {
-            await linkCurrentSession(data.session);
-            return;
-        }
-        showTelegramLinkChoice();
+        if (!data.session) showTelegramLinkChoice();
+        else window.dispatchEvent(new CustomEvent("pojidmusic:telegram-link-available"));
     } catch (error) {
         console.warn("Telegram auth bootstrap failed", error);
-        showTelegramLinkChoice();
+        const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+        if (!data?.session) showTelegramLinkChoice();
     }
-
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session && !telegramAccountLinked) void linkCurrentSession(session);
-    });
-    authStateSubscription = data.subscription;
 }
 
 export function initializeAccountAuthGuard() {
     if (initialized) return;
     initialized = true;
     removeLegacyRoleChoice();
-
     if (isTelegramMiniApp()) void initializeTelegramAuth();
-
-    window.addEventListener("pagehide", () => {
-        authStateSubscription?.unsubscribe();
-        authStateSubscription = null;
-    }, { once: true });
 }
