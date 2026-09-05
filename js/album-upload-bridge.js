@@ -36,9 +36,13 @@ async function openAlbumDirectly() {
     try {
         closeReleaseChooser();
         closeTrackUploader();
-        const album = await import('./album-upload.js');
+
+        // Always enter through album-upload-entry so the legacy uploader is
+        // enhanced into the same four-step flow used by the mobile UI.
+        const album = await import('./album-upload-entry.js?v=90');
         album.openAlbumUpload?.();
         await new Promise((resolve) => requestAnimationFrame(resolve));
+
         const modal = document.querySelector('[data-album-upload-modal]');
         if (!forceAlbumModalVisible(modal)) {
             console.error('Album uploader modal was not created.');
