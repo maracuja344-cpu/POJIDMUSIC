@@ -1,14 +1,14 @@
-const RELEASE_VERSION = "pwa-v86";
+const RELEASE_VERSION = "pwa-v87";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
-const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v86">`;
+const RELEASE_MARKER = `<meta name="pojidmusic-release" content="pwa-v87">`;
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "86";
+const ENTRY_VERSION = "87";
 
 const CRITICAL_SHELL_ASSETS = [
-    "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-ui-fixes-v84.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./track-management-surface.css", "./home-discovery.css", "./home-discovery.js", "./artist-public-surface.js", "./track-editor-modal-guard.js", "./album-upload.css", "./album-upload-mobile-compact.css", "./release-upload-chooser.css", "./track-upload-wizard.css", "./admin-panel.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
-    "./js/app-navigation.js", "./js/artist-media.js", "./js/artist-utils.js", "./js/artwork.js", "./js/audio-url-resolver.js", "./js/audio-url-resolver-core.js", "./js/auth.js", "./js/account-auth-guard.js", "./js/admin-panel.js", "./js/admin-mobile-bridge.js", "./js/carousel.js", "./js/catalog-state.js", "./js/data-cache.js", "./js/data-repository.js", "./js/feedback.js", "./js/image-cropper.js", "./js/mobile.js", "./js/media-session.js", "./js/playback-context.js", "./js/mobile-shell.js", "./js/player.js", "./js/player-persistence.js", "./js/profile-routing.js", "./js/pull-to-refresh.js", "./js/queue-decisions.js", "./js/render.js", "./js/script.js", "./js/search.js", "./js/supabase/client.js", "./js/supabase/config.js", "./js/track-management.js", "./js/tracks-api.js", "./js/tracks-utils.js", "./js/track-upload.js", "./js/track-upload-wizard.js", "./js/track-upload-wizard-entry.js", "./js/album-upload.js", "./js/album-upload-entry.js", "./js/album-upload-scroll-lock.js", "./js/album-upload-bridge.js", "./js/release-upload-chooser.js"
+    "./index.html", "./style.css", "./telegram-profile.css", "./telegram-profile-v45.css", "./mobile-ui-fixes-v84.css", "./mobile-navigation.css", "./artist-mobile-list.css", "./album-surface.css", "./track-management-surface.css", "./home-discovery.css", "./home-discovery.js", "./artist-public-surface.js", "./track-editor-modal-guard.js", "./album-upload.css", "./album-upload-mobile-compact.css", "./release-upload-chooser.css", "./track-upload-wizard.css", "./admin-panel.css", "./tracks.js", "./manifest.webmanifest", "./img/cover.jpg",
+    "./js/app-navigation.js", "./js/artist-media.js", "./js/artist-utils.js", "./js/artwork.js", "./js/audio-url-resolver.js", "./js/audio-url-resolver-core.js", "./js/auth.js", "./js/account-auth-guard.js", "./js/admin-panel.js", "./js/admin-mobile-bridge.js", "./js/album-surface.js", "./js/carousel.js", "./js/catalog-state.js", "./js/data-cache.js", "./js/data-repository.js", "./js/feedback.js", "./js/image-cropper.js", "./js/mobile.js", "./js/media-session.js", "./js/playback-context.js", "./js/mobile-shell.js", "./js/player.js", "./js/player-persistence.js", "./js/profile-routing.js", "./js/pull-to-refresh.js", "./js/queue-decisions.js", "./js/render.js", "./js/script.js", "./js/search.js", "./js/supabase/client.js", "./js/supabase/config.js", "./js/track-management.js", "./js/tracks-api.js", "./js/tracks-utils.js", "./js/track-upload.js", "./js/track-upload-wizard.js", "./js/track-upload-wizard-entry.js", "./js/album-upload.js", "./js/album-upload-entry.js", "./js/album-upload-scroll-lock.js", "./js/album-upload-bridge.js", "./js/release-upload-chooser.js"
 ];
 const OPTIONAL_SHELL_ASSETS = ["./icons/favicon-16.png", "./icons/favicon-32.png", "./icons/favicon-48.png", "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png"];
 const SDK_ASSETS = ["https://esm.sh/@supabase/supabase-js@2.112.2?bundle", "https://esm.sh/@supabase/supabase-js@2.112.2/es2022/supabase-js.bundle.mjs", "https://esm.sh/node/buffer.mjs", "https://esm.sh/node/process.mjs", "https://esm.sh/node/events.mjs", "https://esm.sh/node/tty.mjs", "https://esm.sh/node/async_hooks.mjs"];
@@ -29,6 +29,7 @@ function versionNavigationHtml(html) {
     if (!next.includes("mobile-ui-fixes-v84.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="mobile-ui-fixes-v84.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("track-management-surface.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="track-management-surface.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("home-discovery.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="home-discovery.css?v=${ENTRY_VERSION}">\n</head>`);
+    if (!next.includes("album-surface.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="album-surface.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("album-upload.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="album-upload.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("album-upload-mobile-compact.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="album-upload-mobile-compact.css?v=${ENTRY_VERSION}">\n</head>`);
     if (!next.includes("release-upload-chooser.css")) next = next.replace("</head>", `    <link rel="stylesheet" href="release-upload-chooser.css?v=${ENTRY_VERSION}">\n</head>`);
@@ -36,6 +37,7 @@ function versionNavigationHtml(html) {
     if (!next.includes("home-discovery.js")) next = next.replace("</body>", `    <script type="module" src="home-discovery.js?v=${ENTRY_VERSION}"></script>\n</body>`);
     if (!next.includes("artist-public-surface.js")) next = next.replace("</body>", `    <script type="module" src="artist-public-surface.js?v=${ENTRY_VERSION}"></script>\n</body>`);
     if (!next.includes("track-editor-modal-guard.js")) next = next.replace("</body>", `    <script type="module" src="track-editor-modal-guard.js?v=${ENTRY_VERSION}"></script>\n</body>`);
+    if (!next.includes("js/album-surface.js")) next = next.replace("</body>", `    <script type="module" src="js/album-surface.js?v=${ENTRY_VERSION}"></script>\n</body>`);
     if (!next.includes("js/album-upload.js")) next = next.replace("</body>", `    <script type="module" src="js/album-upload.js?v=${ENTRY_VERSION}"></script>\n</body>`);
     if (!next.includes("js/album-upload-bridge.js")) next = next.replace("</body>", `    <script type="module" src="js/album-upload-bridge.js?v=${ENTRY_VERSION}"></script>\n</body>`);
     if (!next.includes("js/release-upload-chooser.js")) next = next.replace("</body>", `    <script type="module" src="js/release-upload-chooser.js?v=${ENTRY_VERSION}"></script>\n</body>`);
