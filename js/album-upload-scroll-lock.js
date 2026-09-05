@@ -1,30 +1,19 @@
-let lockedY = 0;
 let locked = false;
 
 function lockBackground() {
   if (locked) return;
   locked = true;
-  lockedY = window.scrollY || window.pageYOffset || 0;
   document.documentElement.classList.add('album-upload-scroll-locked');
-  Object.assign(document.body.style, {
-    position: 'fixed',
-    top: `-${lockedY}px`,
-    left: '0',
-    right: '0',
-    width: '100%'
-  });
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
 }
 
 function unlockBackground() {
   if (!locked) return;
   locked = false;
   document.documentElement.classList.remove('album-upload-scroll-locked');
-  document.body.style.position = '';
-  document.body.style.top = '';
-  document.body.style.left = '';
-  document.body.style.right = '';
-  document.body.style.width = '';
-  window.scrollTo(0, lockedY);
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
 }
 
 function syncLock() {
