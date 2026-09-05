@@ -1,3 +1,4 @@
+import './album-upload-bridge.js?v=83';
 import { openAlbumUpload } from './album-upload-entry.js?v=81';
 
 let chooserOpen = false;
