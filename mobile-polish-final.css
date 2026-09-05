@@ -2,36 +2,56 @@
    Small presentation overrides only. */
 
 @media (max-width: 932px) {
-    /* Home: keep the carousel important without letting it swallow the page. */
+    /* Home: keep the carousel important, but fit more music in the first viewport. */
     html.mobile-device .home-section-title,
+    html.mobile-device #new-releases .section-title,
+    html.mobile-device #new .section-title,
+    html.mobile-device #all-tracks .section-title {
+        letter-spacing: -.04em;
+        line-height: .98;
+    }
+
+    html.mobile-device #new .section-title,
     html.mobile-device #new-releases .section-title {
-        letter-spacing: -.035em;
+        margin-bottom: 14px;
+        font-size: clamp(32px, 9.2vw, 40px);
+    }
+
+    html.mobile-device #recommendations.home-recommendations-list {
+        margin-top: 34px;
     }
 
     html.mobile-device #recommendations.home-recommendations-list .section-title {
         padding-inline: var(--pm-side, 16px);
-        font-size: 26px;
-        letter-spacing: -.025em;
+        font-size: clamp(27px, 7.8vw, 34px);
+        letter-spacing: -.035em;
     }
 
     html.mobile-device .home-recommendations-refresh {
-        width: 36px;
-        min-width: 36px;
-        height: 36px;
+        width: 34px;
+        min-width: 34px;
+        height: 34px;
         padding: 0;
         justify-content: center;
-        border-radius: 14px;
+        border-radius: 13px;
         font-size: 0;
-        color: rgba(255,255,255,.62);
-        background: rgba(255,255,255,.028);
+        color: rgba(255,255,255,.58);
+        background: rgba(255,255,255,.025);
     }
 
-    html.mobile-device .home-recommendations-refresh svg { width: 16px; height: 16px; }
+    html.mobile-device .home-recommendations-refresh svg { width: 15px; height: 15px; }
 
     html.mobile-device #recommendations.home-recommendations-list .recommendation-card {
-        min-height: 62px;
+        min-height: 58px;
         border-radius: var(--pm-radius-sm, 14px);
         transition: transform 120ms ease, background-color 160ms ease;
+    }
+
+    html.mobile-device #recommendations.home-recommendations-list .recommendation-card img,
+    html.mobile-device #recommendations.home-recommendations-list .recommendation-cover {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
     }
 
     html.mobile-device #recommendations.home-recommendations-list .recommendation-card:active {
@@ -39,9 +59,15 @@
         background: rgba(255,255,255,.032);
     }
 
+    html.mobile-device #all-tracks .section-title {
+        margin-top: 34px;
+        margin-bottom: 14px;
+        font-size: clamp(30px, 8.6vw, 38px);
+    }
+
     html.mobile-device .all-tracks-section,
     html.mobile-device #all-tracks {
-        padding-bottom: calc(150px + env(safe-area-inset-bottom));
+        padding-bottom: calc(176px + env(safe-area-inset-bottom));
     }
 
     /* Search artist result reads like navigation, not a filter chip. */
@@ -107,8 +133,8 @@
     html.mobile-device .profile-action-button:active { background: rgba(255,255,255,.035); }
 
     html.mobile-device .profile-action-icon {
-        filter: saturate(.78);
-        opacity: .9;
+        filter: saturate(.72);
+        opacity: .86;
     }
 
     /* Artist: keep the hero cinematic, but let releases arrive sooner. */
@@ -117,18 +143,19 @@
     }
 
     html.mobile-device .artist-hero-content {
-        padding-bottom: 24px;
+        padding-bottom: 18px;
     }
 
     html.mobile-device .artist-releases { padding-bottom: 4px; }
 
     html.mobile-device .artist-releases .section-title {
-        margin-top: 24px;
-        margin-bottom: 14px;
-        font-size: 30px;
+        margin-top: 18px;
+        margin-bottom: 12px;
+        font-size: 29px;
+        letter-spacing: -.035em;
     }
 
-    html.mobile-device .artist-profile-filters { margin-bottom: 14px; }
+    html.mobile-device .artist-profile-filters { margin-bottom: 12px; }
 
     /* Keep the bottom chrome from visually swallowing content. */
     html.mobile-device .mobile-bottom-navigation {
@@ -143,5 +170,20 @@
 
     html.mobile-device :where(.mobile-nav-button,.search-artist-result,.profile-action-button,.home-recommendations-refresh) {
         -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@media (max-width: 430px) {
+    html.mobile-device #new .section-title,
+    html.mobile-device #new-releases .section-title {
+        font-size: 34px;
+    }
+
+    html.mobile-device #recommendations.home-recommendations-list .section-title {
+        font-size: 30px;
+    }
+
+    html.mobile-device #all-tracks .section-title {
+        font-size: 32px;
     }
 }
