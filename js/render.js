@@ -32,39 +32,14 @@ function revealElement(element) {
 /* =========================================================
    1. ПОЛУЧЕНИЕ И СОРТИРОВКА ТРЕКОВ
    ========================================================= */
-
-/*
-Возвращает только полноценные релизы.
-
-В runtime-каталоге могут находиться разные типы материалов,
-поэтому здесь мы отбираем только записи:
-
-type: "release"
-*/
 function getReleaseTracks() {
     return getCatalogTracks().filter(isPlayableRelease);
 }
 
-
-/*
-Создаёт копию массива и сортирует треки по дате релиза.
-
-Самые новые треки оказываются в начале массива.
-
-Копия [...trackList] нужна, чтобы не менять
-исходный runtime-каталог.
-*/
 function sortTracksByDate(trackList) {
     return sortTracksByReleaseDate(trackList);
 }
 
-
-/*
-Перемешивает копию массива случайным образом.
-
-Используется для блока рекомендаций.
-Исходный массив при этом не изменяется.
-*/
 function shuffleTracks(trackList) {
     const shuffledTracks = [...trackList];
 
@@ -93,16 +68,6 @@ function shuffleTracks(trackList) {
 /* =========================================================
    2. СОЗДАНИЕ ОБЫЧНОЙ КАРТОЧКИ ТРЕКА
    ========================================================= */
-
-/*
-Создаёт HTML-элемент обычной карточки.
-
-Эта карточка используется в разделах:
-
-- Новинки
-- Все треки
-- Результаты поиска
-*/
 export function createTrackCard(
     track,
     {
@@ -111,12 +76,7 @@ export function createTrackCard(
     } = {}
 ) {
     const card = document.createElement("div");
-
-    /*
-    CSS использует этот класс для оформления карточки.
-    */
     card.className = "release-card reveal-item";
-
     card.dataset.trackId = track.catalogId;
 
     const coverWrap = document.createElement("div");
@@ -161,17 +121,8 @@ export function createTrackCard(
 /* =========================================================
    3. СОЗДАНИЕ КАРТОЧКИ РЕКОМЕНДАЦИИ
    ========================================================= */
-
-/*
-Рекомендации используют отдельную форму карточки:
-
-- большая квадратная обложка;
-- текст под изображением;
-- горизонтальная карусель.
-*/
 export function createRecommendationCard(track, { loading = "lazy" } = {}) {
     const card = document.createElement("div");
-
     card.className = "recommendation-card";
     card.dataset.trackId = track.catalogId;
 
@@ -195,6 +146,41 @@ export function createRecommendationCard(track, { loading = "lazy" } = {}) {
     artist.className = "recommendation-artist artist-name";
     renderArtistLinks(artist, track);
 
+    /*
+    Recommendations intentionally neutralize the large mobile tap-area
+    rules used by generic artist links elsewhere in the app. Those rules
+    add min-height/padding and visually push the title to the top.
+    Inline !important values keep this component isolated from legacy CSS.
+    */
+    card.style.setProperty("align-items", "center", "important");
+    info.style.setProperty("display", "flex", "important");
+    info.style.setProperty("flex-direction", "column", "important");
+    info.style.setProperty("justify-content", "center", "important");
+    info.style.setProperty("align-items", "flex-start", "important");
+    info.style.setProperty("min-height", "50px", "important");
+    info.style.setProperty("height", "50px", "important");
+    info.style.setProperty("padding", "0", "important");
+    info.style.setProperty("margin", "0", "important");
+    info.style.setProperty("gap", "4px", "important");
+
+    [title, artist].forEach((node) => {
+        node.style.setProperty("position", "static", "important");
+        node.style.setProperty("min-height", "0", "important");
+        node.style.setProperty("height", "auto", "important");
+        node.style.setProperty("margin", "0", "important");
+        node.style.setProperty("padding", "0", "important");
+        node.style.setProperty("line-height", "1.15", "important");
+    });
+
+    artist.querySelectorAll(".artist-link").forEach((link) => {
+        link.style.setProperty("display", "inline", "important");
+        link.style.setProperty("min-height", "0", "important");
+        link.style.setProperty("height", "auto", "important");
+        link.style.setProperty("margin", "0", "important");
+        link.style.setProperty("padding", "0", "important");
+        link.style.setProperty("line-height", "inherit", "important");
+    });
+
     info.append(title, artist);
     card.append(cover, info);
 
@@ -205,24 +191,6 @@ export function createRecommendationCard(track, { loading = "lazy" } = {}) {
 /* =========================================================
    4. УНИВЕРСАЛЬНЫЙ РЕНДЕР КАРТОЧЕК
    ========================================================= */
-
-/*
-Общая функция, которая вставляет карточки в контейнер.
-
-Она нужна, чтобы не повторять одинаковый код
-в Новинках, Всех треках и Рекомендациях.
-
-Параметры:
-
-container
-    HTML-контейнер, куда добавляются карточки.
-
-trackList
-    Массив треков, которые нужно показать.
-
-createCard
-    Функция, создающая нужный тип карточки.
-*/
 function renderCards(
     container,
     trackList,
@@ -236,15 +204,10 @@ function renderCards(
             revealObserver?.unobserve(element);
         });
 
-    /*
-    Очищаем старое содержимое перед новым рендером.
-    Это защищает от появления дублей.
-    */
     container.innerHTML = "";
 
     trackList.forEach((track, index) => {
         const card = createCard(track, index);
-
         container.append(card);
     });
 
@@ -255,10 +218,6 @@ function renderCards(
 /* =========================================================
    5. РЕНДЕР НОВИНОК
    ========================================================= */
-
-/*
-Показывает четыре самых новых релиза.
-*/
 export function renderNewTracks() {
     const container = document.querySelector(
         "#new .tracks-row"
@@ -279,10 +238,6 @@ export function renderNewTracks() {
 /* =========================================================
    6. РЕНДЕР ВСЕХ ТРЕКОВ
    ========================================================= */
-
-/*
-Показывает все релизы, начиная с самого нового.
-*/
 export function renderAllTracks() {
     const container = document.querySelector(
         "#all-tracks .tracks-row"
@@ -303,13 +258,6 @@ export function renderAllTracks() {
 /* =========================================================
    7. РЕНДЕР РЕКОМЕНДАЦИЙ
    ========================================================= */
-
-/*
-Выбирает до шести случайных релизов.
-
-При каждом обновлении страницы порядок рекомендаций
-может измениться.
-*/
 export function renderRecommendations() {
     const container = document.querySelector(
         "#recommendations .recommendations-track"
@@ -330,11 +278,6 @@ export function renderRecommendations() {
 /* =========================================================
    8. АНИМАЦИЯ ПОЯВЛЕНИЯ КАРТОЧЕК
    ========================================================= */
-
-/*
-Один общий observer показывает карточки по мере входа
-в viewport и отдельно наблюдает секцию рекомендаций.
-*/
 export function observeRevealElement(element) {
     if (!element || element.classList.contains("is-visible")) {
         return;
@@ -352,10 +295,6 @@ export function observeRevealElement(element) {
     try {
         revealObserver.observe(element);
 
-        /*
-        Некоторые встроенные браузеры создают observer, но не
-        вызывают callback. Карточка всё равно станет видимой.
-        */
         window.setTimeout(() => {
             if (
                 !element.classList.contains(
@@ -387,7 +326,6 @@ export function initializeCardAnimations() {
                         if (!entry.isIntersecting) return;
 
                         revealElement(entry.target);
-
                         observer.unobserve(entry.target);
                     });
                 },
