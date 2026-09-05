@@ -1,0 +1,36 @@
+/* v84: small scoped fixes only. Keep the restored v83 mobile shell intact. */
+
+/* Active-track accent should hug the card instead of washing across the row. */
+html[data-telegram-mini-app="true"] .release-card.current,
+html[data-telegram-mini-app="true"] .recommendation-card.current,
+html.mobile-device .release-card.current,
+html.mobile-device .recommendation-card.current {
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--player-accent) 42%, rgba(255,255,255,.08)),
+        0 8px 24px color-mix(in srgb, var(--player-accent) 18%, transparent) !important;
+}
+
+/* Admin is one more row in the existing compact profile list, not a new surface. */
+html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-action {
+    min-height: 62px !important;
+    padding: 8px 46px 23px 62px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: rgba(255,255,255,.94) !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+}
+html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-action[hidden] {
+    display: none !important;
+}
+html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-label {
+    display: block !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+html[data-telegram-mini-app="true"] .profile-actions .admin-mobile-subtitle {
+    pointer-events: none;
+}
