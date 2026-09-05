@@ -39,7 +39,7 @@ async function openAlbumDirectly() {
 
         // Always enter through album-upload-entry so the legacy uploader is
         // enhanced into the same four-step flow used by the mobile UI.
-        const album = await import('./album-upload-entry.js?v=90');
+        const album = await import('./album-upload-entry.js?v=91');
         album.openAlbumUpload?.();
         await new Promise((resolve) => requestAnimationFrame(resolve));
 
