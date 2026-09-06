@@ -2,7 +2,8 @@ name: Direct artist bootstrap hotfix
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -12,12 +13,14 @@ jobs:
     if: github.event.head_commit.message == 'chore: bootstrap direct artist hotfix'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Patch direct entry assets
-        shell: python
+        shell: bash
         run: |
+          python - <<'PY'
           from pathlib import Path
 
           index = Path('index.html')
@@ -55,10 +58,12 @@ jobs:
           sw.write_text(text, encoding='utf-8')
 
           Path('.github/workflows/direct-artist-bootstrap.yml').unlink()
+          PY
       - name: Commit hotfix
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html artist-public-surface.js service-worker.js .github/workflows/direct-artist-bootstrap.yml
+          git add -A
           git commit -m "fix(artist): load cinematic surface directly in Telegram"
           git push
