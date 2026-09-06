@@ -1,0 +1,64 @@
+name: Direct artist bootstrap hotfix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'chore: bootstrap direct artist hotfix'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch direct entry assets
+        shell: python
+        run: |
+          from pathlib import Path
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          html = html.replace(
+              '<meta name="pojidmusic-release" content="pwa-v28">',
+              '<meta name="pojidmusic-release" content="pwa-v98">'
+          )
+          direct_css = '    <link rel="stylesheet" href="artist-hero-v92.css?v=98" data-artist-hero="98">\n'
+          if 'artist-hero-v92.css?v=98' not in html:
+              html = html.replace(
+                  '    <link rel="stylesheet" href="style.css">\n',
+                  '    <link rel="stylesheet" href="style.css?v=98">\n' + direct_css
+              )
+          else:
+              html = html.replace('href="style.css"', 'href="style.css?v=98"')
+          direct_js = '    <script type="module" src="artist-public-surface.js?v=98"></script>\n'
+          if 'artist-public-surface.js?v=98' not in html:
+              html = html.replace('</body>', direct_js + '</body>')
+          index.write_text(html, encoding='utf-8')
+
+          surface = Path('artist-public-surface.js')
+          js = surface.read_text(encoding='utf-8').replace(
+              'const ARTIST_HERO_VERSION = "97";',
+              'const ARTIST_HERO_VERSION = "98";'
+          ).replace('artist-cinematic-v97', 'artist-cinematic-v98')
+          surface.write_text(js, encoding='utf-8')
+
+          sw = Path('service-worker.js')
+          text = sw.read_text(encoding='utf-8')
+          text = text.replace('const RELEASE_VERSION = "pwa-v97";', 'const RELEASE_VERSION = "pwa-v98";')
+          text = text.replace('const ENTRY_VERSION = "97";', 'const ENTRY_VERSION = "98";')
+          text = text.replace('artist-cinematic-v97', 'artist-cinematic-v98')
+          text = text.replace('id="artist-cinematic-v97"', 'id="artist-cinematic-v98"')
+          sw.write_text(text, encoding='utf-8')
+
+          Path('.github/workflows/direct-artist-bootstrap.yml').unlink()
+      - name: Commit hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html artist-public-surface.js service-worker.js .github/workflows/direct-artist-bootstrap.yml
+          git commit -m "fix(artist): load cinematic surface directly in Telegram"
+          git push
