@@ -26,7 +26,11 @@ def local_imports(path: Path):
 
 
 def production_graph():
-    pending = [ENTRY]
+    # The current worker composes additional module entry points into navigation HTML.
+    # They are executable roots, not unused cache entries.
+    worker = SW_PATH.read_text(encoding="utf-8")
+    entries = array_values(worker, "modules")
+    pending = [ENTRY, *(ROOT / entry for entry in entries)]
     visited = set()
     while pending:
         path = pending.pop()
@@ -59,13 +63,18 @@ def main():
     sdk_assets = array_values(sw, "SDK_ASSETS")
     cached_modules = {
         asset for asset in critical
-        if asset.startswith("./js/") and asset.endswith(".js")
+        if asset.endswith(".js") and asset != "./tracks.js"
     }
     missing = sorted(graph - cached_modules)
     extra = sorted(cached_modules - graph)
 
     assert not missing, "Modules missing from shell: " + ", ".join(missing)
     assert not extra, "Unused JS entries in shell: " + ", ".join(extra)
+    for asset in critical:
+        if asset.startswith("./"):
+            assert (ROOT / asset).is_file(), f"Missing shell asset: {asset}"
+    for asset in graph:
+        assert asset in critical, f"Entry missing from shell: {asset}"
 
     release = re.search(r'''RELEASE_VERSION\s*=\s*["']([^"']+)''', sw).group(1)
     assert f'<meta name="pojidmusic-release" content="{release}">' in index

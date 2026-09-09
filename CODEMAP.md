@@ -1,5 +1,16 @@
 # POJIDMUSIC: architectural codemap
 
+## Mobile foundation update — 2026-09-09
+
+The current mobile ownership and verification record is [MOBILE_DESIGN_SYSTEM_V1.md](MOBILE_DESIGN_SYSTEM_V1.md).
+`mobile-navigation.css` owns scoped design tokens and shared mobile chrome;
+`home-discovery.css` owns Home presentation. The two polish files retain other views.
+The current worker injects additional module roots into navigation HTML, now included
+in the shell graph check. No data, route, or player state boundary changes in this slice.
+Historical statements below about local fallback and immutable `?v=` caching are stale:
+current `tracks.js` is empty, catalog-state excludes local rows, and version-query assets
+can bypass the worker cache. See the linked risk register; those behaviors are unchanged.
+
 Audit date: 2026-09-02. This document describes the code currently present in the
 repository. It is not a description of an intended or older architecture.
 

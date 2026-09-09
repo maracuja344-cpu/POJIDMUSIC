@@ -2,74 +2,6 @@
    Small presentation overrides only. */
 
 @media (max-width: 932px) {
-    /* Home: keep the carousel important, while secondary sections stay quieter. */
-    html.mobile-device .home-section-title,
-    html.mobile-device #new-releases .section-title,
-    html.mobile-device #new .section-title,
-    html.mobile-device #all-tracks .section-title {
-        letter-spacing: -.04em;
-        line-height: .98;
-    }
-
-    html.mobile-device #new .section-title,
-    html.mobile-device #new-releases .section-title {
-        margin-bottom: 14px;
-        font-size: clamp(32px, 9.2vw, 40px);
-    }
-
-    html.mobile-device #recommendations.home-recommendations-list {
-        margin-top: 32px;
-    }
-
-    html.mobile-device #recommendations.home-recommendations-list .section-title {
-        padding-inline: var(--pm-side, 16px);
-        font-size: clamp(25px, 7vw, 30px);
-        letter-spacing: -.035em;
-    }
-
-    html.mobile-device .home-recommendations-refresh {
-        width: 34px;
-        min-width: 34px;
-        height: 34px;
-        padding: 0;
-        justify-content: center;
-        border-radius: 13px;
-        font-size: 0;
-        color: rgba(255,255,255,.58);
-        background: rgba(255,255,255,.025);
-    }
-
-    html.mobile-device .home-recommendations-refresh svg { width: 15px; height: 15px; }
-
-    html.mobile-device #recommendations.home-recommendations-list .recommendation-card {
-        min-height: 58px;
-        border-radius: var(--pm-radius-sm, 14px);
-        transition: transform 120ms ease, background-color 160ms ease;
-    }
-
-    html.mobile-device #recommendations.home-recommendations-list .recommendation-card img,
-    html.mobile-device #recommendations.home-recommendations-list .recommendation-cover {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-    }
-
-    html.mobile-device #recommendations.home-recommendations-list .recommendation-card:active {
-        transform: scale(.985);
-        background: rgba(255,255,255,.032);
-    }
-
-    html.mobile-device #all-tracks .section-title {
-        margin-top: 30px;
-        margin-bottom: 14px;
-        font-size: clamp(27px, 7.6vw, 32px);
-    }
-
-    html.mobile-device .all-tracks-section,
-    html.mobile-device #all-tracks {
-        padding-bottom: calc(194px + env(safe-area-inset-bottom));
-    }
-
     /* Search artist result reads like navigation, not a filter chip. */
     html.mobile-device .search-artist-result {
         position: relative;
@@ -157,47 +89,7 @@
 
     html.mobile-device .artist-profile-filters { margin-bottom: 12px; }
 
-    /* Bottom chrome gets a soft visual runway instead of cutting through cards. */
-    html.mobile-device .mobile-bottom-navigation {
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 14px 34px rgba(0,0,0,.32);
-        isolation: isolate;
-    }
-
-    html.mobile-device .mobile-bottom-navigation::before {
-        content: "";
-        position: absolute;
-        z-index: -1;
-        left: -18px;
-        right: -18px;
-        top: -34px;
-        height: 42px;
-        pointer-events: none;
-        background: linear-gradient(to bottom, rgba(8,8,9,0), rgba(8,8,9,.82) 78%, rgba(8,8,9,.94));
-        filter: blur(2px);
-    }
-
-    html.mobile-device .mini-player {
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.065), 0 14px 32px rgba(0,0,0,.31);
-    }
-
-    html.mobile-device .mini-player .player-title { letter-spacing: -.012em; }
-
     html.mobile-device :where(.mobile-nav-button,.search-artist-result,.profile-action-button,.home-recommendations-refresh) {
         -webkit-tap-highlight-color: transparent;
-    }
-}
-
-@media (max-width: 430px) {
-    html.mobile-device #new .section-title,
-    html.mobile-device #new-releases .section-title {
-        font-size: 34px;
-    }
-
-    html.mobile-device #recommendations.home-recommendations-list .section-title {
-        font-size: 28px;
-    }
-
-    html.mobile-device #all-tracks .section-title {
-        font-size: 29px;
     }
 }

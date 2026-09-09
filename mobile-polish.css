@@ -2,7 +2,7 @@
    Visual-only layer. Keeps player/data/navigation behavior untouched. */
 
 @media (max-width: 932px) {
-    :root {
+    html.mobile-device {
         --pm-bg: #0b0b0c;
         --pm-surface-1: rgba(22, 22, 24, .86);
         --pm-surface-2: rgba(30, 30, 33, .88);
@@ -19,31 +19,8 @@
         --pm-radius-xl: 36px;
         --pm-section-gap: 34px;
         --pm-side: 16px;
-        --mobile-nav-height: 66px;
-        --mobile-nav-bottom: calc(7px + env(safe-area-inset-bottom));
-        --mobile-player-bottom: calc(var(--mobile-nav-height) + 13px + env(safe-area-inset-bottom));
     }
 
-    html.mobile-device body {
-        background: var(--pm-bg);
-        color: var(--pm-text);
-    }
-
-    /* Header: quiet chrome, content gets the attention. */
-    html.mobile-device .header {
-        min-height: 56px;
-        padding: calc(9px + env(safe-area-inset-top)) var(--pm-side) 7px;
-        background: linear-gradient(180deg, rgba(11,11,12,.96), rgba(11,11,12,.72));
-        border-bottom-color: transparent;
-        -webkit-backdrop-filter: blur(18px);
-        backdrop-filter: blur(18px);
-    }
-
-    html.mobile-device .logo {
-        font-size: 17px;
-        font-weight: 750;
-        letter-spacing: .12em;
-    }
 
     /* One section scale across Home and Artist. */
     html.mobile-device .section-title {
@@ -54,9 +31,6 @@
         text-align: left;
     }
 
-    html.mobile-device #new .section-title { margin-top: 28px; }
-    html.mobile-device #all-tracks .section-title,
-    html.mobile-device #recommendations .section-title { margin-top: 38px; }
 
     /* Cards use the same radius family everywhere. */
     html.mobile-device .release-card {
@@ -85,31 +59,6 @@
         opacity: 1;
         font-size: 12px;
     }
-
-    /* Recommendations are intentionally lighter than release cards. */
-    html.mobile-device .recommendations-section { margin-top: 0; }
-    html.mobile-device .recommendations-viewport { padding: 0 var(--pm-side) 8px; }
-    html.mobile-device .recommendations-track { gap: 8px; }
-    html.mobile-device .recommendation-card {
-        width: min(82vw, 360px);
-        min-height: 66px;
-        padding: 8px 10px;
-        display: grid;
-        grid-template-columns: 50px minmax(0, 1fr);
-        align-items: center;
-        gap: 11px;
-        border-color: var(--pm-border-soft);
-        border-radius: var(--pm-radius-md);
-        background: rgba(255,255,255,.018);
-    }
-    html.mobile-device .recommendation-cover {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-    }
-    html.mobile-device .recommendation-info { padding: 0; min-width: 0; }
-    html.mobile-device .recommendation-title { font-size: 15px; }
-    html.mobile-device .recommendation-artist { margin-top: 3px; font-size: 12px; color: var(--pm-muted); opacity: 1; }
 
     /* Search results read as people, not filter pills. */
     html.mobile-device body.mobile-search-active .search-wrap {
@@ -271,28 +220,6 @@
         text-align: left;
     }
     html.mobile-device .profile-action-button:last-of-type { border-bottom: 0; }
-
-    /* Bottom chrome: slightly less vertical tax. */
-    html.mobile-device .mobile-bottom-navigation {
-        height: var(--mobile-nav-height);
-        padding: 4px 8px;
-        border-radius: 24px;
-        border-color: var(--pm-border);
-        background: rgba(15,15,17,.84);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 16px 40px rgba(0,0,0,.34);
-    }
-    html.mobile-device .mobile-nav-button { min-height: 56px; border-radius: 18px; }
-    html.mobile-device .mobile-nav-button.is-active { background: rgba(255,255,255,.035); }
-
-    html.mobile-device .mini-player {
-        height: 62px;
-        padding: 6px 7px;
-        grid-template-columns: minmax(0, 1fr) 50px;
-        border-radius: var(--pm-radius-md);
-        border-color: rgba(255,255,255,.12);
-    }
-    html.mobile-device .mini-player .player-cover { width: 48px; height: 48px; border-radius: 13px; }
-    html.mobile-device .mini-player .player-toggle { width: 48px; height: 48px; border-radius: 15px; }
 
     /* Queue sheet belongs to the same surface family. */
     html.mobile-device .player-queue-sheet-content,

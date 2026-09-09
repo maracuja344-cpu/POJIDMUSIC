@@ -6309,65 +6309,6 @@ html.mobile-device
         letter-spacing: 1.5px;
     }
 
-    html.mobile-device .mobile-bottom-navigation {
-        position: fixed;
-        right: calc(var(--mobile-shell-side) + env(safe-area-inset-right));
-        bottom: var(--mobile-nav-bottom);
-        left: calc(var(--mobile-shell-side) + env(safe-area-inset-left));
-        z-index: 980;
-        height: var(--mobile-nav-height);
-        padding: 4px 8px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-items: stretch;
-        border: 1px solid rgba(255, 255, 255, 0.13);
-        border-radius: 22px;
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.09), transparent 34%),
-            rgba(18, 18, 20, 0.76);
-        box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.09),
-            0 18px 42px rgba(0, 0, 0, 0.38);
-        -webkit-backdrop-filter: blur(26px) saturate(145%);
-        backdrop-filter: blur(26px) saturate(145%);
-    }
-
-    html.mobile-device .mobile-nav-button {
-        min-width: 0;
-        min-height: 52px;
-        padding: 4px 8px 3px;
-        border: 0;
-        border-radius: 16px;
-        display: grid;
-        place-items: center;
-        align-content: center;
-        gap: 2px;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.52);
-        font: inherit;
-        font-size: 10px;
-        font-weight: 600;
-        line-height: 1;
-        letter-spacing: 0;
-        transition: color 180ms ease, background-color 180ms ease;
-    }
-
-    html.mobile-device .mobile-nav-button svg {
-        width: 23px;
-        height: 23px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    html.mobile-device .mobile-nav-button.is-active {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.035);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-    }
-
     html.mobile-device .search-wrap {
         display: none;
     }
