@@ -1,5 +1,25 @@
 # Mobile Design System v1 — foundation
 
+## Home visual refinement (after 39e0d3c)
+
+The accepted foundation now has a focused Home presentation variant. A full-width
+release carousel with larger artwork and a distinct metadata surface replaces the
+small square-cover row; recommendations are three artwork tiles without row borders.
+Sentence-case section labels, a compact 44px Home header, integrated refresh icon,
+and quieter 56px mini-player/navigation panels establish the new hierarchy.
+The Upload icon uses the same size as the other icons; active navigation uses color
+and a small dot. Every button retains a >=44px touch area. Home shell dimensions are
+scoped to `body[data-app-view="catalog"]:not(.mobile-search-active)`.
+
+Verification: 390x844, 430x932, 1280x900 desktop and standalone safe-area emulation pass.
+No horizontal overflow; last catalog cards can scroll fully above the mini-player.
+Existing Home/Search return, guest Profile entry, pause/resume and role-layout checks
+pass. Desktop sampled geometry/type/colors match 39e0d3c within 0.1px. Screenshots use
+the same historical POJIDMUSIC fixture and playing track as the foundation comparison.
+The final 390px frame was visually compared with both the concepts and the previous
+implementation. No player/auth/backend changes. Release markers advance to pwa-v99;
+the shell graph check passes. The previous live/PWA-runtime limitations below remain.
+
 Base: `cc4a40e` (`origin/main`, fetched 2026-09-09). Work is isolated in
 `codex/mobile-design-system-v1`; the older checkout's uncommitted player work is preserved.
 

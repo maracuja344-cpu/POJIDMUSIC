@@ -39,6 +39,7 @@ const metrics = () => {
     const report = {};
     try {
         for (const [name,width,height,mobile,safe] of [['desktop',1280,900,false,false],['mobile390',390,844,true,false],['mobile430',430,932,true,false],['standalone',390,844,true,true]]) {
+            if (process.env.VIEWPORT_NAME && process.env.VIEWPORT_NAME !== name) continue;
             const context = await browser.newContext({ viewport:{width,height}, isMobile:mobile, hasTouch:mobile, serviceWorkers:'block' });
             const page = await context.newPage();
             page.on('pageerror', e => console.error(name, e.message));
@@ -82,6 +83,23 @@ const metrics = () => {
             await page.waitForTimeout(1200);
             report[name].player = await page.evaluate(metrics);
             await page.screenshot({path:path.join(out,`${name}-player.png`)});
+            const toggle = page.locator('.mini-player .player-toggle');
+            const beforeToggle = await toggle.getAttribute('aria-label');
+            await toggle.click();
+            await page.waitForTimeout(350);
+            assert.notEqual(await toggle.getAttribute('aria-label'),beforeToggle,`${name}: pause`);
+            await toggle.click();
+            await page.waitForTimeout(350);
+            assert.equal(await toggle.getAttribute('aria-label'),beforeToggle,`${name}: resume`);
+            if (mobile) {
+                await page.evaluate(() => { document.documentElement.style.scrollBehavior='auto'; window.scrollTo(0,document.documentElement.scrollHeight); });
+                await page.waitForTimeout(350);
+                report[name].lastCardClear = await page.evaluate(() => {
+                    const cards=document.querySelectorAll('#all-tracks .release-card');
+                    return cards[cards.length-1].getBoundingClientRect().bottom <= document.querySelector('.mini-player').getBoundingClientRect().top;
+                });
+                assert.ok(report[name].lastCardClear,`${name}: last card reachable above player`);
+            }
             await context.close();
         }
     } finally { await browser.close(); server.close(); }

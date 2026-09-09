@@ -1,4 +1,5 @@
 /* POJIDMUSIC home discovery: one carousel only. */
+.home-section-label { text-transform: uppercase; }
 #new.home-new-carousel .tracks-row {
     display: flex;
     width: 100%;
@@ -202,19 +203,19 @@
     html.mobile-device #catalog-view :is(#new, #recommendations, #all-tracks) {
         width: 100%;
         max-width: 680px;
-        margin: var(--m-space-8) auto 0;
+        margin: var(--m-space-6) auto 0;
         padding: 0;
     }
-    html.mobile-device #catalog-view #new { margin-top: var(--m-space-6); }
+    html.mobile-device #catalog-view #new { margin-top: var(--m-space-2); }
     html.mobile-device #catalog-view :is(#new, #recommendations, #all-tracks) .section-title {
         width: auto;
         margin: 0 var(--m-right) var(--m-space-4) var(--m-left);
         padding: 0;
         color: var(--m-text);
-        font-size: var(--m-title);
+        font-size: 17px;
         font-weight: 700;
         line-height: 1.25;
-        letter-spacing: .015em;
+        letter-spacing: -.015em;
         text-align: left;
     }
     html.mobile-device #catalog-view #new .tracks-row {
@@ -227,12 +228,6 @@
         gap: var(--m-space-3);
         overflow-x: auto;
         scroll-padding-inline: var(--m-left) var(--m-right);
-    }
-    html.mobile-device #catalog-view #new .release-card {
-        flex: 0 0 min(44vw, 200px);
-        width: min(44vw, 200px);
-        max-width: none;
-        scroll-snap-align: start;
     }
     html.mobile-device #catalog-view #all-tracks .tracks-row {
         width: 100%;
@@ -278,30 +273,33 @@
     }
     html.mobile-device #catalog-view :is(#new, #all-tracks) .artist-name { color: var(--m-secondary); font-size: var(--m-caption); }
     html.mobile-device #catalog-view #recommendations .recommendations-viewport { padding: 0 var(--m-right) 0 var(--m-left); }
-    html.mobile-device #catalog-view #recommendations .recommendations-track { grid-template-columns: 1fr; gap: var(--m-space-2); }
+    html.mobile-device #catalog-view #recommendations .recommendations-track { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--m-space-3); }
     html.mobile-device #catalog-view #recommendations .recommendation-card {
         width: 100%;
         min-width: 0;
-        min-height: 66px;
-        display: grid;
-        grid-template-columns: 50px minmax(0, 1fr);
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: var(--m-space-3);
-        padding: 7px var(--m-space-2);
-        border: 1px solid var(--m-border);
+        gap: var(--m-space-2);
+        padding: 0;
+        border: 0;
         border-radius: var(--m-radius-sm);
-        background: var(--m-surface);
+        background: transparent;
+        box-shadow: none;
         transition: background-color var(--m-motion) ease;
     }
     html.mobile-device #catalog-view #recommendations .recommendation-cover {
-        width: 50px;
-        height: 50px;
-        min-width: 50px;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1;
+        object-fit: cover;
+        min-width: 0;
         margin: 0;
         border-radius: var(--m-artwork-radius);
     }
-    html.mobile-device #catalog-view #recommendations .recommendation-title { font-size: var(--m-body); font-weight: 650; }
-    html.mobile-device #catalog-view #recommendations .recommendation-artist { font-size: var(--m-caption); color: var(--m-secondary); opacity: 1; }
+    html.mobile-device #catalog-view #recommendations .recommendation-title { font-size: 13px; font-weight: 600; }
+    html.mobile-device #catalog-view #recommendations .recommendation-artist { display: block; font-size: var(--m-caption); color: var(--m-secondary); opacity: 1; }
     html.mobile-device #catalog-view .home-recommendations-refresh {
         width: var(--m-control-min);
         min-width: var(--m-control-min);
@@ -310,7 +308,53 @@
         flex-basis: var(--m-control-min);
         border-radius: var(--m-radius-sm);
         color: var(--m-secondary);
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        margin-right: -12px;
     }
     html.mobile-device #catalog-view .home-recommendations-refresh svg { width: 18px; height: 18px; }
     html.mobile-device #catalog-view .home-recommendations-refresh:focus-visible { outline: 2px solid var(--m-accent); }
+    html.mobile-device #catalog-view .home-section-label { text-transform: none; }
+    html.mobile-device #catalog-view #new .release-card {
+        flex: 0 0 calc(100% - var(--m-space-4));
+        width: calc(100% - var(--m-space-4));
+        max-width: none;
+        scroll-snap-align: start;
+        gap: 0;
+        overflow: hidden;
+        border-radius: var(--m-radius-md);
+        background: var(--m-bg-raised);
+        box-shadow: none;
+    }
+    html.mobile-device #catalog-view #new .cover-wrap {
+        aspect-ratio: 1.38;
+        border: 0;
+        border-radius: 0;
+    }
+    html.mobile-device #catalog-view #new .release-info {
+        width: 100%;
+        padding: 12px 16px 14px;
+        display: grid;
+        gap: 3px;
+    }
+    html.mobile-device #catalog-view #new .track-title {
+        font-size: 23px;
+        line-height: 1.15;
+        font-weight: 650;
+        letter-spacing: -.025em;
+    }
+    html.mobile-device #catalog-view #new .artist-name {
+        margin: 0;
+        min-height: 0;
+        font-size: 13px;
+        line-height: 1.35;
+    }
+    html.mobile-device #catalog-view #recommendations .recommendation-info {
+        width: 100%;
+    }
+    html.mobile-device #catalog-view #recommendations .section-title {
+        margin-bottom: var(--m-space-2);
+    }
+
 }
