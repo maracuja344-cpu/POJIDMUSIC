@@ -60,54 +60,190 @@
         font-size: 12px;
     }
 
-    /* Search results read as people, not filter pills. */
+    /* Search v1: the single mobile Search presentation owner. */
+    html.mobile-device body[data-app-view="catalog"].mobile-search-active .header { display: none; }
     html.mobile-device body.mobile-search-active .search-wrap {
-        margin: 10px var(--pm-side) 22px;
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        width: auto;
+        margin: 0;
+        padding: calc(var(--m-safe-top) + var(--m-space-3)) var(--m-right) var(--m-space-3) var(--m-left);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: var(--m-control);
+        align-items: center;
+        gap: var(--m-space-2);
+        background: var(--m-bg);
     }
     html.mobile-device body.mobile-search-active .search-input {
-        min-height: 50px;
-        border-color: var(--pm-border);
-        border-radius: var(--pm-md, 20px);
-        background: var(--pm-surface-1);
-    }
-    html.mobile-device .search-group-title {
-        margin-bottom: 12px;
-        color: var(--pm-muted);
-        font-size: 12px;
-        letter-spacing: .1em;
-    }
-    html.mobile-device .search-artists-list {
-        display: grid;
-        gap: 8px;
-        overflow: visible;
-    }
-    html.mobile-device .search-artist-result {
+        grid-column: 1;
+        grid-row: 1;
         width: 100%;
-        min-height: 58px;
-        padding: 0 16px;
-        justify-content: flex-start;
-        border: 1px solid var(--pm-border-soft);
-        border-radius: var(--pm-radius-md);
-        background: rgba(255,255,255,.025);
-        font-size: 15px;
-        font-weight: 650;
+        height: var(--m-control);
+        min-height: var(--m-control);
+        padding: 0 44px 0 var(--m-space-4);
+        border: 0;
+        border-radius: var(--m-radius-sm);
+        background: var(--m-bg-raised);
+        color: var(--m-text);
+        font-family: var(--m-font);
+        font-size: 16px;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    html.mobile-device body.mobile-search-active .search-input:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 1px var(--m-secondary);
+        background: var(--m-bg-raised);
+    }
+    html.mobile-device body.mobile-search-active .search-input::placeholder { color: var(--m-tertiary); }
+    html.mobile-device body.mobile-search-active .search-clear-button {
+        position: relative;
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: end;
+        inset: auto;
+        transform: none;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        background: transparent;
+        color: var(--m-secondary);
+    }
+    html.mobile-device body.mobile-search-active .search-cancel-button {
+        grid-column: 2;
+        grid-row: 1;
+        display: block;
+        min-width: 52px;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--m-secondary);
+        font: 13px var(--m-font);
+        letter-spacing: 0;
+    }
+    html.mobile-device body.mobile-search-active #search-results {
+        min-height: 0;
+        margin: 12px 0 0;
+        padding: 0 var(--m-right) 0 var(--m-left);
+        opacity: 1;
+        transform: none;
         text-align: left;
     }
-    html.mobile-device body.mobile-search-active #search-results { padding-inline: var(--pm-side); }
-    html.mobile-device body.mobile-search-active #search-results .search-results-list { padding: 0; gap: 8px; }
+    html.mobile-device body.mobile-search-active #search-results > .section-title { display: none; }
+    html.mobile-device body.mobile-search-active .search-group-title {
+        margin: 0 0 var(--m-space-3);
+        color: var(--m-text);
+        font-size: 17px;
+        font-weight: 650;
+        line-height: 1.25;
+        letter-spacing: -.015em;
+        text-transform: none;
+    }
+    html.mobile-device body.mobile-search-active .search-artists { margin-bottom: var(--m-space-8); }
+    html.mobile-device body.mobile-search-active .search-artists-list {
+        display: flex;
+        gap: var(--m-space-4);
+        overflow-x: auto;
+        padding: 0 0 var(--m-space-1);
+        scrollbar-width: none;
+    }
+    html.mobile-device body.mobile-search-active .search-artist-result {
+        flex: 0 0 96px;
+        min-width: 0;
+        min-height: 110px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--m-space-2);
+        background: transparent;
+        box-shadow: none;
+        color: var(--m-text);
+        font: 13px/1.3 var(--m-font);
+        letter-spacing: 0;
+        text-align: center;
+    }
+    html.mobile-device body.mobile-search-active .search-artist-avatar {
+        width: 72px;
+        height: 72px;
+        flex: 0 0 72px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        background: var(--m-bg-raised);
+        color: var(--m-secondary);
+        font-size: 24px;
+    }
+    html.mobile-device body.mobile-search-active .search-artist-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    html.mobile-device body.mobile-search-active .search-artist-label {
+        width: 100%;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow-wrap: anywhere;
+    }
+    html.mobile-device body.mobile-search-active #search-results .search-results-list {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--m-space-2);
+        padding: 0;
+    }
     html.mobile-device body.mobile-search-active #search-results .release-card {
-        min-height: 82px;
-        padding: 8px;
-        border-radius: var(--pm-radius-md);
-        background: rgba(255,255,255,.018);
+        min-height: 76px;
+        padding: 6px 0;
+        gap: var(--m-space-3);
+        border: 0;
+        border-radius: var(--m-radius-sm);
+        background: transparent;
+        box-shadow: none;
+    }
+    html.mobile-device body.mobile-search-active #search-results .release-card.current {
+        background: var(--m-surface);
+        box-shadow: none;
     }
     html.mobile-device body.mobile-search-active #search-results .cover-wrap,
     html.mobile-device body.mobile-search-active #search-results .cover {
-        width: 66px;
-        height: 66px;
-        flex-basis: 66px;
-        border-radius: var(--pm-radius-sm);
+        width: 64px;
+        height: 64px;
+        flex-basis: 64px;
+        border-radius: var(--m-artwork-radius);
     }
+    html.mobile-device body.mobile-search-active #search-results .play-state { font-size: 22px; }
+    html.mobile-device body.mobile-search-active #search-results .release-info { padding: 0; }
+    html.mobile-device body.mobile-search-active #search-results .track-title {
+        margin: 0 0 4px;
+        font-size: var(--m-body);
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    html.mobile-device body.mobile-search-active #search-results .artist-name {
+        display: block;
+        min-height: 0;
+        color: var(--m-secondary);
+        font-size: var(--m-caption);
+        line-height: 1.35;
+    }
+    html.mobile-device body.mobile-search-active #search-results .artist-name .artist-link { display: inline; }
+    html.mobile-device body.mobile-search-active #search-results .search-idle,
+    html.mobile-device body.mobile-search-active #search-results .search-empty {
+        margin: 48px 12px 0;
+        color: var(--m-secondary);
+        font-size: var(--m-body);
+        line-height: 1.5;
+        text-align: center;
+    }
+    html.mobile-device body.mobile-search-active #search-results[data-search-state="idle"] .search-idle { display: block; }
+    html.mobile-device body.mobile-search-active .search-idle strong { display: block; margin-bottom: 6px; color: var(--m-text); font-size: 17px; font-weight: 600; }
+    html.mobile-device body.mobile-search-active .search-idle span { font-size: 13px; }
+    html.mobile-device body.mobile-search-active :is(.search-artist-result, .search-cancel-button):focus-visible { outline: 2px solid var(--m-secondary); outline-offset: 2px; }
 
     /* Artist page: keep the cinematic hero, reveal music sooner. */
     html.mobile-device .artist-profile-view { padding-inline: var(--pm-side); }

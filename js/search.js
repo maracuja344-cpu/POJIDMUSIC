@@ -42,7 +42,7 @@ function findArtists(query) {
             const slug = artist.slug;
             const key = artist.id;
             if (!artistsByKey.has(key)) {
-                artistsByKey.set(key, { displayName, slug });
+                artistsByKey.set(key, { displayName, slug, avatarUrl: artist.avatarUrl || "" });
             }
         });
     });
@@ -79,7 +79,25 @@ function renderArtistResults(foundArtists, section, container) {
     foundArtists.forEach((artist) => {
         const item = document.createElement(artist.slug ? "button" : "span");
         item.className = "search-artist-result";
-        item.textContent = artist.displayName;
+        const avatar = document.createElement("span");
+        avatar.className = "search-artist-avatar";
+        avatar.setAttribute("aria-hidden", "true");
+        const initial = Array.from(artist.displayName)[0]?.toUpperCase() || "";
+        avatar.textContent = initial;
+        if (artist.avatarUrl) {
+            const image = document.createElement("img");
+            image.alt = "";
+            image.loading = "lazy";
+            image.decoding = "async";
+            image.width = image.height = 72;
+            image.addEventListener("error", () => { avatar.textContent = initial; }, { once: true });
+            image.src = artist.avatarUrl;
+            avatar.replaceChildren(image);
+        }
+        const label = document.createElement("span");
+        label.className = "search-artist-label";
+        label.textContent = artist.displayName;
+        item.append(avatar, label);
         if (artist.slug) {
             item.type = "button";
             item.dataset.artistSlug = artist.slug;
@@ -107,6 +125,7 @@ function resetSearch(context) {
         searchTracksTitle
     } = context;
     clearSearchResults(searchResultsList);
+    searchResultsSection.dataset.searchState = "idle";
     renderArtistResults([], searchArtistsSection, searchArtistsList);
     if (searchTracksTitle) searchTracksTitle.hidden = true;
     searchResultsSection.classList.remove("search-visible");
@@ -151,6 +170,7 @@ function handleSearch(context) {
     showSearchSection(searchResultsSection);
     const foundTracks = findTracks(query);
     const foundArtists = findArtists(query);
+    searchResultsSection.dataset.searchState = foundTracks.length || foundArtists.length ? "results" : "empty";
     renderSearchResults(foundTracks, searchResultsList);
     renderArtistResults(foundArtists, searchArtistsSection, searchArtistsList);
     if (searchTracksTitle) searchTracksTitle.hidden = foundTracks.length === 0;

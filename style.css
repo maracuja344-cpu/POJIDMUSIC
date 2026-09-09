@@ -6244,6 +6244,8 @@ html.mobile-device
    ========================================================= */
 
 .mobile-bottom-navigation,
+.search-artist-avatar,
+.search-idle,
 .search-cancel-button,
 .fullscreen-player-drag-handle,
 .fullscreen-control-label,
@@ -6311,100 +6313,6 @@ html.mobile-device
 
     html.mobile-device .search-wrap {
         display: none;
-    }
-
-    html.mobile-device body.mobile-search-active .search-wrap {
-        position: sticky;
-        top: calc(8px + env(safe-area-inset-top));
-        z-index: 30;
-        width: auto;
-        margin: 8px 14px 20px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
-        align-items: center;
-    }
-
-    html.mobile-device body.mobile-search-active .search-input {
-        width: 100%;
-        min-height: 48px;
-        padding: 0 44px 0 18px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 18px;
-        background: rgba(31, 31, 34, 0.78);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        -webkit-backdrop-filter: blur(20px) saturate(130%);
-        backdrop-filter: blur(20px) saturate(130%);
-        font-size: 16px;
-    }
-
-    html.mobile-device body.mobile-search-active .search-clear-button {
-        right: 72px;
-    }
-
-    html.mobile-device body.mobile-search-active .search-cancel-button {
-        min-width: 60px;
-        min-height: 44px;
-        padding: 0;
-        border: 0;
-        display: block;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.86);
-        font: inherit;
-        font-size: 14px;
-        letter-spacing: 0;
-    }
-
-    html.mobile-device body.mobile-search-active #search-results {
-        min-height: calc(100svh - 210px);
-        margin-top: 0;
-        padding-inline: 14px;
-        opacity: 1;
-        transform: none;
-    }
-
-    html.mobile-device body.mobile-search-active #search-results > .section-title {
-        display: none;
-    }
-
-    html.mobile-device .search-group-title {
-        margin: 0 0 10px;
-        color: rgba(255, 255, 255, 0.58);
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1.2;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    html.mobile-device .search-artists {
-        margin-bottom: 22px;
-    }
-
-    html.mobile-device .search-artists-list {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    html.mobile-device .search-artists-list::-webkit-scrollbar {
-        display: none;
-    }
-
-    html.mobile-device .search-artist-result {
-        min-height: 44px;
-        padding: 0 16px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 999px;
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.07);
-        color: #fff;
-        font: inherit;
-        font-size: 14px;
-        letter-spacing: 0;
     }
 
     html.mobile-device .mini-player {

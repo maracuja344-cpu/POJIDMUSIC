@@ -33,6 +33,101 @@ const metrics = () => {
     return { overflow: document.documentElement.scrollWidth > innerWidth, width: innerWidth,
         items: Object.fromEntries(selectors.map(s => { const e = document.querySelector(s); if (!e) return [s, null]; const r=e.getBoundingClientRect(), c=getComputedStyle(e); return [s, { x:r.x,y:r.y,width:r.width,height:r.height,display:c.display,font:c.fontSize,color:c.color,background:c.backgroundColor,padding:c.padding,borderRadius:c.borderRadius }]; })) };
 };
+async function searchPass(page, name, mobile) {
+    const result = {};
+    await page.evaluate(async () => {
+        const catalog = await import('/js/catalog-state.js');
+        catalog.setCatalogTracks(catalog.getCatalogTracks().map(t=>({...t, artists:[{
+            id:`fixture-${t.artist}`, slug:`fixture-${t.artist.toLowerCase().replace(/\W/g,'')}`,
+            displayName:t.artist, avatarUrl:t.cover, isFallback:false
+        }]})));
+    });
+    if (mobile) {
+        await page.locator('[data-mobile-tab="search"]').click();
+        await page.waitForTimeout(150);
+        assert.equal(await page.locator('.search-input').evaluate(e=>document.activeElement===e),true,'Search autofocus');
+        if (!process.env.BASELINE_REF) assert.equal(await page.locator('.search-idle').isVisible(),true,'Intentional idle state');
+        await page.screenshot({path:path.join(out,`${name}-search-empty.png`)});
+    }
+    const field=page.locator('.search-input');
+    await field.fill('Avario');
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator('#search-results .release-card').count(),1,'Track-only query');
+    assert.equal(await page.locator('.search-artists').isVisible(),false,'No matching artist');
+    await field.fill('triplepeepy');
+    await page.waitForTimeout(70);
+    assert.equal(await page.locator('#search-results .release-card').count(),1,'Debounce does not render early');
+    await page.waitForTimeout(350);
+    assert.equal(await page.locator('.search-artists').isVisible(),true,'Artists group');
+    assert.ok(await page.locator('#search-results .release-card').count()>1,'Tracks group');
+    await page.evaluate(()=>document.querySelector('.search-input').blur());
+    await page.screenshot({path:path.join(out,`${name}-search-results.png`)});
+    result.normal = await page.locator('#search-results').evaluate(e=>({htmlWidth:document.documentElement.scrollWidth, viewport:innerWidth, styles:[...e.querySelectorAll('.release-card,.search-artist-result,.search-group-title')].map(n=>{const s=getComputedStyle(n),r=n.getBoundingClientRect();return {class:n.className,width:r.width,height:r.height,font:s.fontSize,padding:s.padding,color:s.color,background:s.backgroundColor,border:s.border};})}));
+    assert.ok(result.normal.htmlWidth<=result.normal.viewport,'Search no overflow');
+    if (mobile) {
+        await page.locator('#search-results .release-card').first().click();
+        await page.waitForTimeout(1000);
+        assert.equal(await page.locator('.mini-player').isVisible(),true,'Search playback opens mini-player');
+        await page.screenshot({path:path.join(out,`${name}-search-player.png`)});
+        const toggle=page.locator('.mini-player .player-toggle'), before=await toggle.getAttribute('aria-label');
+        await toggle.click();await page.waitForTimeout(300);
+        assert.notEqual(await toggle.getAttribute('aria-label'),before,'Search pause');
+        await toggle.click();await page.waitForTimeout(300);
+        assert.equal(await toggle.getAttribute('aria-label'),before,'Search resume');
+        result.roles={};
+        for (const role of ['listener','artist','admin']) {
+            await page.evaluate(role=>document.querySelectorAll('[data-mobile-tab="upload"],[data-mobile-tab="artist"]').forEach(e=>e.hidden=role==='listener'),role);
+            const buttons=await page.locator('.mobile-nav-button:visible').evaluateAll(es=>es.map(e=>({width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height})));
+            assert.equal(buttons.length,role==='listener'?3:5);
+            assert.ok(buttons.every(e=>e.width>=44&&e.height>=44));result.roles[role]=buttons.length;
+        }
+        assert.equal(await page.locator('[data-mobile-tab="search"]').getAttribute('aria-current'),'page');
+        await page.locator('.search-artist-result').first().click();
+        await page.waitForTimeout(300);
+        assert.ok(new URL(page.url()).searchParams.has('artist'),'Artist routing');
+        assert.equal(await page.locator('.header').isVisible(),true,'Artist keeps its header');
+        await page.goBack(); await page.waitForTimeout(400);
+        assert.equal(await page.locator('#catalog-view').isVisible(),true,'History returns to catalog');
+        // Artist-only cannot arise naturally: artists come from matching playable tracks.
+        // Isolate the existing artist projection to check this layout without changing semantics.
+        await page.locator('.search-results-list').evaluate(e=>e.style.display='none');
+        await page.locator('.search-tracks-title').evaluate(e=>e.hidden=true);
+        await page.screenshot({path:path.join(out,`${name}-artists-only-layout.png`)});
+        await page.locator('.search-results-list').evaluate(e=>e.style.display='');
+    }
+    await field.fill('zzzz-no-match');await page.waitForTimeout(300);
+    assert.equal(await page.locator('.search-empty').isVisible(),true,'No results');
+    await page.screenshot({path:path.join(out,`${name}-no-results.png`)});
+    await page.locator('.search-clear-button').click();
+    assert.equal(await field.inputValue(),'','Clear query');
+    if(mobile && !process.env.BASELINE_REF) assert.equal(await page.locator('.search-idle').isVisible(),true);
+    await page.evaluate(async()=>{
+        const catalog=await import('/js/catalog-state.js');const list=catalog.getCatalogTracks();
+        const long='Очень длинное название для проверки переносов и границ экрана '.repeat(3);
+        catalog.setCatalogTracks(list.map(t=>({...t,title:long,artists:[{id:'fixture-long',slug:'fixture-long',displayName:long,avatarUrl:'',isFallback:false}]})));
+    });
+    await field.fill('Очень');await page.waitForTimeout(300);
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Long text no overflow');
+    await page.screenshot({path:path.join(out,`${name}-long-results.png`)});
+    assert.equal(await page.locator('.search-artist-result').count(),1,'Artist identities deduplicated');
+    if(mobile && !process.env.BASELINE_REF) assert.equal(await page.locator('.search-artist-avatar').textContent(),'О','Initial fallback');
+    if(mobile){
+        await page.evaluate(()=>{document.documentElement.style.scrollBehavior='auto';window.scrollTo(0,document.documentElement.scrollHeight);});
+        await page.waitForTimeout(300);
+        assert.ok(await page.evaluate(()=>{const c=document.querySelectorAll('#search-results .release-card');return c[c.length-1].getBoundingClientRect().bottom<=document.querySelector('.mini-player').getBoundingClientRect().top;}),'Last search row clears player');
+        await page.evaluate(async()=>{
+            const catalog=await import('/js/catalog-state.js');const track=catalog.getCatalogTracks()[0];
+            catalog.setCatalogTracks([{...track,title:'Legacy track',artist:'Legacy artist',artists:[{id:'credit-legacy',slug:'legacy',displayName:'Legacy artist',isFallback:true}]}]);
+        });
+        await field.fill('Legacy');await page.waitForTimeout(300);
+        assert.equal(await page.locator('.search-artist-result').count(),0,'Legacy identity not linked as Artist');
+        assert.equal(await page.locator('#search-results .release-card').count(),1,'Legacy track still searchable');
+        await page.locator('.search-cancel-button').click();await page.waitForTimeout(300);
+        assert.equal(await page.locator('body').evaluate(e=>e.classList.contains('mobile-search-active')),false,'Cancel returns Home');
+        await page.screenshot({path:path.join(out,`${name}-home-return.png`)});
+    }
+    return result;
+}
 (async () => {
     await new Promise(r => server.listen(0, '127.0.0.1', r));
     const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -61,6 +156,7 @@ const metrics = () => {
                 render.renderNewTracks(); render.renderAllTracks(); render.renderRecommendations(); render.initializeCardAnimations();
             });
             await page.waitForTimeout(500);
+            if(process.env.SEARCH_PASS){report[name]=await searchPass(page,name,mobile);await context.close();continue;}
             await page.screenshot({path:path.join(out,`${name}-home.png`)});
             report[name] = {home:await page.evaluate(metrics)};
             if (mobile) {
@@ -104,6 +200,7 @@ const metrics = () => {
         }
     } finally { await browser.close(); server.close(); }
     fs.writeFileSync(path.join(out,'report.json'), JSON.stringify(report,null,2));
+    if(process.env.SEARCH_PASS){console.log('PASS Search presentation/behavior: '+Object.keys(report).join(', '));return;}
     for (const [name,result] of Object.entries(report)) {
         assert.equal(result.home.overflow,false,`${name}: Home overflow`);
         assert.equal(result.player.overflow,false,`${name}: player overflow`);

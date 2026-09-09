@@ -2,25 +2,6 @@
    Small presentation overrides only. */
 
 @media (max-width: 932px) {
-    /* Search artist result reads like navigation, not a filter chip. */
-    html.mobile-device .search-artist-result {
-        position: relative;
-        min-height: 66px;
-        padding-right: 46px;
-    }
-
-    html.mobile-device .search-artist-result::after {
-        content: "›";
-        position: absolute;
-        right: 17px;
-        top: 50%;
-        transform: translateY(-52%);
-        color: rgba(255,255,255,.34);
-        font-size: 27px;
-        font-weight: 300;
-        line-height: 1;
-    }
-
     /* Profile: pull the useful controls into the first viewport. */
     html.mobile-device .profile-view,
     html.mobile-device .account-profile-view {

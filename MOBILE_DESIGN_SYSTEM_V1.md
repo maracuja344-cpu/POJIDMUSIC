@@ -1,5 +1,28 @@
 # Mobile Design System v1 — foundation
 
+## Mobile Search (after 8f50ee1)
+
+Search now shares Home's compact catalog chrome (without the active-tab dot).
+`mobile-polish.css` owns the mobile Search toolbar, idle/empty states, circular artist
+results and artwork-led track rows. Superseded Search blocks are removed from
+`style.css` and `mobile-polish-final.css`; the legacy active-card glow excludes Search.
+Artist avatar URLs come from existing catalog identities; missing/broken images use an
+initial. Desktop hides the presentation additions. No queries, ranking, filtering,
+debounce, autofocus, route or player changes; search.js only projects avatar/state data.
+
+Focused fixture checks pass at 390x844, 430x932 and standalone safe-area emulation:
+autofocus, query/debounce, clear, track-only/both groups, empty/no-results, long names,
+legacy exclusion, artist URL navigation/history return, cancel/Home return, playback,
+pause/resume, last-row clearance and 3/5-tab projections. Artist-only is a layout fixture:
+the existing algorithm derives artists from playable tracks, so it cannot naturally
+produce an artist match without a track match. Artist route content/auth are not mocked
+as verified production data. Desktop Search metrics match 8f50ee1; Home metrics match
+the accepted baseline. Catalog fixtures use historical tracks and explicit test identities.
+Run `SEARCH_PASS=1` with the existing visual harness for these scenarios.
+
+Release marker pwa-v100 passes the shell check. Main/live remain untouched as requested.
+The prior guest-catalog HTTP 401 and PWA-runtime limitations remain outside this stage.
+
 ## Home visual refinement (after 39e0d3c)
 
 The accepted foundation now has a focused Home presentation variant. A full-width
