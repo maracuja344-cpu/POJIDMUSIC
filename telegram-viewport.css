@@ -49,4 +49,220 @@ html[data-telegram-viewport="true"].telegram-keyboard-open .mobile-bottom-naviga
         left: calc(var(--mobile-shell-side, 12px) + var(--pm-tg-left)) !important;
         right: calc(var(--mobile-shell-side, 12px) + var(--pm-tg-right)) !important;
     }
+
+    /* Telegram catalog polish: compact content without changing desktop/PWA. */
+    html[data-telegram-viewport="true"].mobile-device .header {
+        min-height: 48px !important;
+        padding-top: calc(4px + var(--pm-tg-top)) !important;
+        padding-bottom: 3px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #new.home-new-carousel .section-title {
+        margin-top: 18px !important;
+        margin-bottom: 11px !important;
+        font-size: clamp(29px, 8.3vw, 34px) !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #new.home-new-carousel .tracks-row {
+        margin: 0 !important;
+        padding-left: var(--pm-side, 16px) !important;
+        padding-right: var(--pm-side, 16px) !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list {
+        margin-top: 22px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list .section-title,
+    html[data-telegram-viewport="true"].mobile-device #all-tracks .section-title {
+        margin-top: 0 !important;
+        margin-bottom: 9px !important;
+        font-size: clamp(23px, 6.5vw, 27px) !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #all-tracks .section-title {
+        margin-top: 22px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list .recommendations-track {
+        gap: 2px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list .recommendation-card {
+        grid-template-columns: 46px minmax(0, 1fr) !important;
+        gap: 10px !important;
+        min-height: 54px !important;
+        padding: 4px 2px !important;
+        border-color: transparent !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list :is(.recommendation-cover, .recommendation-card img) {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+        border-radius: 9px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list .recommendation-info {
+        gap: 2px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list .recommendation-title {
+        font-size: 14px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device #recommendations.home-recommendations-list .recommendation-artist {
+        font-size: 11px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active .search-wrap {
+        margin: 7px var(--pm-side, 16px) 15px !important;
+        grid-template-columns: minmax(0, 1fr) 60px !important;
+        gap: 8px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active .search-input {
+        min-height: 46px !important;
+        padding-right: 42px !important;
+        border-radius: 16px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active .search-clear-button {
+        right: 74px !important;
+        width: 32px !important;
+        height: 32px !important;
+        padding: 8px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device .search-artists {
+        margin-bottom: 16px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device .search-artists-list,
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active #search-results .search-results-list {
+        gap: 2px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device .search-artist-result {
+        min-height: 52px !important;
+        padding: 7px 42px 7px 4px !important;
+        border-color: transparent !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+        font-size: 14px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active #search-results .release-card {
+        min-height: 58px !important;
+        gap: 10px !important;
+        padding: 4px 2px !important;
+        border-color: transparent !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active #search-results :is(.cover-wrap, .cover) {
+        width: 50px !important;
+        height: 50px !important;
+        flex-basis: 50px !important;
+        border-radius: 9px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active #search-results .track-title {
+        margin-bottom: 3px !important;
+        font-size: 14px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active #search-results .artist-name {
+        font-size: 11px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device .mobile-bottom-navigation {
+        box-shadow:
+            0 34px 0 34px var(--pm-bg, #0b0b0c),
+            inset 0 1px 0 rgba(255,255,255,.055),
+            0 14px 34px rgba(0,0,0,.32) !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device .mobile-bottom-navigation::before {
+        content: none !important;
+    }
+
+    /* Artist is a continuous surface: header -> hero -> releases. */
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] .header {
+        position: absolute !important;
+        top: 0 !important;
+        z-index: 12 !important;
+        background: linear-gradient(180deg, rgba(9,9,10,.92), rgba(9,9,10,.54) 62%, transparent) !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile.artist-profile-view {
+        width: 100% !important;
+        max-width: none !important;
+        margin-top: 0 !important;
+        padding-inline: 0 !important;
+        overflow-x: hidden !important;
+        background: #09090a !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile .artist-hero {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #09090a !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile .artist-banner {
+        width: 100% !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile .artist-banner::after {
+        background: linear-gradient(180deg, rgba(9,9,10,.10) 0%, rgba(9,9,10,.02) 38%, rgba(9,9,10,.40) 67%, rgba(9,9,10,.86) 84%, #09090a 100%) !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile .artist-releases {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 2px var(--pm-side, 16px) calc(160px + var(--pm-tg-bottom)) !important;
+        background: #09090a !important;
+        box-sizing: border-box !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile .artist-releases .section-title {
+        margin: 0 0 12px !important;
+        padding: 0 !important;
+        font-size: 27px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile [data-artist-tracks] {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        gap: 12px 10px !important;
+    }
+
+    html[data-telegram-viewport="true"].mobile-device body[data-app-view="artist"] #artist-profile [data-artist-tracks] .release-card {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 7px 7px 9px !important;
+        border: 1px solid rgba(255,255,255,.06) !important;
+        border-radius: 15px !important;
+        background: rgba(255,255,255,.014) !important;
+        box-shadow: none !important;
+    }
 }

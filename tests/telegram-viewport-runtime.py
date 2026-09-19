@@ -102,7 +102,7 @@ def main():
                 # A host safe-area update must move the header immediately.
                 c.evaluate("window.scrollTo(0,0); Telegram.WebApp.safeAreaInset.top=0; Telegram.WebApp.contentSafeAreaInset.top=32; __tgEmit('safeAreaChanged')")
                 time.sleep(.3)
-                assert c.evaluate("parseFloat(getComputedStyle(document.querySelector('.header')).paddingTop)") == (41 if width <= 932 else 52)
+                assert c.evaluate("parseFloat(getComputedStyle(document.querySelector('.header')).paddingTop)") == (36 if width <= 932 else 52)
                 c.evaluate("document.querySelector('.fullscreen-player').classList.add('open')")
                 time.sleep(.4)
                 assert c.evaluate("document.querySelector('.fullscreen-player').getBoundingClientRect().height") == height

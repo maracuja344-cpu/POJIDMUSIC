@@ -1,9 +1,9 @@
-const RELEASE_VERSION = "pwa-v98";
+const RELEASE_VERSION = "pwa-v100";
 const SHELL_CACHE = `pojidmusic-shell-${RELEASE_VERSION}`;
 const SDK_CACHE = "pojidmusic-sdk-supabase-2.112.2";
 const CACHE_PREFIX = "pojidmusic-";
 const SERVED_RELEASE_MARKER = `<meta name="pojidmusic-release" content="${RELEASE_VERSION}">`;
-const ENTRY_VERSION = "98";
+const ENTRY_VERSION = "100";
 
 const CRITICAL_SHELL_ASSETS = [
     "./telegram-viewport.css", "./js/telegram-viewport.js", "./vendor/telegram-web-app.js",
