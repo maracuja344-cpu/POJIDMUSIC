@@ -27,6 +27,12 @@ def local_imports(path: Path):
 
 def production_graph():
     pending = [ENTRY]
+    # The worker also injects independent module entry points into the shell.
+    sw = SW_PATH.read_text(encoding="utf-8")
+    pending.extend(ROOT / path for path in array_values(sw, "modules"))
+    index = (ROOT / "index.html").read_text(encoding="utf-8")
+    pending.extend(ROOT / urlparse(path).path for path in re.findall(
+        r'<script\s+type="module"\s+src="([^"]+)"', index))
     visited = set()
     while pending:
         path = pending.pop()
@@ -56,12 +62,14 @@ def main():
     client = (ROOT / "js" / "supabase" / "client.js").read_text(encoding="utf-8")
     graph = production_graph()
     critical = array_values(sw, "CRITICAL_SHELL_ASSETS")
+    for asset in critical:
+        assert (ROOT / asset).is_file(), f"Missing shell asset: {asset}"
     sdk_assets = array_values(sw, "SDK_ASSETS")
     cached_modules = {
         asset for asset in critical
         if asset.startswith("./js/") and asset.endswith(".js")
     }
-    missing = sorted(graph - cached_modules)
+    missing = sorted(graph - critical)
     extra = sorted(cached_modules - graph)
 
     assert not missing, "Modules missing from shell: " + ", ".join(missing)

@@ -1,0 +1,52 @@
+/* Telegram geometry only; the website and standalone PWA retain their CSS. */
+html[data-telegram-viewport="true"] {
+    --pm-tg-top: calc(max(env(safe-area-inset-top, 0px), var(--pm-tg-device-top, 0px)) + var(--pm-tg-content-top, 0px));
+    --pm-tg-bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--pm-tg-device-bottom, 0px)) + var(--pm-tg-content-bottom, 0px));
+    --pm-tg-left: calc(max(env(safe-area-inset-left, 0px), var(--pm-tg-device-left, 0px)) + var(--pm-tg-content-left, 0px));
+    --pm-tg-right: calc(max(env(safe-area-inset-right, 0px), var(--pm-tg-device-right, 0px)) + var(--pm-tg-content-right, 0px));
+    scroll-padding-top: calc(var(--pm-tg-top) + 70px);
+    scroll-padding-bottom: calc(var(--pm-tg-bars-height, 180px) + var(--pm-tg-bottom));
+}
+html[data-telegram-viewport="true"] body {
+    min-height: var(--pm-tg-height, 100dvh);
+    padding-bottom: calc(var(--pm-tg-bars-height, 180px) + var(--pm-tg-bottom) + var(--pm-tg-bottom-offset, 0px)) !important;
+}
+html[data-telegram-viewport="true"] .header {
+    padding-top: calc(20px + var(--pm-tg-top)) !important;
+}
+html[data-telegram-viewport="true"] .mini-player {
+    bottom: calc(var(--pm-tg-nav-height, 0px) + 13px + var(--pm-tg-bottom) + var(--pm-tg-bottom-offset, 0px)) !important;
+}
+html[data-telegram-viewport="true"] .mobile-bottom-navigation {
+    bottom: calc(7px + var(--pm-tg-bottom) + var(--pm-tg-bottom-offset, 0px)) !important;
+}
+html[data-telegram-viewport="true"] .fullscreen-player {
+    top: var(--pm-tg-offset, 0px) !important;
+    height: var(--pm-tg-height, 100dvh) !important;
+    min-height: 0 !important;
+    padding-top: calc(10px + var(--pm-tg-top)) !important;
+    padding-bottom: calc(18px + var(--pm-tg-bottom)) !important;
+    padding-left: calc(22px + var(--pm-tg-left)) !important;
+    padding-right: calc(22px + var(--pm-tg-right)) !important;
+    overflow-y: auto;
+}
+html[data-telegram-viewport="true"].telegram-keyboard-open .mini-player,
+html[data-telegram-viewport="true"].telegram-keyboard-open .mobile-bottom-navigation {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: none !important;
+}
+@media (max-width: 932px) {
+    html[data-telegram-viewport="true"].mobile-device .header {
+        padding-top: calc(9px + var(--pm-tg-top)) !important;
+        padding-left: calc(16px + var(--pm-tg-left)) !important;
+        padding-right: calc(16px + var(--pm-tg-right)) !important;
+    }
+    html[data-telegram-viewport="true"].mobile-device body.mobile-search-active .search-wrap {
+        top: calc(8px + var(--pm-tg-top) + var(--pm-tg-offset, 0px));
+    }
+    html[data-telegram-viewport="true"].mobile-device :is(.mini-player, .mobile-bottom-navigation) {
+        left: calc(var(--mobile-shell-side, 12px) + var(--pm-tg-left)) !important;
+        right: calc(var(--mobile-shell-side, 12px) + var(--pm-tg-right)) !important;
+    }
+}

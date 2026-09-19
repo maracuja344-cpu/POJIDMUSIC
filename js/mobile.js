@@ -1,3 +1,4 @@
+import "./telegram-viewport.js";
 import {
     initializeAccountAuthGuard
 } from "./account-auth-guard.js";
@@ -41,7 +42,7 @@ function isSafariBrowser() {
 
 export function isMobileDevice() {
     return (
-        coarsePointerQuery.matches &&
+        (coarsePointerQuery.matches || document.documentElement.dataset.telegramViewport === "true") &&
         phoneWidthQuery.matches
     );
 }

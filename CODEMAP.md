@@ -1,5 +1,24 @@
 # POJIDMUSIC: architectural codemap
 
+## Telegram viewport adaptation (2026-09-19, pwa-v98)
+
+`js/telegram-viewport.js` is an independent early geometry entry in `index.html`,
+also imported by `mobile.js` (ES module evaluation is shared). Only a Telegram
+launch activates it. It loads the vendored official `vendor/telegram-web-app.js`,
+requests expansion/fullscreen when supported, and owns `--pm-tg-*` CSS variables
+and the temporary `telegram-keyboard-open` class. Device and Telegram content
+insets, host viewport events, VisualViewport events and measured bottom-bar heights
+feed the scoped rules in `telegram-viewport.css`. Narrow Telegram windows use the
+existing mobile shell even with a mouse; regular website device detection is unchanged.
+
+No player commands, catalog queries or persistence keys are added. The three new
+assets are critical shell resources. The existing worker activation/reload policy is
+unchanged; both the worker and HTML release marker are `pwa-v98`.
+
+`tests/telegram-viewport-runtime.py` verifies the real shell markup/styles with
+deterministic list content and emulated Telegram events, independently of remote
+catalog/auth startup. This is not a physical Telegram client test.
+
 Audit date: 2026-09-02. This document describes the code currently present in the
 repository. It is not a description of an intended or older architecture.
 
